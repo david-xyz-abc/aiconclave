@@ -1,6 +1,7 @@
 import { useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import {
+  Edges,
   Environment,
   Lightformer,
   Line,
@@ -27,6 +28,171 @@ const modulePositions: [number, number, number][] = [
   [0.55, -1.48, 0.35],
   [-0.35, -1.68, -0.2],
 ]
+
+function CoreInterior() {
+  const filaments = useMemo(() => {
+    return Array.from({ length: 22 }, (_, index) => {
+      const angle = (index / 22) * Math.PI * 2
+      const elevation = Math.sin(index * 1.71) * 0.46
+      const radius = Math.sqrt(1 - elevation * elevation) * 0.58
+      const edge = new THREE.Vector3(
+        Math.cos(angle) * radius,
+        elevation,
+        Math.sin(angle) * radius,
+      )
+      const bend = edge
+        .clone()
+        .multiplyScalar(0.54)
+        .add(
+          new THREE.Vector3(
+            Math.sin(index * 2.3) * 0.13,
+            Math.cos(index * 1.4) * 0.11,
+            Math.sin(index * 0.8) * 0.15,
+          ),
+        )
+      return new THREE.QuadraticBezierCurve3(
+        edge,
+        bend,
+        new THREE.Vector3(
+          Math.sin(index) * 0.08,
+          Math.cos(index * 1.7) * 0.08,
+          Math.sin(index * 2.1) * 0.08,
+        ),
+      ).getPoints(20)
+    })
+  }, [])
+
+  const sparks = useMemo(() => {
+    const data = new Float32Array(130 * 3)
+    for (let index = 0; index < 130; index += 1) {
+      const radius = Math.cbrt((index * 0.61803398875) % 1) * 0.53
+      const theta = index * 2.39996
+      const phi = Math.acos(1 - 2 * ((index * 0.37) % 1))
+      data[index * 3] = radius * Math.sin(phi) * Math.cos(theta)
+      data[index * 3 + 1] = radius * Math.cos(phi)
+      data[index * 3 + 2] = radius * Math.sin(phi) * Math.sin(theta)
+    }
+    return data
+  }, [])
+
+  return (
+    <group renderOrder={5}>
+      {filaments.map((points, index) => (
+        <Line
+          key={index}
+          points={points}
+          color={index % 4 === 0 ? '#ffd0a9' : '#ff3b0b'}
+          lineWidth={index % 4 === 0 ? 0.8 : 0.42}
+          transparent
+          opacity={index % 4 === 0 ? 0.95 : 0.64}
+          depthTest={false}
+        />
+      ))}
+      <points>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[sparks, 3]} />
+        </bufferGeometry>
+        <pointsMaterial
+          color="#ffb17d"
+          size={0.022}
+          transparent
+          opacity={0.88}
+          depthWrite={false}
+          depthTest={false}
+          toneMapped={false}
+        />
+      </points>
+      <mesh scale={0.1}>
+        <icosahedronGeometry args={[0.72, 1]} />
+        <meshBasicMaterial color="#ff2608" />
+      </mesh>
+    </group>
+  )
+}
+
+const coreVertexShader = `
+  varying vec3 vNormalView;
+  varying vec3 vViewDirection;
+  varying vec3 vPositionLocal;
+
+  void main() {
+    vPositionLocal = position;
+    vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
+    vNormalView = normalize(normalMatrix * normal);
+    vViewDirection = normalize(-viewPosition.xyz);
+    gl_Position = projectionMatrix * viewPosition;
+  }
+`
+
+const coreFragmentShader = `
+  uniform float uTime;
+  varying vec3 vNormalView;
+  varying vec3 vViewDirection;
+  varying vec3 vPositionLocal;
+
+  float hash(vec3 p) {
+    p = fract(p * 0.3183099 + vec3(0.1, 0.2, 0.3));
+    p *= 17.0;
+    return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+  }
+
+  float noise(vec3 p) {
+    vec3 i = floor(p);
+    vec3 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    return mix(
+      mix(mix(hash(i), hash(i + vec3(1,0,0)), f.x),
+          mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
+      mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x),
+          mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y),
+      f.z
+    );
+  }
+
+  void main() {
+    vec3 p = vPositionLocal * 5.0;
+    float broad = noise(p + vec3(0.0, uTime * 0.08, 0.0));
+    float fine = noise(p * 2.35 - vec3(uTime * 0.04, 0.0, uTime * 0.06));
+    float veinA = 1.0 - smoothstep(0.012, 0.038, abs(broad - 0.5));
+    float veinB = 1.0 - smoothstep(0.009, 0.027, abs(fine - 0.52));
+    float veins = clamp(veinA * 0.9 + veinB * 0.42, 0.0, 1.0);
+    float fresnel = pow(1.0 - max(dot(vNormalView, vViewDirection), 0.0), 2.5);
+    float pulse = 0.78 + sin(uTime * 1.25 + broad * 9.0) * 0.22;
+
+    vec3 smoke = vec3(0.012, 0.004, 0.002);
+    vec3 ember = vec3(1.0, 0.1, 0.01) * veins * pulse * 0.58;
+    vec3 rim = vec3(1.0, 0.24, 0.06) * fresnel * 0.38;
+    vec3 color = smoke + ember + rim;
+    float alpha = 0.96 + fresnel * 0.03 + veins * 0.01;
+    gl_FragColor = vec4(color, alpha);
+  }
+`
+
+function NeuralCoreShell() {
+  const material = useRef<THREE.ShaderMaterial>(null)
+
+  useFrame(({ clock }) => {
+    if (material.current) {
+      material.current.uniforms.uTime.value = clock.elapsedTime
+    }
+  })
+
+  return (
+    <mesh castShadow scale={1.08} renderOrder={2}>
+      <dodecahedronGeometry args={[0.72, 2]} />
+      <shaderMaterial
+        ref={material}
+        vertexShader={coreVertexShader}
+        fragmentShader={coreFragmentShader}
+        uniforms={{ uTime: { value: 0 } }}
+        transparent
+        depthWrite
+        blending={THREE.NormalBlending}
+      />
+      <Edges color="#ff7136" threshold={18} />
+    </mesh>
+  )
+}
 
 function makeBladeGeometry() {
   const shape = new THREE.Shape()
@@ -85,7 +251,7 @@ function NeuralConnection({
         color="#ff4a15"
         lineWidth={0.65}
         transparent
-        opacity={0.34 + active * 0.35}
+        opacity={0.52 + active * 0.38}
       />
       <mesh ref={pulse}>
         <sphereGeometry args={[0.035, 12, 12]} />
@@ -120,19 +286,24 @@ function AutomationModule({
 
   return (
     <group ref={group} position={position}>
-      <mesh castShadow>
-        <boxGeometry args={[0.22, 0.22, 0.22]} />
+      <mesh castShadow rotation={[0.22, 0.35, 0.08]}>
+        <boxGeometry args={[0.3, 0.25, 0.28]} />
         <meshStandardMaterial
-          color="#16110f"
-          metalness={0.82}
-          roughness={0.22}
+          color="#0d0b0a"
+          metalness={0.92}
+          roughness={0.16}
           emissive="#6b1708"
-          emissiveIntensity={0.3}
+          emissiveIntensity={0.38}
         />
+        <Edges color="#ff5b22" threshold={18} />
       </mesh>
-      <mesh scale={1.2}>
-        <boxGeometry args={[0.22, 0.035, 0.22]} />
+      <mesh position={[0, 0.17, 0]} rotation={[0.22, 0.35, 0.08]}>
+        <boxGeometry args={[0.23, 0.055, 0.21]} />
         <meshBasicMaterial color="#ff4a15" toneMapped={false} />
+      </mesh>
+      <mesh position={[0, -0.17, 0]} rotation={[0.22, 0.35, 0.08]}>
+        <boxGeometry args={[0.23, 0.04, 0.21]} />
+        <meshBasicMaterial color="#a91d08" toneMapped={false} />
       </mesh>
     </group>
   )
@@ -367,11 +538,27 @@ function CoreAssembly({ progress }: { progress: ProgressRef }) {
       >
         <meshStandardMaterial
           color="#0b0a09"
-          roughness={0.27}
-          metalness={0.72}
+          roughness={0.2}
+          metalness={0.86}
           emissive="#3e0b03"
           emissiveIntensity={0.16}
         />
+        <Edges color="#873018" threshold={22} />
+        {Array.from({ length: 6 }, (_, index) => (
+          <mesh
+            key={index}
+            geometry={bladeGeometry}
+            position={[0.025 * index, -0.018 * index, -0.11 - index * 0.055]}
+            scale={[1 - index * 0.022, 1 - index * 0.015, 1]}
+          >
+            <meshStandardMaterial
+              color={index % 2 === 0 ? '#16110f' : '#080706'}
+              roughness={0.25}
+              metalness={0.78}
+            />
+            <Edges color="#4d1a0d" threshold={25} />
+          </mesh>
+        ))}
       </mesh>
 
       <mesh
@@ -383,11 +570,27 @@ function CoreAssembly({ progress }: { progress: ProgressRef }) {
       >
         <meshStandardMaterial
           color="#eadfce"
-          roughness={0.48}
+          roughness={0.4}
           metalness={0.04}
           emissive="#6d2b16"
           emissiveIntensity={0.08}
         />
+        <Edges color="#ffb188" threshold={24} />
+        {Array.from({ length: 10 }, (_, index) => (
+          <mesh
+            key={index}
+            geometry={bladeGeometry}
+            position={[-0.022 * index, -0.014 * index, -0.1 - index * 0.065]}
+            scale={[1 - index * 0.026, 1 - index * 0.012, 1]}
+          >
+            <meshStandardMaterial
+              color={index % 3 === 0 ? '#fff2df' : '#cdbca7'}
+              roughness={0.5}
+              metalness={0.02}
+            />
+            <Edges color="#9d7560" threshold={22} />
+          </mesh>
+        ))}
       </mesh>
 
       <group ref={glassRibbon}>
@@ -413,28 +616,24 @@ function CoreAssembly({ progress }: { progress: ProgressRef }) {
       </group>
 
       <group ref={core}>
-        <mesh castShadow>
-          <icosahedronGeometry args={[0.72, 5]} />
-          <MeshTransmissionMaterial
-            color="#6f1106"
-            transmission={0.72}
-            thickness={1.25}
-            roughness={0.08}
-            chromaticAberration={0.09}
-            anisotropy={0.35}
-            distortion={0.16}
-            distortionScale={0.22}
-            temporalDistortion={0.12}
-            samples={6}
+        <NeuralCoreShell />
+        <mesh scale={0.82} rotation={[0.4, 0.2, -0.16]}>
+          <dodecahedronGeometry args={[0.72, 1]} />
+          <meshStandardMaterial
+            color="#120504"
+            emissive="#c72408"
+            emissiveIntensity={0.32}
+            roughness={0.25}
+            metalness={0.72}
+            wireframe
+            transparent
+            opacity={0.2}
           />
         </mesh>
-        <mesh scale={0.42}>
-          <icosahedronGeometry args={[0.72, 2]} />
-          <meshBasicMaterial color="#ff3b0b" toneMapped={false} />
-        </mesh>
+        <CoreInterior />
         <pointLight
           color="#ff3d0b"
-          intensity={22}
+          intensity={11}
           distance={5.2}
           decay={2}
         />
