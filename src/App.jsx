@@ -152,8 +152,8 @@ function PanelTable({ registrations, loading, onOpen }) {
   );
 }
 
-function DetailItem({ label, children, wide = false }) {
-  return <div className={`detail-item${wide ? " detail-item-wide" : ""}`}><dt>{label}</dt><dd>{children}</dd></div>;
+function DetailItem({ label, children, wide = false, important = false }) {
+  return <div className={`detail-item${wide ? " detail-item-wide" : ""}${important ? " detail-item-important" : ""}`}><dt>{label}</dt><dd>{children}</dd></div>;
 }
 
 function RegistrationDetails({ registration, onClose, onDelete, deleting }) {
@@ -175,13 +175,13 @@ function RegistrationDetails({ registration, onClose, onDelete, deleting }) {
           <button className="close-button" type="button" onClick={onClose} aria-label="Close registration details">×</button>
         </div>
         <dl className="detail-grid">
-          <DetailItem label="Email"><a href={`mailto:${registration.email}`}>{registration.email}</a></DetailItem>
-          <DetailItem label="Phone"><a href={`tel:${registration.phone}`}>{registration.phone}</a></DetailItem>
-          <DetailItem label="Participant type">{registration.participant_type}</DetailItem>
+          <DetailItem label="Email" important><a href={`mailto:${registration.email}`}>{registration.email}</a></DetailItem>
+          <DetailItem label="Phone" important><a href={`tel:${registration.phone}`}>{registration.phone}</a></DetailItem>
+          <DetailItem label="Participant type" important>{registration.participant_type}</DetailItem>
           <DetailItem label="Registered">{formatDate(registration.created_at)}</DetailItem>
-          <DetailItem label="Organisation" wide>{registration.organisation}</DetailItem>
-          <DetailItem label="Department / Branch" wide>{displayValue(registration.department)}</DetailItem>
-          <DetailItem label="Panel selection" wide><span className="panel-mark">{registration.panel_selection}</span></DetailItem>
+          <DetailItem label="Organisation" wide important>{registration.organisation}</DetailItem>
+          <DetailItem label="Department / Branch" wide important>{displayValue(registration.department)}</DetailItem>
+          <DetailItem label="Panel selection" wide important><span className="panel-mark">{registration.panel_selection}</span></DetailItem>
           <DetailItem label="Industry sector">{displayValue(registration.industry_sector)}</DetailItem>
           <DetailItem label="Sector details">{displayValue(registration.industry_sector_other)}</DetailItem>
           <DetailItem label="Organisation type">{displayValue(registration.organisation_type)}</DetailItem>

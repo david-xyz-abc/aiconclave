@@ -128,6 +128,9 @@ td a { text-decoration-thickness: 1px; text-underline-offset: .2em; }
 .detail-item-wide { grid-column: 1 / -1; padding-left: 0 !important; border-left: 0 !important; }
 .detail-item dt { margin-bottom: .4rem; color: var(--muted); font: 600 .62rem/1.2 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
 .detail-item dd { margin: 0; overflow-wrap: anywhere; font-size: .9rem; }
+.detail-item-important dd { color: var(--text); font: 600 1.08rem/1.35 var(--mono); letter-spacing: -.018em; }
+.detail-item-important dd a { text-decoration-thickness: 1.5px; text-underline-offset: .22em; }
+.detail-item-important .panel-mark { padding: .42rem .6rem; font-size: .88rem; font-weight: 600; }
 .detail-actions { display: flex; justify-content: space-between; gap: 1rem; margin-top: 2rem; }
 @keyframes backdrop-in { from { opacity: 0; } }
 @keyframes drawer-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
@@ -156,17 +159,22 @@ td a { text-decoration-thickness: 1px; text-underline-offset: .2em; }
   table, tbody, tr, td { display: block; width: 100%; }
   table { min-width: 0; }
   thead { display: none; }
-  tbody { display: grid; gap: .75rem; }
-  tbody tr { padding: .5rem 1rem; border: 1px solid var(--line-strong); border-top: 4px solid var(--signal); background: #fff; }
+  tbody { display: grid; gap: .55rem; }
+  tbody tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .55rem .75rem; align-items: center; padding: .7rem .8rem; border: 1px solid var(--line-strong); border-left: 4px solid var(--signal); background: #fff; }
   td { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: .75rem; padding: .75rem 0; border-bottom: 1px solid var(--line); }
   td::before { content: attr(data-label); color: var(--muted); font: 600 .62rem/1.3 var(--mono); letter-spacing: .07em; text-transform: uppercase; }
-  td[data-label="Name"] { display: block; padding: 1rem 0; }
-  td[data-label="Name"]::before { display: block; margin-bottom: .45rem; }
-  td[data-label="Name"] .cell-name { color: var(--text); font: 600 1.15rem/1.25 var(--mono); letter-spacing: -.025em; }
+  td[data-label="Name"] { display: block; min-width: 0; padding: 0; border: 0; }
+  td[data-label="Name"]::before { display: none; }
+  td[data-label="Name"] .cell-name { overflow: hidden; color: var(--text); font: 600 1rem/1.25 var(--mono); letter-spacing: -.025em; text-overflow: ellipsis; white-space: nowrap; }
   td[data-label="Name"] .cell-secondary { display: none; }
   td[data-label="Type"],
   td[data-label="Organisation"],
   td[data-label="Registered"] { display: none; }
+  td[data-label="Panel"] { display: block; padding: 0; border: 0; }
+  td[data-label="Panel"]::before { display: none; }
+  td[data-label="Panel"] .panel-mark { max-width: 11.5rem; overflow: hidden; font-size: .6rem; text-overflow: ellipsis; white-space: nowrap; }
+  td[data-label="Actions"] { display: block; grid-column: 1 / -1; padding: .5rem 0 0; border-top: 1px solid var(--line); border-bottom: 0; text-align: right; }
+  td[data-label="Actions"]::before { display: none; }
   td:last-child { border-bottom: 0; }
   .cell-action { text-align: left; }
 }
