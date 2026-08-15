@@ -130,7 +130,7 @@ function PanelTable({ registrations, loading, onOpen }) {
         <tbody>
           {registrations.map((registration) => (
             <tr key={registration.id}>
-              <td data-label="Participant">
+              <td data-label="Name">
                 <strong className="cell-name">{registration.name}</strong>
                 <a className="cell-secondary" href={`mailto:${registration.email}`}>{registration.email}</a>
               </td>
@@ -322,6 +322,19 @@ function Dashboard({ user, onLogout }) {
             </button>
           ))}
         </nav>
+
+        <label className="mobile-section-picker">
+          <span>Registration section</span>
+          <div className="mobile-section-control">
+            <strong aria-hidden="true">{currentSection.number}</strong>
+            <select value={activeSection} onChange={(event) => setActiveSection(event.target.value)} aria-label="Choose registration section">
+              {registrationSections.map((section) => (
+                <option value={section.id} key={section.id}>{section.label} — {section.id === "panel" ? `${registrations.length} registrations` : section.status}</option>
+              ))}
+            </select>
+            <i aria-hidden="true"></i>
+          </div>
+        </label>
 
         {activeSection !== "panel" ? <EmptyRegistrationSection section={currentSection} /> : <>
           <section className="metrics-grid" aria-label="Panel registration summary">
