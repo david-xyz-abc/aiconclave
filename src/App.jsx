@@ -9,6 +9,7 @@ const PATHS = {
   register: '/register',
   registerHackathon: '/register/hackathon',
   registerPanel: '/register/panel',
+  myRegistration: '/my-registration',
 }
 
 const HACKATHON_REGISTRATION_OPEN = false
@@ -125,6 +126,29 @@ const initialPanelForm = {
   updatesOptIn: false,
 }
 
+function validatePanelForm(form) {
+  const errors = {}
+  const phoneDigits = form.phone.replace(/\D/g, '')
+
+  if (!form.name.trim()) errors.name = 'Enter your full name.'
+  if (!form.email.trim()) errors.email = 'Enter your email address.'
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) errors.email = 'Enter a valid email address, for example name@example.com.'
+  if (!form.phone.trim()) errors.phone = 'Enter your phone number.'
+  else if (!/^[+\d\s().-]+$/.test(form.phone) || phoneDigits.length < 7 || phoneDigits.length > 15) errors.phone = 'Enter a valid phone number containing 7 to 15 digits.'
+  if (!form.participantType) errors.participantType = 'Choose your participant type.'
+  if (!form.organisation.trim()) errors.organisation = 'Enter your college, institution or organization name.'
+  if (!form.panelSelection) errors.panelSelection = 'Choose the panel discussion you want to attend.'
+  if (form.industrySector === 'Other' && !form.industrySectorOther.trim()) errors.industrySectorOther = 'Specify your industry sector.'
+  if (form.organisationType === 'Other' && !form.organisationTypeOther.trim()) errors.organisationTypeOther = 'Specify your organization type.'
+  if (!form.informationConfirmed) errors.informationConfirmed = 'Confirm that the information provided is accurate.'
+
+  return errors
+}
+
+function FieldError({ id, message }) {
+  return message ? <p className="field-error" id={id} role="alert">{message}</p> : null
+}
+
 function currentPage() {
   const path = window.location.pathname.replace(/\/+$/, '') || '/'
   if (path === '/about') return 'about'
@@ -133,6 +157,7 @@ function currentPage() {
   if (path === '/register/hackathon') return 'register-hackathon'
   if (path === '/register/panel') return 'register-panel'
   if (path === '/register') return 'register'
+  if (path === '/my-registration') return 'my-registration'
   return 'home'
 }
 
@@ -253,7 +278,7 @@ function Header({ active }) {
   const [open, setOpen] = useState(false)
   const closeMenu = () => setOpen(false)
   const linkClass = (page) => (active === page ? 'is-active' : undefined)
-  const registrationActive = active.startsWith('register')
+  const registrationActive = active.startsWith('register') || active === 'my-registration'
 
   return (
     <header id="site-header" className="site-header">
@@ -271,6 +296,7 @@ function Header({ active }) {
             <li><a href={PATHS.about} className={linkClass('about')} aria-current={active === 'about' ? 'page' : undefined} onClick={closeMenu}>About</a></li>
             <li><a href={PATHS.schedule} className={linkClass('schedule')} aria-current={active === 'schedule' ? 'page' : undefined} onClick={closeMenu}>Schedule</a></li>
             <li><a href={PATHS.participate} className={linkClass('participate')} aria-current={active === 'participate' ? 'page' : undefined} onClick={closeMenu}>Participate</a></li>
+            <li><a href={PATHS.myRegistration} className={linkClass('my-registration')} aria-current={active === 'my-registration' ? 'page' : undefined} onClick={closeMenu}>My registrations</a></li>
             <li><a href={PATHS.register} className={`btn btn-primary nav-cta${registrationActive ? ' is-active' : ''}`} aria-current={registrationActive ? 'page' : undefined} onClick={closeMenu}>Register</a></li>
           </ul>
         </nav>
@@ -452,10 +478,155 @@ function ParticipatePage() {
   return <main id="main"><section id="participants" className="section"><div className="container"><div className="section-head" data-reveal><p className="eyebrow">Who Should Attend</p><h1 className="section-heading">Built for people working across all three sectors.</h1><p className="section-lede">AI Conclave 2026 is open to anyone with a stake in how AI touches Agriculture, Health or Education — students, practitioners and decision-makers alike.</p></div><div className="participants-grid">{participantGroups.map((group) => <div id={group.id} className="participant-group" data-reveal key={group.id}><span className={`stamp ${group.stamp}`}>{group.name}</span><h2>{group.name}</h2><ul className="participant-list">{group.items.map((item) => <li key={item}>{item}</li>)}</ul></div>)}</div></div></section></main>
 }
 
-function RegistrationChoicePage() {
+let googleScriptPromise
+let googleConfigPromise
+let googleConfigCreatedAt = 0
+
+function loadGoogleIdentity() {
+  if (window.google?.accounts?.id) return Promise.resolve(window.google)
+  if (googleScriptPromise) return googleScriptPromise
+  googleScriptPromise = new Promise((resolve, reject) => {
+    const existing = document.querySelector('script[data-google-identity]')
+    const script = existing || document.createElement('script')
+    script.addEventListener('load', () => window.google?.accounts?.id ? resolve(window.google) : reject(new Error('Google Sign-In did not load.')), { once: true })
+    script.addEventListener('error', () => reject(new Error('Google Sign-In could not be loaded.')), { once: true })
+    if (!existing) {
+      script.src = 'https://accounts.google.com/gsi/client'
+      script.async = true
+      script.defer = true
+      script.dataset.googleIdentity = 'true'
+      document.head.appendChild(script)
+    }
+  }).catch((error) => {
+    googleScriptPromise = undefined
+    throw error
+  })
+  return googleScriptPromise
+}
+
+function getGoogleConfig(force = false) {
+  if (force || Date.now() - googleConfigCreatedAt > 4 * 60 * 1000) googleConfigPromise = undefined
+  if (!googleConfigPromise) {
+    googleConfigCreatedAt = Date.now()
+    googleConfigPromise = fetch('/api/auth/config', { headers: { accept: 'application/json' } })
+      .then(async (response) => {
+        const data = await response.json().catch(() => ({}))
+        if (!response.ok || !data.ok) throw new Error(data.error || 'Google Sign-In is unavailable right now.')
+        return data
+      })
+      .catch((error) => {
+        googleConfigPromise = undefined
+        throw error
+      })
+  }
+  return googleConfigPromise
+}
+
+function GoogleSignInButton({ onSignedIn }) {
+  const hostRef = useRef(null)
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(true)
+  const [attempt, setAttempt] = useState(0)
+
+  useEffect(() => {
+    let active = true
+    setBusy(true)
+    setError('')
+    Promise.all([loadGoogleIdentity(), getGoogleConfig(attempt > 0)]).then(([google, config]) => {
+      if (!active || !hostRef.current) return
+      hostRef.current.replaceChildren()
+      google.accounts.id.initialize({
+        client_id: config.clientId,
+        nonce: config.nonce,
+        auto_select: false,
+        cancel_on_tap_outside: true,
+        callback: async ({ credential }) => {
+          if (!credential || !active) return
+          setBusy(true)
+          setError('')
+          try {
+            const response = await fetch('/api/auth/google', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ credential }),
+            })
+            const data = await response.json().catch(() => ({}))
+            if (!response.ok || !data.ok) throw new Error(data.error || 'Google Sign-In could not be completed.')
+            googleConfigPromise = undefined
+            onSignedIn(data.participant)
+          } catch (signInError) {
+            googleConfigPromise = undefined
+            if (active) {
+              setError(signInError.message || 'Google Sign-In could not be completed. Please try again.')
+            }
+          } finally {
+            if (active) setBusy(false)
+          }
+        },
+      })
+      google.accounts.id.renderButton(hostRef.current, {
+        type: 'standard', theme: 'outline', size: 'large', shape: 'rectangular', text: 'continue_with',
+        width: Math.min(360, Math.max(240, hostRef.current.clientWidth)),
+      })
+      setBusy(false)
+    }).catch((loadError) => {
+      if (!active) return
+      setBusy(false)
+      setError(loadError.message || 'Google Sign-In is unavailable right now.')
+    })
+    return () => { active = false }
+  }, [attempt, onSignedIn])
+
+  return <div className="google-sign-in-control">
+    <div ref={hostRef} className="google-button-host" aria-busy={busy}></div>
+    {busy && <p className="account-state"><span className="account-spinner" aria-hidden="true"></span> Preparing secure sign-in…</p>}
+    {error && <div className="account-error" role="alert"><p>{error}</p><button type="button" className="text-button" onClick={() => setAttempt((value) => value + 1)}>Try again</button></div>}
+  </div>
+}
+
+function SignInCard({ onSignedIn }) {
+  return <main id="main" className="registration-login-page">
+    <section className="page-header"><div className="container"><p className="eyebrow">Registration access</p><h1 className="section-heading">Sign in before choosing an event.</h1><p className="section-lede">Use your Gmail or Google Workspace account. It securely links your registration to you, so you can return and view it later.</p></div></section>
+    <section className="section"><div className="container register-layout"><div className="participant-login-card">
+      <div className="participant-login-mark" aria-hidden="true"><span>01</span><i></i><span>02</span></div>
+      <div><span className="stamp">Participant sign-in</span><h2>Continue with Google</h2><p>Your verified Google email will be used for registration. We never receive or store your Google password.</p></div>
+      <div className="participant-login-action"><GoogleSignInButton onSignedIn={onSignedIn} /><small>Sign-in is required before event selection.</small></div>
+    </div></div></section>
+  </main>
+}
+
+function useParticipantSession() {
+  const [state, setState] = useState({ status: 'loading', participant: null, error: '' })
+  useEffect(() => {
+    let active = true
+    fetch('/api/auth/session', { headers: { accept: 'application/json' } }).then(async (response) => {
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok || !data.ok) throw new Error(data.error || 'We could not check your sign-in status.')
+      if (active) setState({ status: data.signedIn ? 'signed-in' : 'signed-out', participant: data.participant || null, error: '' })
+    }).catch(() => {
+      if (active) setState({ status: 'signed-out', participant: null, error: '' })
+    })
+    return () => { active = false }
+  }, [])
+  return [state, setState]
+}
+
+function RegistrationGate({ children }) {
+  const [session, setSession] = useParticipantSession()
+  if (session.status === 'loading') return <main id="main"><section className="account-loading"><span className="account-spinner" aria-hidden="true"></span><p>Checking your sign-in…</p></section></main>
+  if (session.status === 'error') return <main id="main"><section className="section"><div className="container register-layout"><div className="account-error account-error-page" role="alert"><h1>Sign-in could not be checked.</h1><p>{session.error}</p><button type="button" className="btn btn-outline" onClick={() => window.location.reload()}>Try again</button></div></div></section></main>
+  if (session.status !== 'signed-in') return <SignInCard onSignedIn={(participant) => setSession({ status: 'signed-in', participant, error: '' })} />
+  return children(session.participant)
+}
+
+function ParticipantBar({ participant }) {
+  return <div className="participant-bar"><span className="participant-status-dot" aria-hidden="true"></span><div><small>Signed in as</small><strong>{participant.displayName || participant.email}</strong><span>{participant.email}</span></div><a href={PATHS.myRegistration}>My registrations <span aria-hidden="true">→</span></a></div>
+}
+
+function RegistrationChoicePage({ participant }) {
   return <main id="main">
     <section className="page-header"><div className="container"><p className="eyebrow">Registration</p><h1 className="section-heading">Choose your experience</h1><p className="section-lede">Start with Day 1 panel discussions or register for the Day 2 hackathon.</p></div></section>
-    <section className="section"><div className="container"><div className="registration-choice-grid">
+    <section className="section"><div className="container"><ParticipantBar participant={participant} /><div className="registration-choice-grid">
       <a className="registration-choice registration-choice-panel" href={PATHS.registerPanel} data-reveal><span className="choice-number" aria-hidden="true">01</span><span className="stamp">Day 1 · Industry Panels</span><h2>Panel Discussion Registration</h2><p>For students, educators, researchers, professionals and delegates attending the Agriculture, Education or Healthcare panels.</p><span className="choice-action">Register for Panel Discussion <span aria-hidden="true">→</span></span></a>
       {HACKATHON_REGISTRATION_OPEN ? <a className="registration-choice registration-choice-hackathon" href={PATHS.registerHackathon} data-reveal><span className="choice-number" aria-hidden="true">02</span><span className="stamp">Day 2 · Hackathon</span><h2>Hackathon Registration</h2><p>For school and college students joining the Technical or Non-Technical hackathon.</p><span className="choice-action">Register for Hackathon <span aria-hidden="true">→</span></span></a> : <div className="registration-choice registration-choice-hackathon is-registration-closed" aria-disabled="true" data-reveal><span className="choice-number" aria-hidden="true">02</span><span className="stamp">Day 2 · Hackathon</span><h2>Hackathon Registration</h2><p>For school and college students joining the Technical or Non-Technical hackathon.</p><span className="choice-action choice-action-disabled">Registration Not Started</span><div className="registration-closed-layer"><span className="closed-status"><i aria-hidden="true"></i> Registration update</span><strong>Opening Soon</strong><small>Hackathon registration has not started yet.</small></div></div>}
     </div></div></section>
@@ -530,36 +701,51 @@ function HackathonRegistrationClosedPage() {
   return <main id="main"><section className="page-header"><div className="container"><a className="back-link" href={PATHS.register}>← All registrations</a><p className="eyebrow">Day 2 · Hackathon</p><h1 className="section-heading">Hackathon Registration</h1><p className="section-lede">Technical and Non-Technical tracks for school and college students.</p></div></section><section className="section"><div className="container register-layout"><div className="registration-closed-notice"><span className="stamp">Coming Soon</span><h2>Registration has not started.</h2><p>Hackathon registration is temporarily closed. Please check back soon for the opening announcement.</p><a className="btn btn-primary" href={PATHS.registerPanel}>Register for Panel Discussion <span aria-hidden="true">→</span></a></div></div></section></main>
 }
 
-function RadioOptions({ name, options, value, onChange, required = false }) {
-  return <div className="radio-options">{options.map((option) => <label className="radio-option" key={option}><input type="radio" name={name} value={option} checked={value === option} onChange={onChange} required={required} /><span className="radio-option-label">{option}</span><span className="radio-option-check" aria-hidden="true">✓</span></label>)}</div>
+function RadioOptions({ name, options, value, onChange, required = false, errorId, invalid = false }) {
+  return <div className="radio-options" role="radiogroup" aria-invalid={invalid} aria-describedby={invalid ? errorId : undefined}>{options.map((option) => <label className="radio-option" key={option}><input type="radio" name={name} value={option} checked={value === option} onChange={onChange} required={required} /><span className="radio-option-label">{option}</span><span className="radio-option-check" aria-hidden="true">✓</span></label>)}</div>
 }
 
-function PanelRegisterPage() {
-  const [form, setForm] = useState(initialPanelForm)
+function PanelRegisterPage({ participant }) {
+  const freshPanelForm = () => ({ ...initialPanelForm, email: participant.email })
+  const [form, setForm] = useState(freshPanelForm)
   const [error, setError] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [confirmation, setConfirmation] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState({})
   const nameRef = useRef(null)
   const updateField = (event) => {
     const { name, value, type, checked } = event.target
     setForm((current) => ({ ...current, [name]: type === 'checkbox' ? checked : value }))
+    setFieldErrors((current) => {
+      if (!current[name]) return current
+      const next = { ...current }
+      delete next[name]
+      return next
+    })
   }
+  const focusFirstInvalidField = (errors) => window.setTimeout(() => document.querySelector(`[name="${Object.keys(errors)[0]}"]`)?.focus(), 0)
   const submit = async (event) => {
     event.preventDefault()
     if (submitting) return
-    const required = ['name', 'email', 'phone', 'participantType', 'organisation', 'panelSelection']
-    if (required.some((field) => !String(form[field]).trim()) || !form.informationConfirmed) {
-      setError('Please complete all required fields and confirm the information is accurate.')
+    const validationErrors = validatePanelForm(form)
+    if (Object.keys(validationErrors).length) {
+      setFieldErrors(validationErrors)
+      setError('Please review the highlighted fields below.')
+      focusFirstInvalidField(validationErrors)
       return
     }
+    setFieldErrors({})
     setError('')
     setSubmitting(true)
     try {
       const response = await fetch('/api/register', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...form, registrationType: 'panel' }) })
       const data = await response.json().catch(() => ({}))
       if (!response.ok || !data.ok) {
-        setError(data.error || 'Could not save registration. Please try again.')
+        const serverErrors = data.fields && typeof data.fields === 'object' ? data.fields : {}
+        setFieldErrors(serverErrors)
+        setError(data.error || 'We could not save your registration. Please try again.')
+        if (Object.keys(serverErrors).length) focusFirstInvalidField(serverErrors)
         return
       }
       setConfirmation(data.registration || form)
@@ -571,10 +757,11 @@ function PanelRegisterPage() {
     }
   }
   const reset = () => {
-    setForm(initialPanelForm)
+    setForm(freshPanelForm())
     setConfirmation(null)
     setSubmitted(false)
     setError('')
+    setFieldErrors({})
     window.setTimeout(() => nameRef.current?.focus(), 0)
   }
   return <main id="main">
@@ -582,22 +769,82 @@ function PanelRegisterPage() {
     <section className="section"><div className="container register-layout">
       <form id="panel-register-form" className="sectioned-form" noValidate hidden={submitted} onSubmit={submit}>
         <fieldset className="form-section" data-reveal><legend><span>01</span> Participant Details</legend>
-          <div className="form-row"><div className="form-field"><label htmlFor="panel-name">Full Name *</label><input ref={nameRef} id="panel-name" name="name" type="text" autoComplete="name" required value={form.name} onChange={updateField} /></div><div className="form-field"><label htmlFor="panel-email">Email ID *</label><input id="panel-email" name="email" type="email" autoComplete="email" required value={form.email} onChange={updateField} /></div></div>
-          <div className="form-field"><label htmlFor="panel-phone">Phone Number *</label><input id="panel-phone" name="phone" type="tel" autoComplete="tel" required value={form.phone} onChange={updateField} /></div>
-          <div className="form-field"><span className="form-legend">Participant Type *</span><RadioOptions name="participantType" options={participantTypes} value={form.participantType} onChange={updateField} required /></div>
-          <div className="form-row"><div className="form-field"><label htmlFor="panel-organisation">College / Institution / Organization Name *</label><input id="panel-organisation" name="organisation" type="text" autoComplete="organization" required value={form.organisation} onChange={updateField} /></div><div className="form-field"><label htmlFor="panel-department">Department / Branch</label><input id="panel-department" name="department" type="text" value={form.department} onChange={updateField} /></div></div>
+          <div className="form-row"><div className="form-field"><label htmlFor="panel-name">Full Name *</label><input ref={nameRef} id="panel-name" name="name" type="text" autoComplete="name" required value={form.name} onChange={updateField} aria-invalid={Boolean(fieldErrors.name)} aria-describedby={fieldErrors.name ? 'panel-name-error' : undefined} /><FieldError id="panel-name-error" message={fieldErrors.name} /></div><div className="form-field"><label htmlFor="panel-email">Verified Google Email</label><input className="verified-email-input" id="panel-email" name="email" type="email" autoComplete="email" readOnly value={form.email} aria-describedby="panel-email-hint" /><p className="field-hint" id="panel-email-hint">Connected securely through Google Sign-In.</p></div></div>
+          <div className="form-field"><label htmlFor="panel-phone">Phone Number *</label><input id="panel-phone" name="phone" type="tel" inputMode="tel" autoComplete="tel" maxLength={24} placeholder="+91 98765 43210" required value={form.phone} onChange={updateField} aria-invalid={Boolean(fieldErrors.phone)} aria-describedby={fieldErrors.phone ? 'panel-phone-error' : 'panel-phone-hint'} /><p className="field-hint" id="panel-phone-hint">Use 7 to 15 digits. Spaces, +, hyphens and brackets are allowed.</p><FieldError id="panel-phone-error" message={fieldErrors.phone} /></div>
+          <div className="form-field"><span className="form-legend">Participant Type *</span><RadioOptions name="participantType" options={participantTypes} value={form.participantType} onChange={updateField} required invalid={Boolean(fieldErrors.participantType)} errorId="participant-type-error" /><FieldError id="participant-type-error" message={fieldErrors.participantType} /></div>
+          <div className="form-row"><div className="form-field"><label htmlFor="panel-organisation">College / Institution / Organization Name *</label><input id="panel-organisation" name="organisation" type="text" autoComplete="organization" required value={form.organisation} onChange={updateField} aria-invalid={Boolean(fieldErrors.organisation)} aria-describedby={fieldErrors.organisation ? 'panel-organisation-error' : undefined} /><FieldError id="panel-organisation-error" message={fieldErrors.organisation} /></div><div className="form-field"><label htmlFor="panel-department">Department / Branch</label><input id="panel-department" name="department" type="text" value={form.department} onChange={updateField} /></div></div>
         </fieldset>
-        <fieldset className="form-section" data-reveal><legend><span>02</span> Panel Selection</legend><div className="form-field"><span className="form-legend">Which panel discussion would you like to attend? *</span><RadioOptions name="panelSelection" options={panelOptions} value={form.panelSelection} onChange={updateField} required /></div><p className="form-note">Students are also welcome to attend the panel discussions.</p></fieldset>
+        <fieldset className="form-section" data-reveal><legend><span>02</span> Panel Selection</legend><div className="form-field"><span className="form-legend">Which panel discussion would you like to attend? *</span><RadioOptions name="panelSelection" options={panelOptions} value={form.panelSelection} onChange={updateField} required invalid={Boolean(fieldErrors.panelSelection)} errorId="panel-selection-error" /><FieldError id="panel-selection-error" message={fieldErrors.panelSelection} /></div><p className="form-note">Students are also welcome to attend the panel discussions.</p></fieldset>
         <fieldset className="form-section" data-reveal><legend><span>03</span> Professional / Delegate Details</legend>
-          <div className="form-field"><span className="form-legend">Industry Sector</span><RadioOptions name="industrySector" options={industrySectors} value={form.industrySector} onChange={updateField} /></div>{form.industrySector === 'Other' && <div className="form-field conditional-field"><label htmlFor="industry-other">Please specify industry sector</label><input id="industry-other" name="industrySectorOther" type="text" value={form.industrySectorOther} onChange={updateField} /></div>}
-          <div className="form-field"><span className="form-legend">Organization Type</span><RadioOptions name="organisationType" options={organisationTypes} value={form.organisationType} onChange={updateField} /></div>{form.organisationType === 'Other' && <div className="form-field conditional-field"><label htmlFor="organisation-other">Please specify organization type</label><input id="organisation-other" name="organisationTypeOther" type="text" value={form.organisationTypeOther} onChange={updateField} /></div>}
+          <div className="form-field"><span className="form-legend">Industry Sector</span><RadioOptions name="industrySector" options={industrySectors} value={form.industrySector} onChange={updateField} /></div>{form.industrySector === 'Other' && <div className="form-field conditional-field"><label htmlFor="industry-other">Please specify industry sector *</label><input id="industry-other" name="industrySectorOther" type="text" required value={form.industrySectorOther} onChange={updateField} aria-invalid={Boolean(fieldErrors.industrySectorOther)} aria-describedby={fieldErrors.industrySectorOther ? 'industry-other-error' : undefined} /><FieldError id="industry-other-error" message={fieldErrors.industrySectorOther} /></div>}
+          <div className="form-field"><span className="form-legend">Organization Type</span><RadioOptions name="organisationType" options={organisationTypes} value={form.organisationType} onChange={updateField} /></div>{form.organisationType === 'Other' && <div className="form-field conditional-field"><label htmlFor="organisation-other">Please specify organization type *</label><input id="organisation-other" name="organisationTypeOther" type="text" required value={form.organisationTypeOther} onChange={updateField} aria-invalid={Boolean(fieldErrors.organisationTypeOther)} aria-describedby={fieldErrors.organisationTypeOther ? 'organisation-other-error' : undefined} /><FieldError id="organisation-other-error" message={fieldErrors.organisationTypeOther} /></div>}
         </fieldset>
-        <fieldset className="form-section" data-reveal><legend><span>04</span> Confirmation</legend><label className="confirmation-check"><input type="checkbox" name="informationConfirmed" checked={form.informationConfirmed} onChange={updateField} required /><span>I confirm that the information provided above is accurate. *</span></label><label className="confirmation-check"><input type="checkbox" name="updatesOptIn" checked={form.updatesOptIn} onChange={updateField} /><span>I agree to receive official AI Conclave updates regarding the panel discussion.</span></label></fieldset>
+        <fieldset className="form-section" data-reveal><legend><span>04</span> Confirmation</legend><label className={`confirmation-check${fieldErrors.informationConfirmed ? ' has-error' : ''}`}><input type="checkbox" name="informationConfirmed" checked={form.informationConfirmed} onChange={updateField} required aria-invalid={Boolean(fieldErrors.informationConfirmed)} aria-describedby={fieldErrors.informationConfirmed ? 'confirmation-error' : undefined} /><span>I confirm that the information provided above is accurate. *</span></label><FieldError id="confirmation-error" message={fieldErrors.informationConfirmed} /><label className="confirmation-check"><input type="checkbox" name="updatesOptIn" checked={form.updatesOptIn} onChange={updateField} /><span>I agree to receive official AI Conclave updates regarding the panel discussion.</span></label></fieldset>
         <div className="form-submit-row"><button type="submit" className="btn btn-primary" disabled={submitting} aria-busy={submitting}>{submitting ? 'Submitting…' : <>Submit Panel Registration <span aria-hidden="true">→</span></>}</button><p className={`form-error${error ? ' is-visible' : ''}`} role="alert" aria-live="polite">{error}</p></div>
       </form>
       <div className={`confirmation-panel${submitted ? ' is-visible' : ''}`} role="status" aria-live="polite" tabIndex={submitted ? -1 : undefined}><span className="stamp">Panel Registration Received</span><h2>Your seat request is recorded.</h2><p>Thanks for registering for the AI Conclave 2026 Industry Panel Discussions.</p>{confirmation && <dl className="confirmation-summary"><dt>Name</dt><dd>{confirmation.name}</dd><dt>Email</dt><dd>{confirmation.email}</dd><dt>Participant</dt><dd>{confirmation.participantType}</dd><dt>Panel</dt><dd>{confirmation.panelSelection}</dd></dl>}<button type="button" className="btn btn-outline" onClick={reset}>Register Another Person</button></div>
     </div></section>
   </main>
+}
+
+function RegistrationDetail({ registration }) {
+  const details = [
+    ['Name', registration.name],
+    ['Verified email', registration.email],
+    ['Phone', registration.phone],
+    ['Participant type', registration.participantType],
+    ['Organisation', registration.organisation],
+    ['Department / branch', registration.department],
+    ['Panel selection', registration.panelSelection],
+    ['Industry sector', registration.industrySector === 'Other' ? registration.industrySectorOther : registration.industrySector],
+    ['Organisation type', registration.organisationType === 'Other' ? registration.organisationTypeOther : registration.organisationType],
+    ['Official updates', registration.updatesOptIn ? 'Yes' : 'No'],
+  ].filter(([, value]) => value)
+  const submitted = registration.createdAt ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(registration.createdAt)) : ''
+  return <article className="registration-record">
+    <header className="registration-record-head"><div><span className="stamp">{registration.type}</span><h2>{registration.panelSelection}</h2><p>Submitted {submitted}</p></div><span className="registration-status"><i aria-hidden="true"></i>{registration.status}</span></header>
+    <dl className="registration-record-grid">{details.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
+  </article>
+}
+
+function MyRegistrationPage() {
+  const [refresh, setRefresh] = useState(0)
+  const [state, setState] = useState({ status: 'loading', participant: null, registrations: [], error: '' })
+
+  useEffect(() => {
+    let active = true
+    setState((current) => ({ ...current, status: 'loading', error: '' }))
+    fetch('/api/my-registration', { headers: { accept: 'application/json' } }).then(async (response) => {
+      const data = await response.json().catch(() => ({}))
+      if (response.status === 401) {
+        if (active) setState({ status: 'signed-out', participant: null, registrations: [], error: '' })
+        return
+      }
+      if (!response.ok || !data.ok) throw new Error(data.error || 'We could not load your registrations.')
+      if (active) setState({ status: 'ready', participant: data.participant, registrations: data.registrations || [], error: '' })
+    }).catch((error) => {
+      if (active) setState({ status: 'error', participant: null, registrations: [], error: error.message || 'We could not load your registrations.' })
+    })
+    return () => { active = false }
+  }, [refresh])
+
+  const signOut = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST', headers: { accept: 'application/json' } })
+    } finally {
+      window.google?.accounts?.id?.disableAutoSelect()
+      setState({ status: 'signed-out', participant: null, registrations: [], error: '' })
+    }
+  }
+
+  if (state.status === 'signed-out') return <SignInCard onSignedIn={() => setRefresh((value) => value + 1)} />
+  if (state.status === 'loading') return <main id="main"><section className="account-loading"><span className="account-spinner" aria-hidden="true"></span><p>Loading your registrations…</p></section></main>
+  if (state.status === 'error') return <main id="main"><section className="section"><div className="container register-layout"><div className="account-error account-error-page" role="alert"><h1>Registrations could not be loaded.</h1><p>{state.error}</p><button type="button" className="btn btn-outline" onClick={() => setRefresh((value) => value + 1)}>Try again</button></div></div></section></main>
+
+  return <main id="main"><section className="page-header"><div className="container"><p className="eyebrow">Participant portal</p><h1 className="section-heading">My registrations</h1><p className="section-lede">Review the event details recorded for your verified Google account.</p></div></section><section className="section"><div className="container">
+    <div className="participant-bar participant-portal-bar"><span className="participant-status-dot" aria-hidden="true"></span><div><small>Signed in as</small><strong>{state.participant.displayName || state.participant.email}</strong><span>{state.participant.email}</span></div><button type="button" className="text-button" onClick={signOut}>Sign out</button></div>
+    {state.registrations.length ? <div className="registration-records">{state.registrations.map((registration) => <RegistrationDetail registration={registration} key={`${registration.type}-${registration.id}`} />)}</div> : <div className="empty-registration"><span className="stamp">No registrations yet</span><h2>Choose your first event.</h2><p>Once you submit a registration, its complete details will appear here.</p><a className="btn btn-primary" href={PATHS.register}>Choose an event <span aria-hidden="true">→</span></a></div>}
+  </div></section></main>
 }
 
 function App() {
@@ -643,7 +890,14 @@ function App() {
     document.title = page === 'home' ? 'AI Conclave 2026' : `${page[0].toUpperCase()}${page.slice(1)} — AI Conclave 2026`
   }, [page])
 
-  const content = page === 'about' ? <AboutPage /> : page === 'schedule' ? <SchedulePage /> : page === 'participate' ? <ParticipatePage /> : page === 'register' ? <RegistrationChoicePage /> : page === 'register-hackathon' ? (HACKATHON_REGISTRATION_OPEN ? <HackathonRegisterPage /> : <HackathonRegistrationClosedPage />) : page === 'register-panel' ? <PanelRegisterPage /> : <HomePage />
+  const content = page === 'about' ? <AboutPage />
+    : page === 'schedule' ? <SchedulePage />
+      : page === 'participate' ? <ParticipatePage />
+        : page === 'register' ? <RegistrationGate>{(participant) => <RegistrationChoicePage participant={participant} />}</RegistrationGate>
+          : page === 'register-hackathon' ? <RegistrationGate>{() => HACKATHON_REGISTRATION_OPEN ? <HackathonRegisterPage /> : <HackathonRegistrationClosedPage />}</RegistrationGate>
+            : page === 'register-panel' ? <RegistrationGate>{(participant) => <PanelRegisterPage participant={participant} />}</RegistrationGate>
+              : page === 'my-registration' ? <MyRegistrationPage />
+                : <HomePage />
   return <><IntroScreen /><Shell active={page}>{content}</Shell></>
 }
 

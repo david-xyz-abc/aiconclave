@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:pages": "npm run build && npx wrangler pages dev dist --port=5173",
+    "db:migrate:local": "npx wrangler d1 migrations apply aiconclave-registrations --local",
     "build": "vite build",
     "preview": "vite preview"
   },

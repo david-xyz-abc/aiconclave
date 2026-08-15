@@ -51,7 +51,7 @@ function isValidEmail(email) {
 
 function isValidPhone(phone) {
   const digits = phone.replace(/\D/g, "");
-  return digits.length >= 7 && digits.length <= 15;
+  return /^[+\d\s().-]+$/.test(phone) && digits.length >= 7 && digits.length <= 15;
 }
 
 export async function onRequestPost(context) {
@@ -88,10 +88,21 @@ export async function onRequestPost(context) {
     const organisationTypeOther = trimStr(body.organisationTypeOther, 160);
     const informationConfirmed = body.informationConfirmed === true;
     const updatesOptIn = body.updatesOptIn === true;
-    const invalid = !name || !isValidEmail(email) || !isValidPhone(phone) || !organisation || !ALLOWED_PARTICIPANT_TYPES.has(participantType) || !ALLOWED_PANELS.has(panelSelection) || !ALLOWED_SECTORS.has(industrySector) || !ALLOWED_ORGANISATION_TYPES.has(organisationType) || !informationConfirmed;
-    if (invalid) return badRequest("Please fill in all required fields correctly.");
-    if (industrySector === "Other" && !industrySectorOther) return badRequest("Please specify the industry sector.");
-    if (organisationType === "Other" && !organisationTypeOther) return badRequest("Please specify the organization type.");
+    const fields = {};
+    if (!name) fields.name = "Enter your full name.";
+    if (!email) fields.email = "Enter your email address.";
+    else if (!isValidEmail(email)) fields.email = "Enter a valid email address, for example name@example.com.";
+    if (!phone) fields.phone = "Enter your phone number.";
+    else if (!isValidPhone(phone)) fields.phone = "Enter a valid phone number containing 7 to 15 digits.";
+    if (!ALLOWED_PARTICIPANT_TYPES.has(participantType)) fields.participantType = "Choose your participant type.";
+    if (!organisation) fields.organisation = "Enter your college, institution or organization name.";
+    if (!ALLOWED_PANELS.has(panelSelection)) fields.panelSelection = "Choose the panel discussion you want to attend.";
+    if (!ALLOWED_SECTORS.has(industrySector)) fields.industrySector = "Choose a valid industry sector.";
+    if (!ALLOWED_ORGANISATION_TYPES.has(organisationType)) fields.organisationType = "Choose a valid organization type.";
+    if (industrySector === "Other" && !industrySectorOther) fields.industrySectorOther = "Specify your industry sector.";
+    if (organisationType === "Other" && !organisationTypeOther) fields.organisationTypeOther = "Specify your organization type.";
+    if (!informationConfirmed) fields.informationConfirmed = "Confirm that the information provided is accurate.";
+    if (Object.keys(fields).length) return json({ ok: false, error: "Please review the highlighted fields.", fields }, 400);
 
     try {
       const result = await db.prepare(`INSERT INTO panel_registrations (name, email, phone, participant_type, organisation, department, panel_selection, industry_sector, industry_sector_other, organisation_type, organisation_type_other, information_confirmed, updates_opt_in) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(name, email, phone, participantType, organisation, department, panelSelection, industrySector, industrySectorOther, organisationType, organisationTypeOther, 1, updatesOptIn ? 1 : 0).run();

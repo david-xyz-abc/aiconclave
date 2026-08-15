@@ -1530,6 +1530,296 @@ a {
 }
 
 /* ===== Register ===== */
+.registration-login-page .page-header {
+  padding-bottom: clamp(2rem, 5vw, 3.5rem);
+}
+
+.participant-login-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 0.72fr);
+  gap: clamp(1.5rem, 5vw, 4rem);
+  overflow: hidden;
+  padding: clamp(1.5rem, 5vw, 3rem);
+  border: 1px solid var(--color-line-strong);
+  border-top: 6px solid var(--color-signal);
+  background: linear-gradient(135deg, rgba(255, 30, 30, 0.07), #fff 46%);
+  box-shadow: 10px 10px 0 rgba(10, 10, 10, 0.07);
+}
+
+.participant-login-card h2,
+.account-error-page h1,
+.empty-registration h2 {
+  margin: 1.2rem 0 0.65rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.55rem, 4vw, 2.25rem);
+  line-height: 1.15;
+}
+
+.participant-login-card p {
+  max-width: 48ch;
+  margin: 0;
+  color: var(--color-text-soft);
+}
+
+.participant-login-mark {
+  position: absolute;
+  top: 1.2rem;
+  right: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--color-text-soft);
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+}
+
+.participant-login-mark i {
+  width: 2.5rem;
+  height: 1px;
+  background: linear-gradient(90deg, var(--color-signal), #1a6b3c);
+}
+
+.participant-login-action {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+}
+
+.participant-login-action small {
+  color: var(--color-text-soft);
+  font-size: 0.76rem;
+}
+
+.google-sign-in-control,
+.google-button-host {
+  width: 100%;
+}
+
+.google-button-host {
+  min-height: 44px;
+}
+
+.account-state,
+.account-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: var(--color-text-soft);
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+}
+
+.account-loading {
+  min-height: 56vh;
+  justify-content: center;
+}
+
+.account-spinner {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  border: 2px solid var(--color-line-strong);
+  border-top-color: var(--color-signal);
+  border-radius: 50%;
+  animation: account-spin 0.7s linear infinite;
+}
+
+@keyframes account-spin {
+  to { transform: rotate(360deg); }
+}
+
+.account-error {
+  padding: 0.8rem 1rem;
+  border-left: 3px solid var(--color-signal);
+  background: rgba(255, 30, 30, 0.06);
+  color: #941b1b;
+}
+
+.account-error p {
+  margin: 0 0 0.45rem;
+}
+
+.account-error-page {
+  padding: clamp(1.5rem, 5vw, 3rem);
+  border: 1px solid var(--color-line-strong);
+  border-top: 5px solid var(--color-signal);
+  background: #fff;
+  color: var(--color-text);
+}
+
+.text-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+
+.participant-bar {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.8rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--color-line-strong);
+  background: #fff;
+}
+
+.participant-status-dot {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  background: #1a6b3c;
+  box-shadow: 0 0 0 4px rgba(26, 107, 60, 0.12);
+}
+
+.participant-bar div {
+  display: grid;
+  min-width: 0;
+}
+
+.participant-bar small,
+.participant-bar span,
+.registration-record-head p {
+  color: var(--color-text-soft);
+  font-size: 0.75rem;
+}
+
+.participant-bar strong {
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  text-overflow: ellipsis;
+}
+
+.participant-bar a {
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.participant-bar a:hover,
+.participant-bar a:focus-visible {
+  color: var(--color-signal);
+}
+
+.participant-bar a span {
+  color: currentColor;
+}
+
+.verified-email-input {
+  border-color: #1a6b3c !important;
+  background: #edf6f0 !important;
+  color: #164d30 !important;
+  cursor: default;
+}
+
+.registration-records {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.registration-record {
+  padding: clamp(1.25rem, 4vw, 2.25rem);
+  border: 1px solid var(--color-line-strong);
+  border-top: 5px solid #1a6b3c;
+  background: #fff;
+  box-shadow: 8px 8px 0 rgba(26, 107, 60, 0.08);
+}
+
+.registration-record-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.registration-record-head h2 {
+  margin: 0.85rem 0 0.2rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.25rem, 3vw, 1.75rem);
+}
+
+.registration-record-head p {
+  margin: 0;
+}
+
+.registration-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.65rem;
+  border: 1px solid #1a6b3c;
+  color: #1a5936;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.registration-status i {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: #1a6b3c;
+}
+
+.registration-record-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  margin: 1.25rem 0 0;
+}
+
+.registration-record-grid div {
+  min-width: 0;
+  padding: 0.9rem 1rem 0.9rem 0;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.registration-record-grid dt {
+  color: var(--color-text-soft);
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.registration-record-grid dd {
+  margin: 0.2rem 0 0;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+
+.empty-registration {
+  padding: clamp(1.5rem, 5vw, 3rem);
+  border: 1px solid var(--color-line-strong);
+  border-top: 5px solid var(--color-signal);
+  background: linear-gradient(135deg, rgba(255, 30, 30, 0.06), #fff 52%);
+}
+
+.empty-registration p {
+  margin: 0 0 1.5rem;
+  color: var(--color-text-soft);
+}
+
 .registration-choice-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2010,6 +2300,28 @@ a {
   outline-offset: 1px;
 }
 
+.form-field input[aria-invalid="true"]:not([type="radio"]):not([type="checkbox"]),
+.radio-options[aria-invalid="true"] .radio-option,
+.confirmation-check.has-error {
+  border-color: #b42318;
+  box-shadow: 0 0 0 2px rgba(180, 35, 24, 0.1);
+}
+
+.field-error {
+  margin: 0;
+  color: #a61911;
+  font-size: 0.84rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.field-hint {
+  margin: 0;
+  color: var(--color-text-soft);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
 .form-fieldset {
   margin: 0;
   padding: 1.25rem;
@@ -2150,6 +2462,37 @@ a {
 }
 
 @media (max-width: 700px) {
+  .participant-login-card {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+
+  .participant-login-action {
+    padding: 1rem;
+  }
+
+  .participant-bar {
+    grid-template-columns: auto 1fr;
+  }
+
+  .participant-bar > a,
+  .participant-bar > button {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .registration-record-head {
+    display: grid;
+  }
+
+  .registration-status {
+    justify-self: start;
+  }
+
+  .registration-record-grid {
+    grid-template-columns: 1fr;
+  }
+
   .registration-choice-grid,
   .radio-options {
     grid-template-columns: 1fr;
@@ -2190,5 +2533,9 @@ a {
   .closed-status i {
     animation: none;
     transition: none;
+  }
+
+  .account-spinner {
+    animation: none;
   }
 }
