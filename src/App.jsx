@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 
 const PATHS = {
   home: '/',
@@ -6,24 +7,21 @@ const PATHS = {
   schedule: '/schedule',
   participate: '/participate',
   register: '/register',
+  registerHackathon: '/register/hackathon',
+  registerPanel: '/register/panel',
 }
 
-const categories = [
+const HACKATHON_REGISTRATION_OPEN = false
+
+const hackathonCategories = [
   'Student',
   'Faculty',
-  'Farmer',
-  'Healthcare Professional',
-  'Industry',
+  'Professional / Industry Delegate',
+  'Researcher',
   'Other',
 ]
 
-const trackOptions = [
-  {
-    id: 'track-workshops',
-    value: 'Workshops',
-    title: 'Workshops',
-    description: 'Day 1 parallel workshops run by AJCE departments & clubs.',
-  },
+const hackathonTrackOptions = [
   {
     id: 'track-hackathon-tech',
     value: 'Hackathon (Technical)',
@@ -36,13 +34,12 @@ const trackOptions = [
     title: 'Hackathon — Non-Technical',
     description: 'Day 2 non-technical track, open to school & college students.',
   },
-  {
-    id: 'track-panel',
-    value: 'Panel Discussion',
-    title: 'Panel Discussion',
-    description: 'Day 1, 10:30 AM — AI Across Sectors.',
-  },
 ]
+
+const participantTypes = ['Student', 'Faculty / Academic', 'Professional / Industry Delegate', 'Researcher', 'Other']
+const panelOptions = ['AI in Agriculture', 'AI in Education', 'AI in Healthcare', 'Interested in All Panels']
+const industrySectors = ['Agriculture', 'Education', 'Healthcare', 'IT / Technology', 'Government', 'Other']
+const organisationTypes = ['Startup', 'MSME', 'Corporate', 'Government', 'Academic Institution', 'Research Organization', 'NGO', 'Other']
 
 const participantGroups = [
   {
@@ -103,7 +100,7 @@ const participantGroups = [
   },
 ]
 
-const initialForm = {
+const initialHackathonForm = {
   name: '',
   email: '',
   phone: '',
@@ -112,16 +109,34 @@ const initialForm = {
   tracks: [],
 }
 
+const initialPanelForm = {
+  name: '',
+  email: '',
+  phone: '',
+  participantType: '',
+  organisation: '',
+  department: '',
+  panelSelection: '',
+  industrySector: '',
+  industrySectorOther: '',
+  organisationType: '',
+  organisationTypeOther: '',
+  informationConfirmed: false,
+  updatesOptIn: false,
+}
+
 function currentPage() {
   const path = window.location.pathname.replace(/\/+$/, '') || '/'
   if (path === '/about') return 'about'
   if (path === '/schedule') return 'schedule'
   if (path === '/participate') return 'participate'
+  if (path === '/register/hackathon') return 'register-hackathon'
+  if (path === '/register/panel') return 'register-panel'
   if (path === '/register') return 'register'
   return 'home'
 }
 
-function useSiteEnhancements() {
+function useSiteEnhancements(pageKey) {
   useEffect(() => {
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const revealNodes = document.querySelectorAll('[data-reveal]')
@@ -214,7 +229,7 @@ function useSiteEnhancements() {
       window.removeEventListener('resize', updateProgress)
       observers.forEach((observer) => observer.disconnect())
     }
-  }, [])
+  }, [pageKey])
 }
 
 function Footer() {
@@ -238,6 +253,7 @@ function Header({ active }) {
   const [open, setOpen] = useState(false)
   const closeMenu = () => setOpen(false)
   const linkClass = (page) => (active === page ? 'is-active' : undefined)
+  const registrationActive = active.startsWith('register')
 
   return (
     <header id="site-header" className="site-header">
@@ -255,7 +271,7 @@ function Header({ active }) {
             <li><a href={PATHS.about} className={linkClass('about')} aria-current={active === 'about' ? 'page' : undefined} onClick={closeMenu}>About</a></li>
             <li><a href={PATHS.schedule} className={linkClass('schedule')} aria-current={active === 'schedule' ? 'page' : undefined} onClick={closeMenu}>Schedule</a></li>
             <li><a href={PATHS.participate} className={linkClass('participate')} aria-current={active === 'participate' ? 'page' : undefined} onClick={closeMenu}>Participate</a></li>
-            <li><a href={PATHS.register} className={`btn btn-primary nav-cta${active === 'register' ? ' is-active' : ''}`} aria-current={active === 'register' ? 'page' : undefined} onClick={closeMenu}>Register</a></li>
+            <li><a href={PATHS.register} className={`btn btn-primary nav-cta${registrationActive ? ' is-active' : ''}`} aria-current={registrationActive ? 'page' : undefined} onClick={closeMenu}>Register</a></li>
           </ul>
         </nav>
       </div>
@@ -287,7 +303,7 @@ function HomePage() {
                 <span className="hero-badge-no">DELEGATE PASS<br />NO. AIC26</span>
               </div>
               <h1 className="hero-title">AI Conclave<br />2026</h1>
-              <p className="hero-tagline">AI Across Sectors — Agriculture, Health &amp; Education. Two days of dialogue-driven sessions, a panel discussion and a ₹1,00,000 hackathon at AJCE.</p>
+              <p className="hero-tagline">A two-day celebration of Artificial Intelligence — talks, workshops, industry panel discussions and a ₹1,00,000 hackathon at AJCE.</p>
               <div className="hero-actions">
                 <a className="btn btn-primary" href={PATHS.register}>Register Now <span className="btn-arrow" aria-hidden="true">→</span></a>
                 <a className="btn btn-outline" href={PATHS.schedule}>View Schedule</a>
@@ -344,12 +360,11 @@ function AboutPage() {
     <main id="main"><section id="about" className="section"><div className="container about-grid">
       <div data-reveal><p className="eyebrow">About the Conclave</p><h1 className="section-heading">A flagship dialogue on AI, not another lecture series.</h1>
         <p className="section-lede">AI Conclave 2026 is a two-day flagship event bringing together practitioners, researchers, policymakers and students to examine how Artificial Intelligence is transforming three sectors central to Kerala's economy and society: Agriculture, Health and Education. The Conclave is built around real dialogue — sessions are designed for participants who can describe genuine ground-level problems, share evidence from practice and stay engaged for follow-up discussions, rather than one-way presentations.</p>
-        <p className="section-lede">Participants stand to gain real, sector-specific value from attending. Farmers, FPOs and agri-tech innovators get direct access to AI tools for precision farming and crop advisory, alongside dialogue with KAU, KVK and ICAR scientists. Doctors, health-tech start-ups and public health officials can explore AI-assisted diagnostics and rural healthcare delivery models. Teachers, students and education policymakers gain exposure to AI-enabled learning platforms and direct interaction with industry mentors. Across all three sectors, the Conclave offers a channel to influence policy through dialogue with government officials and invited dignitaries.</p>
         <p className="section-lede">Organised by the AI Club and Student Council of Amal Jyothi College of Engineering, in association with the Departments of Computer Applications, Computer Science &amp; Engineering, Artificial Intelligence &amp; Data Science, Electronics &amp; Communication Engineering, and Electrical &amp; Electronics Engineering.</p>
       </div>
       <div data-reveal><div className="about-stats">
         <div className="about-stat"><span className="about-stat-figure mono-figure" data-count-to="2">2</span><span className="about-stat-label">Days</span></div>
-        <div className="about-stat"><span className="about-stat-figure mono-figure" data-count-to="2000" data-suffix="+">2000+</span><span className="about-stat-label">Expected participants</span></div>
+        <div className="about-stat"><span className="about-stat-figure mono-figure" data-count-to="2">2</span><span className="about-stat-label">Hackathon tracks</span></div>
         <div className="about-stat"><span className="about-stat-figure mono-figure" data-count-to="3">3</span><span className="about-stat-label">Sectors — Agri, Health, Edu</span></div>
         <div className="about-stat"><span className="about-stat-figure mono-figure" data-count-to="5">5</span><span className="about-stat-label">Departments co-organising</span></div>
       </div><p className="about-principle">Format: dialogue-driven, not one-way talks — panel discussion, parallel workshops, and a hackathon in place of a straight lecture track.</p></div>
@@ -363,7 +378,7 @@ function ScheduleTable({ day }) {
         ['9:00 AM', 'Registration', 'Participant check-in'],
         ['10:00 AM', 'Inaugural Function', 'Opening ceremony'],
         ['10:30 AM', 'Panel Discussion', 'AI Across Sectors: Agriculture, Health & Education'],
-        ['1:00 – 4:00 PM', 'Workshops', 'Parallel workshops organised by departments and clubs of AJCE'],
+        ['1:00 PM – 4:00 PM', 'Workshops', 'Parallel workshops organised by departments and clubs of AJCE'],
       ]
     : [
         ['9:00 AM', 'Registration', 'Participant check-in'],
@@ -371,34 +386,84 @@ function ScheduleTable({ day }) {
         ['2:30 PM', 'Evaluation', 'Judging and assessment of hackathon projects'],
         ['4:00 PM', 'Valedictory Function', 'Closing ceremony and prize distribution'],
       ]
-  return <table className="schedule-table" data-reveal><caption>Day {day} schedule</caption><thead><tr><th scope="col">Time</th><th scope="col">Event</th><th scope="col">Details</th></tr></thead><tbody>{rows.map(([time, event, details]) => <tr key={`${time}-${event}`}><td className="schedule-time mono-figure">{time}</td><td className="schedule-event">{event}</td><td className="schedule-desc">{details}</td></tr>)}</tbody></table>
+  return <table className="schedule-table"><caption>Day {day} schedule</caption><thead><tr><th scope="col">Time</th><th scope="col">Event</th><th scope="col">Details</th></tr></thead><tbody>{rows.map(([time, event, details]) => <tr key={`${time}-${event}`}><td className="schedule-time mono-figure">{time}</td><td className="schedule-event">{event}</td><td className="schedule-desc">{details}</td></tr>)}</tbody></table>
 }
 
 function PanelTracks() {
   const panels = [
     ['panel-agriculture', 'stamp-agri', 'Agriculture', 'Dr. Nikki', [['Alexy Binu', 'Founder & CEO, AetherSphere Ecosystem'], ['Prasad GopalaKrishnan', 'Retired Professor, TNAU']]],
-    ['panel-health', 'stamp-health', 'Health', 'Dr. S.N. Kumar', [['Vivek V. George', 'MD, Trivia Innovations'], ['Thomas Paulose Nechupadam', 'Doctorepreneur, PalluDoctor'], ['Robin Tomy', ''], ['Berin Pathrose', 'Professor, Pathology, KAU']]],
+    ['panel-health', 'stamp-health', 'Health', 'Dr. S.N. Kumar', [['Vivek V. George', 'MD, Trivia Innovations'], ['Thomas Paulose Nechupadam', 'Doctorepreneur, PalluDoctor'], ['Robin Tomy', '—'], ['Berin Pathrose', 'Professor (Pathology), KAU']]],
     ['panel-education', 'stamp-edu', 'Education', 'Dr. Soney C. George', [['Dr. Jagathy Raj V.P.', 'Vice Chancellor, Sree Narayana Open University'], ['Dr. M.V. Rajesh', 'Director, IHRD'], ['Dr. Shailesh Sivan', 'Speaker']]],
   ]
-  return <div className="panel-grid">{panels.map(([id, stamp, name, moderator, speakers]) => <section id={id} className="panel-track" data-reveal aria-labelledby={`${id}-heading`} key={id}><div className="panel-track-head"><span className={`stamp ${stamp}`}>{name}</span><h3 id={`${id}-heading`}>{name}</h3></div><p className="panel-moderator">Moderated by <span className="panel-moderator-name">{moderator}</span></p><ul className="speaker-list">{speakers.map(([speaker, role]) => <li key={speaker}><span className="speaker-name">{speaker}</span>{role && <span className="speaker-role">{role}</span>}</li>)}</ul></section>)}</div>
+  return <div className="panel-grid">{panels.map(([id, stamp, name, moderator, speakers]) => <section id={id} className="panel-track" aria-labelledby={`${id}-heading`} key={id}><div className="panel-track-head"><span className={`stamp ${stamp}`}>{name}</span><h3 id={`${id}-heading`}>{name}</h3></div><p className="panel-moderator"><span className="panel-role-label">Moderator</span><span className="panel-moderator-name">{moderator}</span></p><ul className="speaker-list">{speakers.map(([speaker, role]) => <li key={speaker}><span className="speaker-kicker">Expert</span><span className="speaker-name">{speaker}</span><span className="speaker-role">{role}</span></li>)}</ul></section>)}</div>
 }
 
 function SchedulePage() {
-  const [day, setDay] = useState(1)
+  const [day, setDay] = useState(() => new URLSearchParams(window.location.search).get('day') === '2' ? 2 : 1)
+
+  const selectDay = (selectedDay) => {
+    setDay(selectedDay)
+    const url = new URL(window.location.href)
+    if (selectedDay === 1) url.searchParams.delete('day')
+    else url.searchParams.set('day', String(selectedDay))
+    window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
+  }
+
   return <main id="main">
     <section className="page-header"><div className="container"><p className="eyebrow">Programme</p><h1 className="section-heading">Schedule</h1><p className="section-lede">Two days, laid out end to end — registration through valedictory. Times and venues are fixed by the organisers.</p></div></section>
-    <div className="container day-toggle-wrap"><div className="day-toggle" role="group" aria-label="Select schedule day"><button type="button" className={`day-toggle-btn${day === 1 ? ' is-active' : ''}`} aria-pressed={day === 1} onClick={() => setDay(1)}>Day 1</button><button type="button" className={`day-toggle-btn${day === 2 ? ' is-active' : ''}`} aria-pressed={day === 2} onClick={() => setDay(2)}>Day 2</button></div></div>
-    {day === 1 && <><section id="schedule-day1" className="section"><div className="container"><div className="section-head" data-reveal><h2 className="section-heading">Day 1 <span className="mono-figure">— Inauguration, Panel &amp; Workshops</span></h2></div><ScheduleTable day={1} /></div></section><section id="panel" className="section"><div className="container"><div className="section-head" data-reveal><p className="eyebrow">Day 1 · 10:30 AM</p><h2 className="section-heading">Panel Discussion: AI Across Sectors</h2><p className="section-lede">Industry leaders and academic experts come together to discuss how Artificial Intelligence is transforming Kerala's agriculture, healthcare and education sectors — three tracks, three conversations, each looking at where AI is already changing the sector and where it should go next.</p></div><PanelTracks /></div></section></>}
-    {day === 2 && <section id="schedule-day2" className="section"><div className="container"><div className="section-head" data-reveal><h2 className="section-heading">Day 2 <span className="mono-figure">— Hackathon &amp; Valedictory</span></h2></div><ScheduleTable day={2} /></div></section>}
+    <div className="container day-toggle-wrap"><div className="day-toggle" role="tablist" aria-label="Select schedule day"><button type="button" id="day-1-tab" role="tab" className={`day-toggle-btn${day === 1 ? ' is-active' : ''}`} aria-selected={day === 1} aria-controls="day-1-content" tabIndex={day === 1 ? 0 : -1} onClick={() => selectDay(1)}>Day 1</button><button type="button" id="day-2-tab" role="tab" className={`day-toggle-btn${day === 2 ? ' is-active' : ''}`} aria-selected={day === 2} aria-controls="day-2-content" tabIndex={day === 2 ? 0 : -1} onClick={() => selectDay(2)}>Day 2</button></div><span className="day-toggle-status" aria-live="polite">Showing Day {day}</span></div>
+    <div key={day} className="schedule-day-content">
+      {day === 1 && <div id="day-1-content" role="tabpanel" aria-labelledby="day-1-tab"><section id="schedule-day1" className="section"><div className="container"><div className="section-head"><h2 className="section-heading">Day 1 <span className="mono-figure">— Inauguration, Panel &amp; Workshops</span></h2></div><ScheduleTable day={1} /></div></section><section id="panel" className="section"><div className="container"><div className="section-head"><p className="eyebrow">Day 1 · 10:30 AM</p><h2 className="section-heading">Panel Discussion: AI Across Sectors</h2><p className="section-lede">Industry leaders and academic experts come together to discuss how Artificial Intelligence is transforming Kerala's agriculture, healthcare and education sectors.</p></div><PanelTracks /></div></section></div>}
+      {day === 2 && <div id="day-2-content" role="tabpanel" aria-labelledby="day-2-tab"><section id="schedule-day2" className="section"><div className="container"><div className="section-head"><h2 className="section-heading">Day 2 <span className="mono-figure">— Hackathon &amp; Valedictory</span></h2></div><ScheduleTable day={2} /></div></section></div>}
+    </div>
   </main>
+}
+
+function IntroScreen() {
+  const [visible, setVisible] = useState(() => !window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+  const [leaving, setLeaving] = useState(false)
+
+  useEffect(() => {
+    if (!visible) return undefined
+    document.body.classList.add('intro-active')
+    const leaveTimer = window.setTimeout(() => setLeaving(true), 1700)
+    const finishTimer = window.setTimeout(() => setVisible(false), 2475)
+    return () => {
+      window.clearTimeout(leaveTimer)
+      window.clearTimeout(finishTimer)
+      document.body.classList.remove('intro-active')
+    }
+  }, [visible])
+
+  if (!visible) return null
+  return <div className={`intro-screen${leaving ? ' is-leaving' : ''}`} aria-hidden="true">
+    <div className="intro-grid"></div>
+    <div className="intro-meta"><span>AI Club · Student Council</span><span>AJCE / Kanjirappally</span></div>
+    <div className="intro-type-stage">
+      <div className="intro-band intro-band-primary"><span>AI CONCLAVE</span><span>AI CONCLAVE</span></div>
+      <div className="intro-band intro-band-outline"><span>AJCE</span><span>AJCE</span><span>AJCE</span></div>
+    </div>
+    <div className="intro-footer"><span>Two days · Three sectors · One conversation</span><strong>2026</strong></div>
+    <div className="intro-scan"><i></i></div>
+  </div>
 }
 
 function ParticipatePage() {
   return <main id="main"><section id="participants" className="section"><div className="container"><div className="section-head" data-reveal><p className="eyebrow">Who Should Attend</p><h1 className="section-heading">Built for people working across all three sectors.</h1><p className="section-lede">AI Conclave 2026 is open to anyone with a stake in how AI touches Agriculture, Health or Education — students, practitioners and decision-makers alike.</p></div><div className="participants-grid">{participantGroups.map((group) => <div id={group.id} className="participant-group" data-reveal key={group.id}><span className={`stamp ${group.stamp}`}>{group.name}</span><h2>{group.name}</h2><ul className="participant-list">{group.items.map((item) => <li key={item}>{item}</li>)}</ul></div>)}</div></div></section></main>
 }
 
-function RegisterPage() {
-  const [form, setForm] = useState(initialForm)
+function RegistrationChoicePage() {
+  return <main id="main">
+    <section className="page-header"><div className="container"><p className="eyebrow">Registration</p><h1 className="section-heading">Choose your experience</h1><p className="section-lede">Start with Day 1 panel discussions or register for the Day 2 hackathon.</p></div></section>
+    <section className="section"><div className="container"><div className="registration-choice-grid">
+      <a className="registration-choice registration-choice-panel" href={PATHS.registerPanel} data-reveal><span className="choice-number" aria-hidden="true">01</span><span className="stamp">Day 1 · Industry Panels</span><h2>Panel Discussion Registration</h2><p>For students, educators, researchers, professionals and delegates attending the Agriculture, Education or Healthcare panels.</p><span className="choice-action">Register for Panel Discussion <span aria-hidden="true">→</span></span></a>
+      {HACKATHON_REGISTRATION_OPEN ? <a className="registration-choice registration-choice-hackathon" href={PATHS.registerHackathon} data-reveal><span className="choice-number" aria-hidden="true">02</span><span className="stamp">Day 2 · Hackathon</span><h2>Hackathon Registration</h2><p>For school and college students joining the Technical or Non-Technical hackathon.</p><span className="choice-action">Register for Hackathon <span aria-hidden="true">→</span></span></a> : <div className="registration-choice registration-choice-hackathon is-registration-closed" aria-disabled="true" data-reveal><span className="choice-number" aria-hidden="true">02</span><span className="stamp">Day 2 · Hackathon</span><h2>Hackathon Registration</h2><p>For school and college students joining the Technical or Non-Technical hackathon.</p><span className="choice-action choice-action-disabled">Registration Not Started</span><div className="registration-closed-layer"><span className="closed-status"><i aria-hidden="true"></i> Registration update</span><strong>Opening Soon</strong><small>Hackathon registration has not started yet.</small></div></div>}
+    </div></div></section>
+  </main>
+}
+
+function HackathonRegisterPage() {
+  const [form, setForm] = useState(initialHackathonForm)
   const [error, setError] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [confirmation, setConfirmation] = useState(null)
@@ -419,14 +484,14 @@ function RegisterPage() {
     event.preventDefault()
     if (submitting) return
     const required = ['name', 'email', 'phone', 'organisation', 'category']
-    if (required.some((field) => !String(form[field]).trim())) {
-      setError('Please fill in all required fields.')
+    if (required.some((field) => !String(form[field]).trim()) || !form.tracks.length) {
+      setError('Please fill in all required fields and select a hackathon track.')
       return
     }
     setError('')
     setSubmitting(true)
     try {
-      const response = await fetch('/api/register', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(form) })
+      const response = await fetch('/api/register', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...form, registrationType: 'hackathon' }) })
       const data = await response.json().catch(() => ({}))
       if (!response.ok || !data.ok) {
         setError(data.error || 'Could not save registration. Please try again.')
@@ -442,34 +507,144 @@ function RegisterPage() {
   }
 
   const reset = () => {
-    setForm(initialForm)
+    setForm(initialHackathonForm)
     setConfirmation(null)
     setSubmitted(false)
     setError('')
     window.setTimeout(() => nameRef.current?.focus(), 0)
   }
 
-  return <main id="main"><section className="page-header"><div className="container"><p className="eyebrow">Delegate Registration</p><h1 className="section-heading">Register for AI Conclave 2026</h1><p className="section-lede">Fill in your details and pick the tracks you'd like to attend.</p></div></section><section id="registration-form" className="section"><div className="container register-layout">
+  return <main id="main"><section className="page-header"><div className="container"><a className="back-link" href={PATHS.register}>← All registrations</a><p className="eyebrow">Hackathon Registration</p><h1 className="section-heading">AI Conclave 2026 Hackathon</h1><p className="section-lede">Choose the Technical or Non-Technical track for Day 2.</p></div></section><section id="registration-form" className="section"><div className="container register-layout">
     <form id="register-form" noValidate hidden={submitted} onSubmit={submit}>
       <div className="form-row"><div className="form-field"><label htmlFor="field-name">Full Name</label><input ref={nameRef} type="text" id="field-name" name="name" autoComplete="name" required value={form.name} onChange={updateField} /></div><div className="form-field"><label htmlFor="field-email">Email</label><input type="email" id="field-email" name="email" autoComplete="email" required value={form.email} onChange={updateField} /></div></div>
       <div className="form-row"><div className="form-field"><label htmlFor="field-phone">Phone</label><input type="tel" id="field-phone" name="phone" autoComplete="tel" required value={form.phone} onChange={updateField} /></div><div className="form-field"><label htmlFor="field-org">College / Organisation</label><input type="text" id="field-org" name="organisation" autoComplete="organization" required value={form.organisation} onChange={updateField} /></div></div>
-      <div className="form-field"><label htmlFor="field-category">Category</label><select id="field-category" name="category" required value={form.category} onChange={updateField}><option value="" disabled>Select one</option>{categories.map((category) => <option value={category} key={category}>{category}</option>)}</select></div>
-      <fieldset className="form-fieldset"><legend className="form-legend">Tracks You'd Like to Attend</legend><p className="form-hint">Select all that apply.</p><div className="track-options">{trackOptions.map((track) => <div className="track-option" key={track.id}><label htmlFor={track.id}><span className="track-option-title">{track.title}</span><span className="track-option-desc">{track.description}</span></label><input type="checkbox" id={track.id} name="tracks" value={track.value} checked={form.tracks.includes(track.value)} onChange={toggleTrack} /></div>)}</div></fieldset>
+      <div className="form-field"><label htmlFor="field-category">Participant Type</label><select id="field-category" name="category" required value={form.category} onChange={updateField}><option value="" disabled>Select one</option>{hackathonCategories.map((category) => <option value={category} key={category}>{category}</option>)}</select></div>
+      <fieldset className="form-fieldset"><legend className="form-legend">Hackathon Track</legend><p className="form-hint">Select at least one track.</p><div className="track-options">{hackathonTrackOptions.map((track) => <div className="track-option" key={track.id}><label htmlFor={track.id}><span className="track-option-title">{track.title}</span><span className="track-option-desc">{track.description}</span></label><input type="checkbox" id={track.id} name="tracks" value={track.value} checked={form.tracks.includes(track.value)} onChange={toggleTrack} /></div>)}</div></fieldset>
       <div className="form-submit-row"><button type="submit" className="btn btn-primary" id="register-submit" disabled={submitting} aria-busy={submitting}>{submitting ? 'Submitting…' : <>Submit Registration <span className="btn-arrow" aria-hidden="true">→</span></>}</button><p className={`form-error${error ? ' is-visible' : ''}`} role="alert" aria-live="polite">{error || 'Please fill in all required fields.'}</p></div>
     </form>
-    <div className={`confirmation-panel${submitted ? ' is-visible' : ''}`} id="confirmation-panel" role="status" aria-live="polite" tabIndex={submitted ? -1 : undefined}><span className="stamp">Registration Received</span><h2>You're on the list.</h2><p>Thanks for registering for AI Conclave 2026. A confirmation with further details will be sent to your email closer to the event.</p>{confirmation && <dl className="confirmation-summary"><dt>Name</dt><dd>{confirmation.name}</dd><dt>Email</dt><dd>{confirmation.email}</dd><dt>Category</dt><dd>{confirmation.category}</dd><dt>Tracks</dt><dd>{confirmation.tracks?.length ? confirmation.tracks.join(', ') : 'None selected'}</dd></dl>}<button type="button" className="btn btn-outline" id="register-again" onClick={reset}>Register Another Person</button></div>
+    <div className={`confirmation-panel${submitted ? ' is-visible' : ''}`} id="confirmation-panel" role="status" aria-live="polite" tabIndex={submitted ? -1 : undefined}><span className="stamp">Hackathon Registration Received</span><h2>You're on the list.</h2><p>Thanks for registering for the AI Conclave 2026 Hackathon.</p>{confirmation && <dl className="confirmation-summary"><dt>Name</dt><dd>{confirmation.name}</dd><dt>Email</dt><dd>{confirmation.email}</dd><dt>Participant</dt><dd>{confirmation.category}</dd><dt>Tracks</dt><dd>{confirmation.tracks?.join(', ')}</dd></dl>}<button type="button" className="btn btn-outline" id="register-again" onClick={reset}>Register Another Person</button></div>
   </div></section></main>
 }
 
+function HackathonRegistrationClosedPage() {
+  return <main id="main"><section className="page-header"><div className="container"><a className="back-link" href={PATHS.register}>← All registrations</a><p className="eyebrow">Day 2 · Hackathon</p><h1 className="section-heading">Hackathon Registration</h1><p className="section-lede">Technical and Non-Technical tracks for school and college students.</p></div></section><section className="section"><div className="container register-layout"><div className="registration-closed-notice"><span className="stamp">Coming Soon</span><h2>Registration has not started.</h2><p>Hackathon registration is temporarily closed. Please check back soon for the opening announcement.</p><a className="btn btn-primary" href={PATHS.registerPanel}>Register for Panel Discussion <span aria-hidden="true">→</span></a></div></div></section></main>
+}
+
+function RadioOptions({ name, options, value, onChange, required = false }) {
+  return <div className="radio-options">{options.map((option) => <label className="radio-option" key={option}><input type="radio" name={name} value={option} checked={value === option} onChange={onChange} required={required} /><span className="radio-option-label">{option}</span><span className="radio-option-check" aria-hidden="true">✓</span></label>)}</div>
+}
+
+function PanelRegisterPage() {
+  const [form, setForm] = useState(initialPanelForm)
+  const [error, setError] = useState('')
+  const [submitted, setSubmitted] = useState(false)
+  const [confirmation, setConfirmation] = useState(null)
+  const [submitting, setSubmitting] = useState(false)
+  const nameRef = useRef(null)
+  const updateField = (event) => {
+    const { name, value, type, checked } = event.target
+    setForm((current) => ({ ...current, [name]: type === 'checkbox' ? checked : value }))
+  }
+  const submit = async (event) => {
+    event.preventDefault()
+    if (submitting) return
+    const required = ['name', 'email', 'phone', 'participantType', 'organisation', 'panelSelection']
+    if (required.some((field) => !String(form[field]).trim()) || !form.informationConfirmed) {
+      setError('Please complete all required fields and confirm the information is accurate.')
+      return
+    }
+    setError('')
+    setSubmitting(true)
+    try {
+      const response = await fetch('/api/register', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...form, registrationType: 'panel' }) })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok || !data.ok) {
+        setError(data.error || 'Could not save registration. Please try again.')
+        return
+      }
+      setConfirmation(data.registration || form)
+      setSubmitted(true)
+    } catch {
+      setError('Network error. Check your connection and try again.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+  const reset = () => {
+    setForm(initialPanelForm)
+    setConfirmation(null)
+    setSubmitted(false)
+    setError('')
+    window.setTimeout(() => nameRef.current?.focus(), 0)
+  }
+  return <main id="main">
+    <section className="page-header panel-register-header"><div className="container"><a className="back-link" href={PATHS.register}>← All registrations</a><p className="eyebrow">Industry Panel Discussions</p><h1 className="section-heading">Panel Discussion Registration</h1><p className="panel-theme-line">Agriculture <span>•</span> Education <span>•</span> Healthcare</p><p className="section-lede">Join experts, professionals, educators, researchers and students to discuss the role and future of AI across key sectors.</p></div></section>
+    <section className="section"><div className="container register-layout">
+      <form id="panel-register-form" className="sectioned-form" noValidate hidden={submitted} onSubmit={submit}>
+        <fieldset className="form-section" data-reveal><legend><span>01</span> Participant Details</legend>
+          <div className="form-row"><div className="form-field"><label htmlFor="panel-name">Full Name *</label><input ref={nameRef} id="panel-name" name="name" type="text" autoComplete="name" required value={form.name} onChange={updateField} /></div><div className="form-field"><label htmlFor="panel-email">Email ID *</label><input id="panel-email" name="email" type="email" autoComplete="email" required value={form.email} onChange={updateField} /></div></div>
+          <div className="form-field"><label htmlFor="panel-phone">Phone Number *</label><input id="panel-phone" name="phone" type="tel" autoComplete="tel" required value={form.phone} onChange={updateField} /></div>
+          <div className="form-field"><span className="form-legend">Participant Type *</span><RadioOptions name="participantType" options={participantTypes} value={form.participantType} onChange={updateField} required /></div>
+          <div className="form-row"><div className="form-field"><label htmlFor="panel-organisation">College / Institution / Organization Name *</label><input id="panel-organisation" name="organisation" type="text" autoComplete="organization" required value={form.organisation} onChange={updateField} /></div><div className="form-field"><label htmlFor="panel-department">Department / Branch</label><input id="panel-department" name="department" type="text" value={form.department} onChange={updateField} /></div></div>
+        </fieldset>
+        <fieldset className="form-section" data-reveal><legend><span>02</span> Panel Selection</legend><div className="form-field"><span className="form-legend">Which panel discussion would you like to attend? *</span><RadioOptions name="panelSelection" options={panelOptions} value={form.panelSelection} onChange={updateField} required /></div><p className="form-note">Students are also welcome to attend the panel discussions.</p></fieldset>
+        <fieldset className="form-section" data-reveal><legend><span>03</span> Professional / Delegate Details</legend>
+          <div className="form-field"><span className="form-legend">Industry Sector</span><RadioOptions name="industrySector" options={industrySectors} value={form.industrySector} onChange={updateField} /></div>{form.industrySector === 'Other' && <div className="form-field conditional-field"><label htmlFor="industry-other">Please specify industry sector</label><input id="industry-other" name="industrySectorOther" type="text" value={form.industrySectorOther} onChange={updateField} /></div>}
+          <div className="form-field"><span className="form-legend">Organization Type</span><RadioOptions name="organisationType" options={organisationTypes} value={form.organisationType} onChange={updateField} /></div>{form.organisationType === 'Other' && <div className="form-field conditional-field"><label htmlFor="organisation-other">Please specify organization type</label><input id="organisation-other" name="organisationTypeOther" type="text" value={form.organisationTypeOther} onChange={updateField} /></div>}
+        </fieldset>
+        <fieldset className="form-section" data-reveal><legend><span>04</span> Confirmation</legend><label className="confirmation-check"><input type="checkbox" name="informationConfirmed" checked={form.informationConfirmed} onChange={updateField} required /><span>I confirm that the information provided above is accurate. *</span></label><label className="confirmation-check"><input type="checkbox" name="updatesOptIn" checked={form.updatesOptIn} onChange={updateField} /><span>I agree to receive official AI Conclave updates regarding the panel discussion.</span></label></fieldset>
+        <div className="form-submit-row"><button type="submit" className="btn btn-primary" disabled={submitting} aria-busy={submitting}>{submitting ? 'Submitting…' : <>Submit Panel Registration <span aria-hidden="true">→</span></>}</button><p className={`form-error${error ? ' is-visible' : ''}`} role="alert" aria-live="polite">{error}</p></div>
+      </form>
+      <div className={`confirmation-panel${submitted ? ' is-visible' : ''}`} role="status" aria-live="polite" tabIndex={submitted ? -1 : undefined}><span className="stamp">Panel Registration Received</span><h2>Your seat request is recorded.</h2><p>Thanks for registering for the AI Conclave 2026 Industry Panel Discussions.</p>{confirmation && <dl className="confirmation-summary"><dt>Name</dt><dd>{confirmation.name}</dd><dt>Email</dt><dd>{confirmation.email}</dd><dt>Participant</dt><dd>{confirmation.participantType}</dd><dt>Panel</dt><dd>{confirmation.panelSelection}</dd></dl>}<button type="button" className="btn btn-outline" onClick={reset}>Register Another Person</button></div>
+    </div></section>
+  </main>
+}
+
 function App() {
-  const page = currentPage()
-  useSiteEnhancements()
+  const [page, setPage] = useState(currentPage)
+  useSiteEnhancements(page)
+
+  useEffect(() => {
+    const commitNavigation = (destination, push) => {
+      if (push) window.history.pushState({}, '', destination)
+      flushSync(() => setPage(currentPage()))
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+    }
+
+    const navigate = (destination, push = true) => {
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      const commit = () => commitNavigation(destination, push)
+      if (document.startViewTransition && !reduceMotion) document.startViewTransition(commit)
+      else commit()
+    }
+
+    const handleClick = (event) => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+      const anchor = event.target.closest('a[href]')
+      if (!anchor || anchor.target || anchor.hasAttribute('download')) return
+      const destination = new URL(anchor.href, window.location.href)
+      if (destination.origin !== window.location.origin) return
+      if (destination.pathname === window.location.pathname && destination.search === window.location.search && destination.hash) return
+      if (destination.href === window.location.href) return
+      event.preventDefault()
+      navigate(`${destination.pathname}${destination.search}${destination.hash}`)
+    }
+
+    const handlePopState = () => navigate(`${window.location.pathname}${window.location.search}${window.location.hash}`, false)
+    document.addEventListener('click', handleClick)
+    window.addEventListener('popstate', handlePopState)
+    return () => {
+      document.removeEventListener('click', handleClick)
+      window.removeEventListener('popstate', handlePopState)
+    }
+  }, [])
+
   useEffect(() => {
     document.title = page === 'home' ? 'AI Conclave 2026' : `${page[0].toUpperCase()}${page.slice(1)} — AI Conclave 2026`
   }, [page])
 
-  const content = page === 'about' ? <AboutPage /> : page === 'schedule' ? <SchedulePage /> : page === 'participate' ? <ParticipatePage /> : page === 'register' ? <RegisterPage /> : <HomePage />
-  return <Shell active={page}>{content}</Shell>
+  const content = page === 'about' ? <AboutPage /> : page === 'schedule' ? <SchedulePage /> : page === 'participate' ? <ParticipatePage /> : page === 'register' ? <RegistrationChoicePage /> : page === 'register-hackathon' ? (HACKATHON_REGISTRATION_OPEN ? <HackathonRegisterPage /> : <HackathonRegistrationClosedPage />) : page === 'register-panel' ? <PanelRegisterPage /> : <HomePage />
+  return <><IntroScreen /><Shell active={page}>{content}</Shell></>
 }
 
 export default App
