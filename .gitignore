@@ -1,8 +1,12 @@
 .wrangler/
 node_modules/
 publish/
+dist/
 .dev.vars
 
 .playwright-mcp/
 /wrangler.toml
 /functions/
+!/wrangler.toml
+!/functions/
+!/functions/**
