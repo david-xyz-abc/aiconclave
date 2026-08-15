@@ -210,7 +210,7 @@ function EmptyRegistrationSection({ section }) {
   );
 }
 
-function Dashboard({ user, onLogout }) {
+function Dashboard({ onLogout }) {
   const [activeSection, setActiveSection] = useState("panel");
   const [registrations, setRegistrations] = useState([]);
   const [query, setQuery] = useState("");
@@ -267,7 +267,6 @@ function Dashboard({ user, onLogout }) {
 
   const allPanelsCount = registrations.filter((item) => item.panel_selection === "Interested in All Panels").length;
   const studentCount = registrations.filter((item) => item.participant_type === "Student").length;
-  const latestRegistration = registrations[0]?.created_at;
 
   function resetFilters() {
     setQuery("");
@@ -304,13 +303,12 @@ function Dashboard({ user, onLogout }) {
     <div className="dashboard-shell">
       <header className="topbar">
         <div className="brand-lockup"><span className="brand-mark" aria-hidden="true">AC</span><span>AI Conclave 2026</span></div>
-        <div className="topbar-meta"><span className="signed-in">Signed in as {user?.username || "admin"}</span><button className="button button-quiet" onClick={logout}>Log out</button></div>
+        <div className="topbar-meta"><button className="button button-quiet" onClick={logout}>Log out</button></div>
       </header>
 
       <main className="dashboard-main">
         <header className="dashboard-intro">
-          <div><p className="eyebrow">Registration operations</p><h1>Delegate directory</h1></div>
-          <p>Review registrations across every AI Conclave programme from one protected workspace.</p>
+          <h1>Registrations</h1>
         </header>
 
         <nav className="section-switcher" aria-label="Registration sections">
@@ -341,7 +339,6 @@ function Dashboard({ user, onLogout }) {
             <MetricCard label="Total registrations" value={registrations.length} detail="Panel delegates" />
             <MetricCard label="Students" value={studentCount} detail="Registered students" />
             <MetricCard label="All panels" value={allPanelsCount} detail="Multi-panel interest" />
-            <MetricCard label="Latest entry" value={latestRegistration ? formatDate(latestRegistration).split(",")[0] : "—"} detail={latestRegistration ? formatDate(latestRegistration) : "No entries yet"} />
           </section>
 
           <section className="data-section" aria-labelledby="table-heading">
@@ -379,5 +376,5 @@ export default function App() {
 
   if (session.loading) return <div className="loading-screen">Loading dashboard…</div>;
   if (!session.user) return <Login onLogin={(user) => setSession({ loading: false, user })} />;
-  return <Dashboard user={session.user} onLogout={() => setSession({ loading: false, user: null })} />;
+  return <Dashboard onLogout={() => setSession({ loading: false, user: null })} />;
 }
