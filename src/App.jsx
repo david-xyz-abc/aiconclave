@@ -217,6 +217,7 @@ function Dashboard({ onLogout }) {
   const [participantType, setParticipantType] = useState("all");
   const [panel, setPanel] = useState("all");
   const [sector, setSector] = useState("all");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedRegistration, setSelectedRegistration] = useState(null);
@@ -267,12 +268,14 @@ function Dashboard({ onLogout }) {
 
   const allPanelsCount = registrations.filter((item) => item.panel_selection === "Interested in All Panels").length;
   const studentCount = registrations.filter((item) => item.participant_type === "Student").length;
+  const activeFilterCount = [participantType !== "all", panel !== "all", sector !== "all"].filter(Boolean).length;
 
   function resetFilters() {
     setQuery("");
     setParticipantType("all");
     setPanel("all");
     setSector("all");
+    setFiltersOpen(false);
   }
 
   async function deleteRegistration(registration) {
@@ -348,9 +351,12 @@ function Dashboard({ onLogout }) {
             </div>
             <div className="filters">
               <label className="search-control"><span>Search all details</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Name, email, phone or organisation" /></label>
-              <label><span>Participant type</span><select value={participantType} onChange={(event) => setParticipantType(event.target.value)}><option value="all">All participant types</option>{participantTypeOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
-              <label><span>Panel selection</span><select value={panel} onChange={(event) => setPanel(event.target.value)}><option value="all">All panel selections</option>{panelOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
-              <label><span>Industry sector</span><select value={sector} onChange={(event) => setSector(event.target.value)}><option value="all">All sectors</option>{sectorOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
+              <button className="mobile-filter-toggle" type="button" aria-expanded={filtersOpen} aria-controls="advanced-filters" onClick={() => setFiltersOpen((current) => !current)}>Filters{activeFilterCount ? ` (${activeFilterCount})` : ""}<span aria-hidden="true">⌄</span></button>
+              <div className={`advanced-filters${filtersOpen ? " is-open" : ""}`} id="advanced-filters">
+                <label><span>Participant type</span><select value={participantType} onChange={(event) => setParticipantType(event.target.value)}><option value="all">All participant types</option>{participantTypeOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
+                <label><span>Panel selection</span><select value={panel} onChange={(event) => setPanel(event.target.value)}><option value="all">All panel selections</option>{panelOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
+                <label><span>Industry sector</span><select value={sector} onChange={(event) => setSector(event.target.value)}><option value="all">All sectors</option>{sectorOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
+              </div>
             </div>
             {error ? <div className="table-state table-error" role="alert">{error}</div> : <PanelTable registrations={filteredRegistrations} loading={loading} onOpen={setSelectedRegistration} />}
           </section>
