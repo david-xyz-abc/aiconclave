@@ -183,11 +183,14 @@ td a { text-decoration-thickness: 1px; text-underline-offset: .2em; }
   .auth-panel { padding: 2rem 1.25rem; }
   .auth-copy { margin-top: 3.5rem; }
   .dashboard-main { padding-inline: .9rem; }
-  .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .metric-card { min-height: 7.5rem; padding: 1rem; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-  .metric-card:nth-child(even) { border-right: 0; }
-  .metric-card:last-child { grid-column: 1 / -1; border-right: 0; border-bottom: 0; }
-  .metric-card strong { font-size: clamp(1.65rem, 9vw, 2.5rem); }
+  .metrics-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .metric-card { min-height: 5.25rem; padding: .7rem .6rem; border-right: 1px solid var(--line); border-bottom: 0; }
+  .metric-card:nth-child(even) { border-right: 1px solid var(--line); }
+  .metric-card:last-child { grid-column: auto; border-right: 0; }
+  .metric-card span { min-height: 2.2em; font-size: .53rem; line-height: 1.15; }
+  .metric-card strong { margin: .38rem 0 0; font-size: clamp(1.4rem, 7vw, 1.9rem); }
+  .metric-card small { display: none; }
+  .data-section { margin-top: 1.5rem; }
   .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: .75rem; }
   .search-control { grid-column: 1 / -1; }
   .filters label:last-child { grid-column: 1 / -1; }
