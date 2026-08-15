@@ -1,0 +1,13 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "aiconclave-devsite",
+  "compatibility_date": "2026-08-15",
+  "pages_build_output_dir": "dist",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "aiconclave-registrations",
+      "database_id": "cfc0669f-3de7-4429-ab54-686e966bb56b"
+    }
+  ]
+}
