@@ -16,10 +16,20 @@ const panelOptions = [
 ];
 
 const registrationSections = [
-  { id: "panel", number: "01", label: "Panel Discussion", status: "Live" },
-  { id: "hackathon", number: "02", label: "Hackathon", status: "Awaiting themes" },
-  { id: "workshops", number: "03", label: "Workshops", status: "Awaiting list" },
+  { id: "panel", path: "/panel-registrations", number: "01", label: "Panel Discussion", status: "Live" },
+  { id: "hackathon", path: "/hackathon-registrations", number: "02", label: "Hackathon", status: "Awaiting themes" },
+  { id: "workshops", path: "/workshop-registrations", number: "03", label: "Workshops", status: "Awaiting list" },
 ];
+
+const dashboardNavigation = [
+  { id: "overview", path: "/", number: "00", label: "Overview", status: "Dashboard" },
+  ...registrationSections,
+];
+
+function currentDashboardRoute() {
+  const path = window.location.pathname.replace(/\/+$/, "") || "/";
+  return dashboardNavigation.find((item) => item.path === path) || dashboardNavigation[0];
+}
 
 function formatDate(value) {
   if (!value) return "—";
@@ -169,8 +179,9 @@ function RegistrationDetails({ registration, onClose, onDelete, deleting }) {
       <aside className="detail-drawer" role="dialog" aria-modal="true" aria-labelledby="detail-title">
         <div className="detail-head">
           <div>
-            <p className="eyebrow">Panel registration #{registration.id}</p>
+            <p className="eyebrow">Participant · Registration #{registration.id}</p>
             <h2 id="detail-title">{registration.name}</h2>
+            <span className="detail-panel-mark">{registration.panel_selection}</span>
           </div>
           <button className="close-button" type="button" onClick={onClose} aria-label="Close registration details">×</button>
         </div>
@@ -181,7 +192,6 @@ function RegistrationDetails({ registration, onClose, onDelete, deleting }) {
           <DetailItem label="Registered">{formatDate(registration.created_at)}</DetailItem>
           <DetailItem label="Organisation" wide important>{registration.organisation}</DetailItem>
           <DetailItem label="Department / Branch" wide important>{displayValue(registration.department)}</DetailItem>
-          <DetailItem label="Panel selection" wide important><span className="panel-mark">{registration.panel_selection}</span></DetailItem>
           <DetailItem label="Industry sector">{displayValue(registration.industry_sector)}</DetailItem>
           <DetailItem label="Sector details">{displayValue(registration.industry_sector_other)}</DetailItem>
           <DetailItem label="Organisation type">{displayValue(registration.organisation_type)}</DetailItem>
@@ -210,36 +220,105 @@ function EmptyRegistrationSection({ section }) {
   );
 }
 
-function Dashboard({ onLogout }) {
-  const [activeSection, setActiveSection] = useState("panel");
+function DashboardNavigation({ route, panelCount, onNavigate }) {
+  const navigate = (event, path) => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    onNavigate(path);
+  };
+  return <>
+    <nav className="section-switcher" aria-label="Dashboard pages">
+      {dashboardNavigation.map((item) => (
+        <a key={item.id} href={item.path} className={`section-card${route.id === item.id ? " is-active" : ""}`} onClick={(event) => navigate(event, item.path)} aria-current={route.id === item.id ? "page" : undefined}>
+          <span className="section-number">{item.number}</span>
+          <strong>{item.label}</strong>
+          <small>{item.id === "panel" ? `${panelCount} registrations` : item.status}</small>
+        </a>
+      ))}
+    </nav>
+    <label className="mobile-section-picker">
+      <span>Dashboard page</span>
+      <div className="mobile-section-control">
+        <strong aria-hidden="true">{route.number}</strong>
+        <select value={route.path} onChange={(event) => onNavigate(event.target.value)} aria-label="Choose dashboard page">
+          {dashboardNavigation.map((item) => (
+            <option value={item.path} key={item.id}>{item.label} — {item.id === "panel" ? `${panelCount} registrations` : item.status}</option>
+          ))}
+        </select>
+        <i aria-hidden="true"></i>
+      </div>
+    </label>
+  </>;
+}
+
+function OverviewPage({ summary, recent, loading, error, onNavigate }) {
+  return <div className="overview-page">
+    <section className="metrics-grid" aria-label="Registration summary">
+      <MetricCard label="Panel registrations" value={summary.total} detail="Current total" />
+      <MetricCard label="Students" value={summary.students} detail="Panel students" />
+      <MetricCard label="All panels" value={summary.allPanels} detail="Multi-panel interest" />
+    </section>
+    <section className="overview-recent" aria-labelledby="recent-heading">
+      <div className="data-heading"><div><p className="eyebrow">Latest activity</p><h2 id="recent-heading">Recent panel registrations</h2></div><a href="/panel-registrations" onClick={(event) => { event.preventDefault(); onNavigate("/panel-registrations"); }}>Open directory <span aria-hidden="true">→</span></a></div>
+      {error ? <div className="table-state table-error" role="alert">{error}</div> : loading ? <div className="table-state">Loading registrations…</div> : recent.length ? <ul className="recent-list">{recent.map((registration) => <li key={registration.id}><a href="/panel-registrations" onClick={(event) => { event.preventDefault(); onNavigate("/panel-registrations"); }}><span><strong>{registration.name}</strong><small>{registration.panel_selection}</small></span><span>Open <i aria-hidden="true">→</i></span></a></li>)}</ul> : <div className="table-state">No panel registrations yet.</div>}
+    </section>
+  </div>;
+}
+
+function Dashboard({ route, onNavigate, onLogout }) {
   const [registrations, setRegistrations] = useState([]);
+  const [summary, setSummary] = useState({ total: 0, students: 0, allPanels: 0 });
+  const [recentRegistrations, setRecentRegistrations] = useState([]);
+  const [panelLoaded, setPanelLoaded] = useState(false);
+  const [summaryLoaded, setSummaryLoaded] = useState(false);
   const [query, setQuery] = useState("");
   const [participantType, setParticipantType] = useState("all");
   const [panel, setPanel] = useState("all");
   const [sector, setSector] = useState("all");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [selectedRegistration, setSelectedRegistration] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
     let active = true;
-    async function loadRegistrations() {
+    async function loadPageData() {
+      if (route.id === "overview" && summaryLoaded) return;
+      if (route.id === "panel" && panelLoaded) return;
+      if (!new Set(["overview", "panel"]).has(route.id)) {
+        setLoading(false);
+        setError("");
+        return;
+      }
+      setLoading(true);
+      setError("");
       try {
-        const response = await fetch("/api/registrations?type=panel");
+        const response = await fetch(`/api/registrations?type=panel${route.id === "overview" ? "&view=summary" : ""}`);
         const data = await response.json().catch(() => ({}));
+        if (response.status === 401) {
+          onLogout();
+          return;
+        }
         if (!response.ok || !data.ok) throw new Error(data.error || "Could not load panel registrations.");
-        if (active) setRegistrations(data.registrations || []);
+        if (!active) return;
+        if (route.id === "overview") {
+          setSummary(data.summary || { total: 0, students: 0, allPanels: 0 });
+          setRecentRegistrations(data.recent || []);
+          setSummaryLoaded(true);
+        } else {
+          setRegistrations(data.registrations || []);
+          setPanelLoaded(true);
+        }
       } catch (loadError) {
         if (active) setError(loadError.message);
       } finally {
         if (active) setLoading(false);
       }
     }
-    loadRegistrations();
+    loadPageData();
     return () => { active = false; };
-  }, []);
+  }, [panelLoaded, route.id, summaryLoaded]);
 
   const sectorOptions = useMemo(() => [...new Set(registrations.map((item) => item.industry_sector).filter(Boolean))].sort(), [registrations]);
 
@@ -266,8 +345,6 @@ function Dashboard({ onLogout }) {
     });
   }, [panel, participantType, query, registrations, sector]);
 
-  const allPanelsCount = registrations.filter((item) => item.panel_selection === "Interested in All Panels").length;
-  const studentCount = registrations.filter((item) => item.participant_type === "Student").length;
   const activeFilterCount = [participantType !== "all", panel !== "all", sector !== "all"].filter(Boolean).length;
 
   function resetFilters() {
@@ -285,8 +362,13 @@ function Dashboard({ onLogout }) {
     try {
       const response = await fetch(`/api/registrations/${registration.id}?type=panel`, { method: "DELETE" });
       const data = await response.json().catch(() => ({}));
+      if (response.status === 401) {
+        onLogout();
+        return;
+      }
       if (!response.ok || !data.ok) throw new Error(data.error || "Could not delete registration.");
       setRegistrations((current) => current.filter((item) => item.id !== registration.id));
+      setSummaryLoaded(false);
       setSelectedRegistration(null);
     } catch (deleteError) {
       setError(deleteError.message);
@@ -300,8 +382,6 @@ function Dashboard({ onLogout }) {
     onLogout();
   }
 
-  const currentSection = registrationSections.find((section) => section.id === activeSection);
-
   return (
     <div className="dashboard-shell">
       <header className="topbar">
@@ -311,40 +391,12 @@ function Dashboard({ onLogout }) {
 
       <main className="dashboard-main">
         <header className="dashboard-intro">
-          <h1>Registrations</h1>
+          <h1>{route.id === "overview" ? "Registration overview" : route.label}</h1>
         </header>
 
-        <nav className="section-switcher" aria-label="Registration sections">
-          {registrationSections.map((section) => (
-            <button key={section.id} type="button" className={`section-card${activeSection === section.id ? " is-active" : ""}`} onClick={() => setActiveSection(section.id)} aria-current={activeSection === section.id ? "page" : undefined}>
-              <span className="section-number">{section.number}</span>
-              <strong>{section.label}</strong>
-              <small>{section.id === "panel" ? `${registrations.length} registrations` : section.status}</small>
-            </button>
-          ))}
-        </nav>
+        <DashboardNavigation route={route} panelCount={panelLoaded ? registrations.length : summary.total} onNavigate={onNavigate} />
 
-        <label className="mobile-section-picker">
-          <span>Registration section</span>
-          <div className="mobile-section-control">
-            <strong aria-hidden="true">{currentSection.number}</strong>
-            <select value={activeSection} onChange={(event) => setActiveSection(event.target.value)} aria-label="Choose registration section">
-              {registrationSections.map((section) => (
-                <option value={section.id} key={section.id}>{section.label} — {section.id === "panel" ? `${registrations.length} registrations` : section.status}</option>
-              ))}
-            </select>
-            <i aria-hidden="true"></i>
-          </div>
-        </label>
-
-        {activeSection !== "panel" ? <EmptyRegistrationSection section={currentSection} /> : <>
-          <section className="metrics-grid" aria-label="Panel registration summary">
-            <MetricCard label="Total registrations" value={registrations.length} detail="Panel delegates" />
-            <MetricCard label="Students" value={studentCount} detail="Registered students" />
-            <MetricCard label="All panels" value={allPanelsCount} detail="Multi-panel interest" />
-          </section>
-
-          <section className="data-section" aria-labelledby="table-heading">
+        {route.id === "overview" ? <OverviewPage summary={summary} recent={recentRegistrations} loading={loading} error={error} onNavigate={onNavigate} /> : route.id !== "panel" ? <EmptyRegistrationSection section={route} /> : <section className="data-section panel-directory" aria-labelledby="table-heading">
             <div className="data-heading">
               <div><p className="eyebrow">Panel discussion</p><h2 id="table-heading">Registered participants</h2><p>{filteredRegistrations.length} of {registrations.length} entries shown</p></div>
               <button className="reset-button" type="button" onClick={resetFilters}>Clear filters</button>
@@ -360,7 +412,7 @@ function Dashboard({ onLogout }) {
             </div>
             {error ? <div className="table-state table-error" role="alert">{error}</div> : <PanelTable registrations={filteredRegistrations} loading={loading} onOpen={setSelectedRegistration} />}
           </section>
-        </>}
+        }
       </main>
 
       <RegistrationDetails registration={selectedRegistration} onClose={() => setSelectedRegistration(null)} onDelete={deleteRegistration} deleting={deletingId === selectedRegistration?.id} />
@@ -370,6 +422,7 @@ function Dashboard({ onLogout }) {
 
 export default function App() {
   const [session, setSession] = useState({ loading: true, user: null });
+  const [route, setRoute] = useState(currentDashboardRoute);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -380,7 +433,23 @@ export default function App() {
       .catch(() => setSession({ loading: false, user: null }));
   }, []);
 
+  useEffect(() => {
+    const handlePopState = () => setRoute(currentDashboardRoute());
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  useEffect(() => {
+    document.title = `${route.id === "overview" ? "Registration Overview" : route.label} — AI Conclave Dashboard`;
+  }, [route]);
+
+  const navigate = (path) => {
+    if (path !== window.location.pathname) window.history.pushState({}, "", path);
+    setRoute(currentDashboardRoute());
+    window.scrollTo({ top: 0, behavior: "auto" });
+  };
+
   if (session.loading) return <div className="loading-screen">Loading dashboard…</div>;
   if (!session.user) return <Login onLogin={(user) => setSession({ loading: false, user })} />;
-  return <Dashboard onLogout={() => setSession({ loading: false, user: null })} />;
+  return <Dashboard route={route} onNavigate={navigate} onLogout={() => setSession({ loading: false, user: null })} />;
 }

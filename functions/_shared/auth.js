@@ -1,4 +1,4 @@
-const SESSION_COOKIE = "aiconclave_dashboard_session";
+const SESSION_COOKIE = "__Host-aiconclave_dashboard_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 12;
 
 function base64Url(bytes) {
@@ -15,6 +15,52 @@ async function sha256(value) {
   const data = new TextEncoder().encode(value);
   const digest = await crypto.subtle.digest("SHA-256", data);
   return bytesToHex(new Uint8Array(digest));
+}
+
+export async function constantTimeEqual(left, right) {
+  const encoder = new TextEncoder();
+  const [leftHash, rightHash] = await Promise.all([
+    crypto.subtle.digest("SHA-256", encoder.encode(String(left))),
+    crypto.subtle.digest("SHA-256", encoder.encode(String(right))),
+  ]);
+  const leftBytes = new Uint8Array(leftHash);
+  const rightBytes = new Uint8Array(rightHash);
+  if (typeof crypto.subtle.timingSafeEqual === "function") return crypto.subtle.timingSafeEqual(leftBytes, rightBytes);
+  let difference = 0;
+  for (let index = 0; index < leftBytes.length; index += 1) difference |= leftBytes[index] ^ rightBytes[index];
+  return difference === 0;
+}
+
+export function isSameOrigin(request) {
+  const origin = request.headers.get("origin");
+  return Boolean(origin) && origin === new URL(request.url).origin;
+}
+
+export async function readJsonBody(request, maximumBytes = 8_192) {
+  if (!(request.headers.get("content-type") || "").toLowerCase().startsWith("application/json")) throw new Error("unsupported-content-type");
+  const declaredLength = Number(request.headers.get("content-length"));
+  if (Number.isFinite(declaredLength) && declaredLength > maximumBytes) throw new Error("body-too-large");
+  if (!request.body) return {};
+  const reader = request.body.getReader();
+  const chunks = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > maximumBytes) {
+      await reader.cancel();
+      throw new Error("body-too-large");
+    }
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return JSON.parse(new TextDecoder().decode(bytes));
 }
 
 export async function hashPassword(password, salt, iterations) {

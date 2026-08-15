@@ -1,12 +1,13 @@
-import { getSession, hashPassword, newToken, sessionCookie, sha256, SESSION_TTL_SECONDS } from "../../_shared/auth.js";
+import { constantTimeEqual, hashPassword, isSameOrigin, newToken, readJsonBody, sessionCookie, sha256, SESSION_TTL_SECONDS } from "../../_shared/auth.js";
 
 function json(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", ...headers } });
 }
 
 export async function onRequestPost(context) {
+  if (!isSameOrigin(context.request)) return json({ ok: false, error: "This sign-in request could not be verified." }, 403);
   let body;
-  try { body = await context.request.json(); } catch { return json({ ok: false, error: "Invalid request." }, 400); }
+  try { body = await readJsonBody(context.request); } catch { return json({ ok: false, error: "Invalid request." }, 400); }
   const username = typeof body?.username === "string" ? body.username.trim().slice(0, 80) : "";
   const password = typeof body?.password === "string" ? body.password : "";
   if (!username || !password) return json({ ok: false, error: "Username and password are required." }, 400);
@@ -22,7 +23,7 @@ export async function onRequestPost(context) {
   } catch {
     return json({ ok: false, error: "Invalid username or password." }, 401);
   }
-  if (passwordHash !== user.password_hash) return json({ ok: false, error: "Invalid username or password." }, 401);
+  if (!(await constantTimeEqual(passwordHash, user.password_hash))) return json({ ok: false, error: "Invalid username or password." }, 401);
 
   const token = newToken();
   const tokenHash = await sha256(token);

@@ -1,4 +1,4 @@
-import { getSession } from "../../_shared/auth.js";
+import { getSession, isSameOrigin } from "../../_shared/auth.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -11,6 +11,7 @@ function json(data, status = 200) {
 }
 
 export async function onRequestDelete(context) {
+  if (!isSameOrigin(context.request)) return json({ ok: false, error: "This delete request could not be verified." }, 403);
   const session = await getSession(context);
   if (!session) return json({ ok: false, error: "Authentication required." }, 401);
 
