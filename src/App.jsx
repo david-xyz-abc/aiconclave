@@ -924,23 +924,28 @@ function downloadRegistrationTicket(registration) {
     context.font = '600 18px monospace'
     context.fillText(PANEL_EVENT.time, 1260, 220)
     context.fillStyle = '#fff'
-    context.fillRect(1260, 255, 230, 105)
+    context.fillRect(1260, 245, 230, 145)
     context.strokeStyle = '#0a0a0a'
     context.lineWidth = 2
-    context.strokeRect(1260, 255, 230, 105)
+    context.strokeRect(1260, 245, 230, 145)
     context.fillStyle = '#1a6b3c'
-    context.fillRect(1260, 255, 10, 105)
+    context.fillRect(1260, 245, 10, 145)
+    context.fillStyle = '#1a6b3c'
+    context.font = '700 12px monospace'
+    context.fillText('VENUE', 1288, 270)
     context.fillStyle = '#0a0a0a'
-    context.font = '700 27px monospace'
-    context.fillText('PANEL PASS', 1288, 300)
+    context.font = '700 22px monospace'
+    context.fillText('AMAL JYOTHI', 1288, 302)
+    context.font = '700 11px monospace'
+    context.fillText('COLLEGE OF ENGINEERING', 1288, 322)
     context.fillStyle = '#6b6b65'
-    context.font = '600 10px monospace'
-    context.fillText('AMAL JYOTHI COLLEGE OF', 1288, 316)
-    context.fillText('ENGINEERING · AUTONOMOUS', 1288, 330)
-    context.fillText('KOOVAPPALLY, KANJIRAPPALLY', 1288, 344)
-    context.fillText('KOTTAYAM DISTRICT', 1288, 358)
+    context.font = '700 9px monospace'
+    context.fillText('AUTONOMOUS', 1288, 340)
+    context.font = '600 9px monospace'
+    context.fillText('KOOVAPPALLY · KANJIRAPPALLY', 1288, 362)
+    context.fillText('KOTTAYAM DISTRICT', 1288, 378)
     context.font = '600 17px monospace'
-    context.fillText(ticketReference(registration), 1260, 410)
+    context.fillText(ticketReference(registration), 1260, 425)
     context.fillStyle = '#ff1e1e'
     context.fillRect(1260, 452, 230, 8)
 
@@ -984,7 +989,7 @@ function RegistrationTicket({ registration }) {
       <div className="event-ticket-title"><small>{PANEL_EVENT.day} · {PANEL_EVENT.name}</small><h3>{registration.panelSelection}</h3></div>
       <dl className="event-ticket-grid"><div><dt>Name</dt><dd>{registration.name}</dd></div><div><dt>Participant type</dt><dd>{registration.participantType}</dd></div><div><dt>Event date</dt><dd>{PANEL_EVENT.date}</dd></div><div className="event-ticket-organisation"><dt>Organisation</dt><dd>{registration.organisation}</dd></div></dl>
     </div>
-    <aside className="event-ticket-stub" aria-label="Ticket stub"><small>Admit one</small><strong>15 SEP</strong><span>{PANEL_EVENT.time}</span><div className="event-ticket-pass-mark"><b>Panel pass</b><span>Amal Jyothi College of Engineering · Autonomous<br />Koovappally, Kanjirappally<br />Kottayam district</span></div><code>{ticketReference(registration)}</code></aside>
+    <aside className="event-ticket-stub" aria-label="Ticket stub"><small>Admit one</small><strong>15 SEP</strong><span>{PANEL_EVENT.time}</span><div className="event-ticket-pass-mark"><small>Venue</small><strong>Amal Jyothi</strong><b>College of Engineering</b><span>Autonomous</span><address>Koovappally · Kanjirappally<br />Kottayam district</address></div><code>{ticketReference(registration)}</code></aside>
   </section>
 }
 
