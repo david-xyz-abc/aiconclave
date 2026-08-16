@@ -1,18 +1,20 @@
 const ALLOWED_CATEGORIES = new Set([
   "Student",
   "Faculty",
-  "Farmer",
-  "Healthcare Professional",
-  "Industry",
+  "Professional / Industry Delegate",
+  "Researcher",
   "Other",
 ]);
 
 const ALLOWED_TRACKS = new Set([
-  "Workshops",
   "Hackathon (Technical)",
   "Hackathon (Non-Technical)",
-  "Panel Discussion",
 ]);
+
+const ALLOWED_PARTICIPANT_TYPES = new Set(["Student", "Faculty / Academic", "Professional / Industry Delegate", "Researcher", "Other"]);
+const ALLOWED_PANELS = new Set(["AI in Agriculture", "AI in Education", "AI in Healthcare"]);
+const ALLOWED_SECTORS = new Set(["", "Agriculture", "Education", "Healthcare", "IT / Technology", "Government", "Other"]);
+const ALLOWED_ORGANISATION_TYPES = new Set(["", "Startup", "MSME", "Corporate", "Government", "Academic Institution", "Research Organization", "NGO", "Other"]);
 
 const MAX_LEN = {
   name: 120,
@@ -49,7 +51,7 @@ function isValidEmail(email) {
 
 function isValidPhone(phone) {
   const digits = phone.replace(/\D/g, "");
-  return digits.length >= 7 && digits.length <= 15;
+  return /^[+\d\s().-]+$/.test(phone) && digits.length >= 7 && digits.length <= 15;
 }
 
 export async function onRequestPost(context) {
@@ -71,6 +73,48 @@ export async function onRequestPost(context) {
   if (!body || typeof body !== "object") {
     return badRequest("Invalid request body.");
   }
+
+  if (body.registrationType === "panel") {
+    const name = trimStr(body.name, MAX_LEN.name);
+    const email = trimStr(body.email, MAX_LEN.email).toLowerCase();
+    const phone = trimStr(body.phone, MAX_LEN.phone);
+    const participantType = trimStr(body.participantType, 80);
+    const organisation = trimStr(body.organisation, MAX_LEN.organisation);
+    const department = trimStr(body.department, 160);
+    const panelSelection = trimStr(body.panelSelection, 80);
+    const industrySector = trimStr(body.industrySector, 80);
+    const industrySectorOther = trimStr(body.industrySectorOther, 160);
+    const organisationType = trimStr(body.organisationType, 80);
+    const organisationTypeOther = trimStr(body.organisationTypeOther, 160);
+    const informationConfirmed = body.informationConfirmed === true;
+    const updatesOptIn = body.updatesOptIn === true;
+    const fields = {};
+    if (!name) fields.name = "Enter your full name.";
+    if (!email) fields.email = "Enter your email address.";
+    else if (!isValidEmail(email)) fields.email = "Enter a valid email address, for example name@example.com.";
+    if (!phone) fields.phone = "Enter your phone number.";
+    else if (!isValidPhone(phone)) fields.phone = "Enter a valid phone number containing 7 to 15 digits.";
+    if (!ALLOWED_PARTICIPANT_TYPES.has(participantType)) fields.participantType = "Choose your participant type.";
+    if (!organisation) fields.organisation = "Enter your college, institution or organization name.";
+    if (!ALLOWED_PANELS.has(panelSelection)) fields.panelSelection = "Choose the panel discussion you want to attend.";
+    if (!ALLOWED_SECTORS.has(industrySector)) fields.industrySector = "Choose a valid industry sector.";
+    if (!ALLOWED_ORGANISATION_TYPES.has(organisationType)) fields.organisationType = "Choose a valid organization type.";
+    if (industrySector === "Other" && !industrySectorOther) fields.industrySectorOther = "Specify your industry sector.";
+    if (organisationType === "Other" && !organisationTypeOther) fields.organisationTypeOther = "Specify your organization type.";
+    if (!informationConfirmed) fields.informationConfirmed = "Confirm that the information provided is accurate.";
+    if (Object.keys(fields).length) return json({ ok: false, error: "Please review the highlighted fields.", fields }, 400);
+
+    try {
+      const result = await db.prepare(`INSERT INTO panel_registrations (name, email, phone, participant_type, organisation, department, panel_selection, industry_sector, industry_sector_other, organisation_type, organisation_type_other, information_confirmed, updates_opt_in) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(name, email, phone, participantType, organisation, department, panelSelection, industrySector, industrySectorOther, organisationType, organisationTypeOther, 1, updatesOptIn ? 1 : 0).run();
+      const id = result && result.meta ? result.meta.last_row_id : null;
+      return json({ ok: true, id, registration: { name, email, phone, participantType, organisation, department, panelSelection, industrySector, industrySectorOther, organisationType, organisationTypeOther, updatesOptIn } }, 201);
+    } catch (err) {
+      console.error("panel registration insert failed", err && err.message ? err.message : err);
+      return json({ ok: false, error: "Could not save panel registration. Try again." }, 500);
+    }
+  }
+
+  if (body.registrationType !== "hackathon") return badRequest("Choose a valid registration type.");
 
   const name = trimStr(body.name, MAX_LEN.name);
   const email = trimStr(body.email, MAX_LEN.email).toLowerCase();
@@ -94,6 +138,7 @@ export async function onRequestPost(context) {
   if (!phone || !isValidPhone(phone)) errors.push("phone");
   if (!organisation) errors.push("organisation");
   if (!category || !ALLOWED_CATEGORIES.has(category)) errors.push("category");
+  if (!tracks.length) errors.push("tracks");
 
   if (errors.length) {
     return badRequest("Please fill in all required fields correctly.", errors);
