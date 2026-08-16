@@ -4,9 +4,10 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "dev:pages": "npm run build && npx wrangler pages dev dist --port=5173",
-    "db:migrate:local": "npx wrangler d1 migrations apply aiconclave-registrations --local",
+    "dev": "npm run db:migrate:local && npm run build && npx --yes wrangler@4.38.0 pages dev dist --port=5174",
+    "dev:vite": "vite",
+    "dev:pages": "npm run db:migrate:local && npm run build && npx --yes wrangler@4.38.0 pages dev dist --port=5174",
+    "db:migrate:local": "npx --yes wrangler@4.38.0 d1 migrations apply aiconclave-registrations --local",
     "build": "vite build",
     "preview": "vite preview"
   },
