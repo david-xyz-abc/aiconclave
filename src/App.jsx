@@ -895,7 +895,7 @@ function downloadRegistrationTicket(registration) {
 
     drawTicketValue(context, 'Name', registration.name, 88, 342, 410)
     drawTicketValue(context, 'Participant type', registration.participantType, 540, 342, 250)
-    drawTicketValue(context, 'Event date', `${PANEL_EVENT.date} · ${PANEL_EVENT.time}`, 825, 342, 300)
+    drawTicketValue(context, 'Event date', PANEL_EVENT.date, 825, 342, 300)
     drawTicketValue(context, 'Organisation', registration.organisation, 88, 435, 1020)
 
     context.fillStyle = '#f5f6f3'
@@ -920,30 +920,27 @@ function downloadRegistrationTicket(registration) {
     context.fillStyle = '#0a0a0a'
     context.font = '700 58px monospace'
     context.fillText('15 SEP', 1255, 185)
-    context.fillStyle = '#6b6b65'
-    context.font = '600 18px monospace'
-    context.fillText(PANEL_EVENT.time, 1260, 220)
     context.fillStyle = '#fff'
-    context.fillRect(1260, 245, 230, 145)
+    context.fillRect(1260, 220, 230, 160)
     context.strokeStyle = '#0a0a0a'
     context.lineWidth = 2
-    context.strokeRect(1260, 245, 230, 145)
+    context.strokeRect(1260, 220, 230, 160)
     context.fillStyle = '#1a6b3c'
-    context.fillRect(1260, 245, 10, 145)
+    context.fillRect(1260, 220, 10, 160)
     context.fillStyle = '#1a6b3c'
     context.font = '700 12px monospace'
-    context.fillText('VENUE', 1288, 270)
+    context.fillText('VENUE', 1288, 248)
     context.fillStyle = '#0a0a0a'
     context.font = '700 22px monospace'
-    context.fillText('AMAL JYOTHI', 1288, 302)
+    context.fillText('AMAL JYOTHI', 1288, 280)
     context.font = '700 11px monospace'
-    context.fillText('COLLEGE OF ENGINEERING', 1288, 322)
+    context.fillText('COLLEGE OF ENGINEERING', 1288, 300)
     context.fillStyle = '#6b6b65'
     context.font = '700 9px monospace'
-    context.fillText('AUTONOMOUS', 1288, 340)
+    context.fillText('AUTONOMOUS', 1288, 320)
     context.font = '600 9px monospace'
-    context.fillText('KOOVAPPALLY · KANJIRAPPALLY', 1288, 362)
-    context.fillText('KOTTAYAM DISTRICT', 1288, 378)
+    context.fillText('KOOVAPPALLY · KANJIRAPPALLY', 1288, 348)
+    context.fillText('KOTTAYAM DISTRICT', 1288, 365)
     context.font = '600 17px monospace'
     context.fillText(ticketReference(registration), 1260, 425)
     context.fillStyle = '#ff1e1e'
@@ -989,7 +986,7 @@ function RegistrationTicket({ registration }) {
       <div className="event-ticket-title"><small>{PANEL_EVENT.day} · {PANEL_EVENT.name}</small><h3>{registration.panelSelection}</h3></div>
       <dl className="event-ticket-grid"><div><dt>Name</dt><dd>{registration.name}</dd></div><div><dt>Participant type</dt><dd>{registration.participantType}</dd></div><div><dt>Event date</dt><dd>{PANEL_EVENT.date}</dd></div><div className="event-ticket-organisation"><dt>Organisation</dt><dd>{registration.organisation}</dd></div></dl>
     </div>
-    <aside className="event-ticket-stub" aria-label="Ticket stub"><small>Admit one</small><strong>15 SEP</strong><span>{PANEL_EVENT.time}</span><div className="event-ticket-pass-mark"><small>Venue</small><strong>Amal Jyothi</strong><b>College of Engineering</b><span>Autonomous</span><address>Koovappally · Kanjirappally<br />Kottayam district</address></div><code>{ticketReference(registration)}</code></aside>
+    <aside className="event-ticket-stub" aria-label="Ticket stub"><small>Admit one</small><strong>15 SEP</strong><div className="event-ticket-pass-mark"><small>Venue</small><strong>Amal Jyothi</strong><b>College of Engineering</b><span>Autonomous</span><address>Koovappally · Kanjirappally<br />Kottayam district</address></div><code>{ticketReference(registration)}</code></aside>
   </section>
 }
 
