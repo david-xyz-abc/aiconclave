@@ -4,7 +4,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "npm run build && npx --yes wrangler@4.38.0 pages dev dist --port 5173",
+    "dev": "vite --host localhost --port 5173",
+    "dev:pages": "npm run build && npx --yes wrangler@4.38.0 pages dev dist --port 5174",
     "dev:vite": "vite",
     "build": "vite build",
     "preview": "vite preview"
