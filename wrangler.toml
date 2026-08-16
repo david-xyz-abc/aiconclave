@@ -1,6 +1,6 @@
 # Dashboard-only Cloudflare Pages + D1 configuration.
 name = "aiconclave-dashboard"
-compatibility_date = "2026-08-16"
+compatibility_date = "2026-08-15"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = "dist"
 
