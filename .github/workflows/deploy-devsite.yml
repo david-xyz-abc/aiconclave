@@ -1,13 +1,13 @@
-name: Deploy devsite
+name: Deploy production site
 
 on:
   push:
     branches:
-      - dev
+      - main
   workflow_dispatch:
 
 concurrency:
-  group: aiconclave-devsite
+  group: aiconclave-production
   cancel-in-progress: true
 
 jobs:
@@ -32,10 +32,10 @@ jobs:
       - name: Build React app
         run: npm run build
 
-      - name: Deploy to separate Cloudflare Pages project
+      - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           wranglerVersion: '4.38.0'
-          command: pages deploy dist --project-name=aiconclave-devsite --branch=dev --commit-dirty=true
+          command: pages deploy dist --project-name=aiconclave-cka --branch=main --commit-dirty=true
