@@ -1537,8 +1537,9 @@ a {
 .participant-login-card {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(16rem, 0.72fr);
-  gap: clamp(1.5rem, 5vw, 4rem);
+  grid-template-columns: minmax(0, 1fr) minmax(19rem, 23rem);
+  align-items: center;
+  gap: clamp(2rem, 6vw, 5rem);
   overflow: hidden;
   padding: clamp(1.5rem, 5vw, 3rem);
   border: 1px solid var(--color-line-strong);
@@ -1562,33 +1563,40 @@ a {
   color: var(--color-text-soft);
 }
 
-.participant-login-mark {
-  position: absolute;
-  top: 1.2rem;
-  right: 1.25rem;
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  color: var(--color-text-soft);
-  font-family: var(--font-display);
-  font-size: 0.68rem;
-  letter-spacing: 0.08em;
+.participant-login-copy {
+  padding-block: clamp(0.5rem, 2vw, 1.5rem);
 }
 
-.participant-login-mark i {
-  width: 2.5rem;
-  height: 1px;
-  background: linear-gradient(90deg, var(--color-signal), #1a6b3c);
+.participant-login-kicker {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--color-text-soft);
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.participant-login-kicker i {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  background: #1a6b3c;
+  box-shadow: 0 0 0 4px rgba(26, 107, 60, 0.12);
 }
 
 .participant-login-action {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 0.75rem;
-  padding: 1.25rem;
+  gap: 1rem;
+  min-width: 0;
+  padding: 1.4rem;
   border: 1px solid var(--color-line);
-  background: var(--color-surface);
+  border-top: 3px solid #1a6b3c;
+  background: #fff;
 }
 
 .participant-login-action small {
@@ -1602,7 +1610,15 @@ a {
 }
 
 .google-button-host {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
   min-height: 44px;
+}
+
+.google-button-host > div,
+.google-button-host iframe {
+  max-width: 100% !important;
 }
 
 .account-state,
@@ -2459,6 +2475,12 @@ a {
 .confirmation-summary dd {
   margin: 0;
   font-size: 0.98rem;
+}
+
+.confirmation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 @media (max-width: 700px) {

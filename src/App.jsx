@@ -164,8 +164,6 @@ function currentPage() {
 function useSiteEnhancements(pageKey) {
   useEffect(() => {
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    const revealNodes = document.querySelectorAll('[data-reveal]')
-    const countNodes = document.querySelectorAll('[data-count-to]')
     const progressBar = document.getElementById('scroll-progress')
 
     const updateProgress = () => {
@@ -173,25 +171,6 @@ function useSiteEnhancements(pageKey) {
       const doc = document.documentElement
       const maximum = doc.scrollHeight - doc.clientHeight
       progressBar.style.width = `${maximum > 0 ? (window.scrollY / maximum) * 100 : 0}%`
-    }
-
-    const observers = []
-    if (reduceMotion || !('IntersectionObserver' in window)) {
-      revealNodes.forEach((node) => node.classList.add('is-revealed'))
-    } else if (revealNodes.length) {
-      const revealObserver = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              entry.target.classList.add('is-revealed')
-              revealObserver.unobserve(entry.target)
-            }
-          })
-        },
-        { threshold: 0.12, rootMargin: '0px 0px -40px 0px' },
-      )
-      revealNodes.forEach((node) => revealObserver.observe(node))
-      observers.push(revealObserver)
     }
 
     const formatIndian = (value) => {
@@ -227,10 +206,23 @@ function useSiteEnhancements(pageKey) {
       requestAnimationFrame(frame)
     }
 
-    if (!('IntersectionObserver' in window)) {
-      countNodes.forEach(animateCount)
-    } else if (countNodes.length) {
-      const countObserver = new IntersectionObserver(
+    const observers = []
+    const supportsIntersectionObserver = 'IntersectionObserver' in window
+    const revealObserver = !reduceMotion && supportsIntersectionObserver
+      ? new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('is-revealed')
+              revealObserver.unobserve(entry.target)
+            }
+          })
+        },
+        { threshold: 0.12, rootMargin: '0px 0px -40px 0px' },
+      )
+      : null
+    const countObserver = supportsIntersectionObserver
+      ? new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
             if (entry.isIntersecting) {
@@ -241,9 +233,31 @@ function useSiteEnhancements(pageKey) {
         },
         { threshold: 0.4 },
       )
-      countNodes.forEach((node) => countObserver.observe(node))
-      observers.push(countObserver)
+      : null
+
+    if (revealObserver) observers.push(revealObserver)
+    if (countObserver) observers.push(countObserver)
+
+    const enhanceNode = (node) => {
+      if (!(node instanceof Element)) return
+      const revealNodes = node.matches('[data-reveal]') ? [node] : node.querySelectorAll('[data-reveal]')
+      revealNodes.forEach((revealNode) => {
+        if (reduceMotion || !revealObserver) revealNode.classList.add('is-revealed')
+        else revealObserver.observe(revealNode)
+      })
+      const countNodes = node.matches('[data-count-to]') ? [node] : node.querySelectorAll('[data-count-to]')
+      countNodes.forEach((countNode) => {
+        if (countObserver) countObserver.observe(countNode)
+        else animateCount(countNode)
+      })
     }
+
+    enhanceNode(document.body)
+    const contentObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => mutation.addedNodes.forEach(enhanceNode))
+    })
+    contentObserver.observe(document.body, { childList: true, subtree: true })
+    observers.push(contentObserver)
 
     window.addEventListener('scroll', updateProgress, { passive: true })
     window.addEventListener('resize', updateProgress)
@@ -588,9 +602,8 @@ function SignInCard({ onSignedIn }) {
   return <main id="main" className="registration-login-page">
     <section className="page-header"><div className="container"><p className="eyebrow">Registration access</p><h1 className="section-heading">Sign in before choosing an event.</h1><p className="section-lede">Use your Gmail or Google Workspace account. It securely links your registration to you, so you can return and view it later.</p></div></section>
     <section className="section"><div className="container register-layout"><div className="participant-login-card">
-      <div className="participant-login-mark" aria-hidden="true"><span>01</span><i></i><span>02</span></div>
-      <div><span className="stamp">Participant sign-in</span><h2>Continue with Google</h2><p>Your verified Google email will be used for registration. We never receive or store your Google password.</p></div>
-      <div className="participant-login-action"><GoogleSignInButton onSignedIn={onSignedIn} /><small>Sign-in is required before event selection.</small></div>
+      <div className="participant-login-copy"><span className="stamp">Participant sign-in</span><h2>Continue with Google</h2><p>Your verified Google email will be used for registration. We never receive or store your Google password.</p></div>
+      <div className="participant-login-action"><span className="participant-login-kicker"><i aria-hidden="true"></i> Secure participant access</span><GoogleSignInButton onSignedIn={onSignedIn} /><small>Sign in once to register and return to your details later.</small></div>
     </div></div></section>
   </main>
 }
@@ -603,8 +616,8 @@ function useParticipantSession() {
       const data = await response.json().catch(() => ({}))
       if (!response.ok || !data.ok) throw new Error(data.error || 'We could not check your sign-in status.')
       if (active) setState({ status: data.signedIn ? 'signed-in' : 'signed-out', participant: data.participant || null, error: '' })
-    }).catch(() => {
-      if (active) setState({ status: 'signed-out', participant: null, error: '' })
+    }).catch((error) => {
+      if (active) setState({ status: 'error', participant: null, error: error.message || 'We could not check your sign-in status.' })
     })
     return () => { active = false }
   }, [])
@@ -706,7 +719,7 @@ function RadioOptions({ name, options, value, onChange, required = false, errorI
 }
 
 function PanelRegisterPage({ participant }) {
-  const freshPanelForm = () => ({ ...initialPanelForm, email: participant.email })
+  const freshPanelForm = () => ({ ...initialPanelForm, name: participant.displayName || '', email: participant.email })
   const [form, setForm] = useState(freshPanelForm)
   const [error, setError] = useState('')
   const [submitted, setSubmitted] = useState(false)
@@ -782,7 +795,7 @@ function PanelRegisterPage({ participant }) {
         <fieldset className="form-section" data-reveal><legend><span>04</span> Confirmation</legend><label className={`confirmation-check${fieldErrors.informationConfirmed ? ' has-error' : ''}`}><input type="checkbox" name="informationConfirmed" checked={form.informationConfirmed} onChange={updateField} required aria-invalid={Boolean(fieldErrors.informationConfirmed)} aria-describedby={fieldErrors.informationConfirmed ? 'confirmation-error' : undefined} /><span>I confirm that the information provided above is accurate. *</span></label><FieldError id="confirmation-error" message={fieldErrors.informationConfirmed} /><label className="confirmation-check"><input type="checkbox" name="updatesOptIn" checked={form.updatesOptIn} onChange={updateField} /><span>I agree to receive official AI Conclave updates regarding the panel discussion.</span></label></fieldset>
         <div className="form-submit-row"><button type="submit" className="btn btn-primary" disabled={submitting} aria-busy={submitting}>{submitting ? 'Submitting…' : <>Submit Panel Registration <span aria-hidden="true">→</span></>}</button><p className={`form-error${error ? ' is-visible' : ''}`} role="alert" aria-live="polite">{error}</p></div>
       </form>
-      <div className={`confirmation-panel${submitted ? ' is-visible' : ''}`} role="status" aria-live="polite" tabIndex={submitted ? -1 : undefined}><span className="stamp">Panel Registration Received</span><h2>Your seat request is recorded.</h2><p>Thanks for registering for the AI Conclave 2026 Industry Panel Discussions.</p>{confirmation && <dl className="confirmation-summary"><dt>Name</dt><dd>{confirmation.name}</dd><dt>Email</dt><dd>{confirmation.email}</dd><dt>Participant</dt><dd>{confirmation.participantType}</dd><dt>Panel</dt><dd>{confirmation.panelSelection}</dd></dl>}<button type="button" className="btn btn-outline" onClick={reset}>Register Another Person</button></div>
+      <div className={`confirmation-panel${submitted ? ' is-visible' : ''}`} role="status" aria-live="polite" tabIndex={submitted ? -1 : undefined}><span className="stamp">Panel Registration Received</span><h2>Your seat request is recorded.</h2><p>Thanks for registering for the AI Conclave 2026 Industry Panel Discussions.</p>{confirmation && <dl className="confirmation-summary"><dt>Name</dt><dd>{confirmation.name}</dd><dt>Email</dt><dd>{confirmation.email}</dd><dt>Participant</dt><dd>{confirmation.participantType}</dd><dt>Panel</dt><dd>{confirmation.panelSelection}</dd></dl>}<div className="confirmation-actions"><a className="btn btn-primary" href={PATHS.myRegistration}>View My Registrations <span className="btn-arrow" aria-hidden="true">→</span></a><button type="button" className="btn btn-outline" onClick={reset}>Register for Another Panel</button></div></div>
     </div></section>
   </main>
 }
