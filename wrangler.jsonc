@@ -3,6 +3,9 @@
   "name": "aiconclave-devsite",
   "compatibility_date": "2026-08-15",
   "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "GOOGLE_CLIENT_ID": "921388690411-ekps2183sg0ohjc7p14negnem6m5m2rm.apps.googleusercontent.com"
+  },
   "pages_build_output_dir": "dist",
   "d1_databases": [
     {
