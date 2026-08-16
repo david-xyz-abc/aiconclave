@@ -920,27 +920,21 @@ function downloadRegistrationTicket(registration) {
     context.fillStyle = '#0a0a0a'
     context.font = '700 58px monospace'
     context.fillText('15 SEP', 1255, 185)
-    context.fillStyle = '#fff'
-    context.fillRect(1260, 220, 230, 160)
-    context.strokeStyle = '#0a0a0a'
-    context.lineWidth = 2
-    context.strokeRect(1260, 220, 230, 160)
     context.fillStyle = '#1a6b3c'
-    context.fillRect(1260, 220, 10, 160)
-    context.fillStyle = '#1a6b3c'
-    context.font = '700 12px monospace'
-    context.fillText('VENUE', 1288, 248)
+    context.fillRect(1245, 220, 250, 5)
+    context.font = '700 14px monospace'
+    context.fillText('VENUE', 1245, 252)
     context.fillStyle = '#0a0a0a'
-    context.font = '700 22px monospace'
-    context.fillText('AMAL JYOTHI', 1288, 280)
-    context.font = '700 11px monospace'
-    context.fillText('COLLEGE OF ENGINEERING', 1288, 300)
+    context.font = '700 25px monospace'
+    context.fillText('AMAL JYOTHI', 1245, 286)
+    context.font = '700 13px monospace'
+    context.fillText('COLLEGE OF ENGINEERING', 1245, 309)
     context.fillStyle = '#6b6b65'
-    context.font = '700 9px monospace'
-    context.fillText('AUTONOMOUS', 1288, 320)
-    context.font = '600 9px monospace'
-    context.fillText('KOOVAPPALLY · KANJIRAPPALLY', 1288, 348)
-    context.fillText('KOTTAYAM DISTRICT', 1288, 365)
+    context.font = '700 11px monospace'
+    context.fillText('AUTONOMOUS', 1245, 330)
+    context.font = '600 11px monospace'
+    context.fillText('KOOVAPPALLY · KANJIRAPPALLY', 1245, 359)
+    context.fillText('KOTTAYAM DISTRICT', 1245, 379)
     context.font = '600 17px monospace'
     context.fillText(ticketReference(registration), 1260, 425)
     context.fillStyle = '#ff1e1e'

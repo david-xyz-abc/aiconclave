@@ -2103,38 +2103,38 @@ a {
 
 .event-ticket-pass-mark {
   display: grid;
-  width: 82%;
-  gap: 0.12rem;
+  width: 88%;
+  gap: 0.16rem;
   margin: 0.5rem 0;
-  padding: 0.65rem 0.6rem;
-  border: 1px solid var(--color-line-strong);
-  border-left: 5px solid #1a6b3c;
-  background: #fff;
+  padding: 0.65rem 0 0;
+  border: 0;
+  border-top: 4px solid #1a6b3c;
+  background: transparent;
   text-align: left;
 }
 
 .event-ticket-pass-mark small {
   color: #1a5936;
-  font-size: 0.48rem;
+  font-size: 0.58rem;
   letter-spacing: 0.12em;
 }
 
 .event-ticket-pass-mark strong {
   margin-top: 0.2rem;
-  font-size: 0.86rem;
+  font-size: 1rem;
   line-height: 1.05;
   text-transform: uppercase;
 }
 
 .event-ticket-pass-mark b {
-  font-size: 0.5rem;
+  font-size: 0.58rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .event-ticket-pass-mark span {
   color: var(--color-text-soft);
-  font-size: 0.42rem;
+  font-size: 0.5rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -2143,7 +2143,7 @@ a {
   margin-top: 0.28rem;
   color: var(--color-text-soft);
   font-family: var(--font-display);
-  font-size: 0.4rem;
+  font-size: 0.48rem;
   font-style: normal;
   font-weight: 600;
   line-height: 1.45;
@@ -2888,6 +2888,14 @@ a {
     grid-template-columns: 1fr;
   }
 
+  .registration-record-body {
+    padding: 0.85rem 1rem 1rem;
+  }
+
+  .registration-record-body > .event-ticket {
+    display: none;
+  }
+
   .event-ticket {
     grid-template-columns: minmax(0, 1fr) 7.2rem;
     min-height: 14rem;
@@ -2926,19 +2934,19 @@ a {
 
   .event-ticket-pass-mark {
     width: 92%;
-    padding: 0.55rem 0.35rem;
+    padding: 0.5rem 0 0;
   }
 
   .event-ticket-pass-mark strong {
-    font-size: 0.68rem;
+    font-size: 0.76rem;
   }
 
   .event-ticket-pass-mark b {
-    font-size: 0.42rem;
+    font-size: 0.48rem;
   }
 
   .event-ticket-pass-mark address {
-    font-size: 0.36rem;
+    font-size: 0.41rem;
   }
 
   .registration-choice-grid,
