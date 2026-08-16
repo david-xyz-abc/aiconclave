@@ -2,7 +2,7 @@ import { isSameOrigin, json, readJsonBody } from '../_lib/http.js'
 import { getParticipantSession } from '../_lib/session.js'
 
 const ALLOWED_PARTICIPANT_TYPES = new Set(['Student', 'Faculty / Academic', 'Professional / Industry Delegate', 'Researcher', 'Other'])
-const ALLOWED_PANELS = new Set(['AI in Agriculture', 'AI in Education', 'AI in Healthcare', 'Interested in All Panels'])
+const ALLOWED_PANELS = new Set(['AI in Agriculture', 'AI in Education', 'AI in Healthcare'])
 const ALLOWED_SECTORS = new Set(['', 'Agriculture', 'Education', 'Healthcare', 'IT / Technology', 'Government', 'Other'])
 const ALLOWED_ORGANISATION_TYPES = new Set(['', 'Startup', 'MSME', 'Corporate', 'Government', 'Academic Institution', 'Research Organization', 'NGO', 'Other'])
 

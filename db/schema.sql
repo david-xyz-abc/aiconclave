@@ -44,8 +44,7 @@ CREATE TABLE IF NOT EXISTS panel_registrations (
     panel_selection IN (
       'AI in Agriculture',
       'AI in Education',
-      'AI in Healthcare',
-      'Interested in All Panels'
+      'AI in Healthcare'
     )
   ),
   industry_sector TEXT NOT NULL DEFAULT '' CHECK (
