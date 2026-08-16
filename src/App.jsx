@@ -13,6 +13,17 @@ const PATHS = {
 }
 
 const HACKATHON_REGISTRATION_OPEN = false
+const PANEL_EVENT = Object.freeze({
+  name: 'Panel Discussion',
+  day: 'Day 1',
+  date: '15 September 2026',
+  time: '10:30 AM',
+})
+const HACKATHON_EVENT = Object.freeze({
+  name: 'Hackathon',
+  day: 'Day 2',
+  date: '16 September 2026',
+})
 
 const hackathonCategories = [
   'Student',
@@ -350,7 +361,7 @@ function HomePage() {
               </div>
               <div className="hero-perforation"></div>
               <div className="hero-strip">
-                <div className="hero-strip-item"><span className="hero-strip-label">Dates</span><span className="hero-strip-value">To be announced</span></div>
+                <div className="hero-strip-item"><span className="hero-strip-label">Dates</span><span className="hero-strip-value">15–16 September 2026</span></div>
                 <div className="hero-strip-item"><span className="hero-strip-label">Venue</span><span className="hero-strip-value">AJCE, Kanjirappally, Kerala</span></div>
                 <div className="hero-strip-item"><span className="hero-strip-label">Organised By</span><span className="hero-strip-value">AI Club / Student Council</span></div>
               </div>
@@ -453,8 +464,8 @@ function SchedulePage() {
     <section className="page-header"><div className="container"><p className="eyebrow">Programme</p><h1 className="section-heading">Schedule</h1><p className="section-lede">Two days, laid out end to end — registration through valedictory. Times and venues are fixed by the organisers.</p></div></section>
     <div className="container day-toggle-wrap"><div className="day-toggle" role="tablist" aria-label="Select schedule day"><button type="button" id="day-1-tab" role="tab" className={`day-toggle-btn${day === 1 ? ' is-active' : ''}`} aria-selected={day === 1} aria-controls="day-1-content" tabIndex={day === 1 ? 0 : -1} onClick={() => selectDay(1)}>Day 1</button><button type="button" id="day-2-tab" role="tab" className={`day-toggle-btn${day === 2 ? ' is-active' : ''}`} aria-selected={day === 2} aria-controls="day-2-content" tabIndex={day === 2 ? 0 : -1} onClick={() => selectDay(2)}>Day 2</button></div><span className="day-toggle-status" aria-live="polite">Showing Day {day}</span></div>
     <div key={day} className="schedule-day-content">
-      {day === 1 && <div id="day-1-content" role="tabpanel" aria-labelledby="day-1-tab"><section id="schedule-day1" className="section"><div className="container"><div className="section-head"><h2 className="section-heading">Day 1 <span className="mono-figure">— Inauguration, Panel &amp; Workshops</span></h2></div><ScheduleTable day={1} /></div></section><section id="panel" className="section"><div className="container"><div className="section-head"><p className="eyebrow">Day 1 · 10:30 AM</p><h2 className="section-heading">Panel Discussion: AI Across Sectors</h2><p className="section-lede">Industry leaders and academic experts come together to discuss how Artificial Intelligence is transforming Kerala's agriculture, healthcare and education sectors.</p></div><PanelTracks /></div></section></div>}
-      {day === 2 && <div id="day-2-content" role="tabpanel" aria-labelledby="day-2-tab"><section id="schedule-day2" className="section"><div className="container"><div className="section-head"><h2 className="section-heading">Day 2 <span className="mono-figure">— Hackathon &amp; Valedictory</span></h2></div><ScheduleTable day={2} /></div></section></div>}
+      {day === 1 && <div id="day-1-content" role="tabpanel" aria-labelledby="day-1-tab"><section id="schedule-day1" className="section"><div className="container"><div className="section-head"><p className="eyebrow">{PANEL_EVENT.date}</p><h2 className="section-heading">Day 1 <span className="mono-figure">— Inauguration, Panel &amp; Workshops</span></h2></div><ScheduleTable day={1} /></div></section><section id="panel" className="section"><div className="container"><div className="section-head"><p className="eyebrow">{PANEL_EVENT.day} · {PANEL_EVENT.date} · {PANEL_EVENT.time}</p><h2 className="section-heading">Panel Discussion: AI Across Sectors</h2><p className="section-lede">Industry leaders and academic experts come together to discuss how Artificial Intelligence is transforming Kerala's agriculture, healthcare and education sectors.</p></div><PanelTracks /></div></section></div>}
+      {day === 2 && <div id="day-2-content" role="tabpanel" aria-labelledby="day-2-tab"><section id="schedule-day2" className="section"><div className="container"><div className="section-head"><p className="eyebrow">{HACKATHON_EVENT.date}</p><h2 className="section-heading">Day 2 <span className="mono-figure">— Hackathon &amp; Valedictory</span></h2></div><ScheduleTable day={2} /></div></section></div>}
     </div>
   </main>
 }
@@ -681,7 +692,7 @@ function HackathonRegisterPage() {
         setError(data.error || 'Could not save registration. Please try again.')
         return
       }
-      setConfirmation(data.registration || form)
+      setConfirmation({ ...(data.registration || form), id: data.id, type: PANEL_EVENT.name, status: 'Received' })
       setSubmitted(true)
     } catch {
       setError('Network error. Check your connection and try again.')
@@ -795,9 +806,161 @@ function PanelRegisterPage({ participant }) {
         <fieldset className="form-section" data-reveal><legend><span>04</span> Confirmation</legend><label className={`confirmation-check${fieldErrors.informationConfirmed ? ' has-error' : ''}`}><input type="checkbox" name="informationConfirmed" checked={form.informationConfirmed} onChange={updateField} required aria-invalid={Boolean(fieldErrors.informationConfirmed)} aria-describedby={fieldErrors.informationConfirmed ? 'confirmation-error' : undefined} /><span>I confirm that the information provided above is accurate. *</span></label><FieldError id="confirmation-error" message={fieldErrors.informationConfirmed} /><label className="confirmation-check"><input type="checkbox" name="updatesOptIn" checked={form.updatesOptIn} onChange={updateField} /><span>I agree to receive official AI Conclave updates regarding the panel discussion.</span></label></fieldset>
         <div className="form-submit-row"><button type="submit" className="btn btn-primary" disabled={submitting} aria-busy={submitting}>{submitting ? 'Submitting…' : <>Submit Panel Registration <span aria-hidden="true">→</span></>}</button><p className={`form-error${error ? ' is-visible' : ''}`} role="alert" aria-live="polite">{error}</p></div>
       </form>
-      <div className={`confirmation-panel${submitted ? ' is-visible' : ''}`} role="status" aria-live="polite" tabIndex={submitted ? -1 : undefined}><span className="stamp">Panel Registration Received</span><h2>Your seat request is recorded.</h2><p>Thanks for registering for the AI Conclave 2026 Industry Panel Discussions.</p>{confirmation && <dl className="confirmation-summary"><dt>Name</dt><dd>{confirmation.name}</dd><dt>Email</dt><dd>{confirmation.email}</dd><dt>Participant</dt><dd>{confirmation.participantType}</dd><dt>Panel</dt><dd>{confirmation.panelSelection}</dd></dl>}<div className="confirmation-actions"><a className="btn btn-primary" href={PATHS.myRegistration}>View My Registrations <span className="btn-arrow" aria-hidden="true">→</span></a><button type="button" className="btn btn-outline" onClick={reset}>Register for Another Panel</button></div></div>
+      <div className={`confirmation-panel${submitted ? ' is-visible' : ''}`} role="status" aria-live="polite" tabIndex={submitted ? -1 : undefined}><span className="stamp">Panel Registration Received</span><h2>Your seat request is recorded.</h2><p>Thanks for registering for the AI Conclave 2026 Industry Panel Discussions.</p>{confirmation && <><RegistrationTicket registration={confirmation} /><dl className="confirmation-summary"><dt>Name</dt><dd>{confirmation.name}</dd><dt>Email</dt><dd>{confirmation.email}</dd><dt>Participant</dt><dd>{confirmation.participantType}</dd><dt>Panel</dt><dd>{confirmation.panelSelection}</dd></dl></>}<div className="confirmation-actions"><a className="btn btn-primary" href={PATHS.myRegistration}>View My Registrations <span className="btn-arrow" aria-hidden="true">→</span></a><button type="button" className="btn btn-outline" onClick={reset}>Register for Another Panel</button></div></div>
     </div></section>
   </main>
+}
+
+function ticketReference(registration) {
+  const identifier = registration.id == null ? 'PENDING' : String(registration.id).padStart(5, '0')
+  return `AIC26-P-${identifier}`
+}
+
+function ticketFileName(registration) {
+  const safeName = String(registration.name || 'participant').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'participant'
+  return `ai-conclave-2026-${safeName}-ticket.png`
+}
+
+function wrapCanvasText(context, value, maximumWidth, maximumLines = 2) {
+  const words = String(value || '—').split(/\s+/)
+  const lines = []
+  let line = ''
+  for (const word of words) {
+    const candidate = line ? `${line} ${word}` : word
+    if (!line || context.measureText(candidate).width <= maximumWidth) line = candidate
+    else {
+      lines.push(line)
+      line = word
+      if (lines.length === maximumLines - 1) break
+    }
+  }
+  if (line && lines.length < maximumLines) lines.push(line)
+  if (lines.length === maximumLines && words.join(' ').length > lines.join(' ').length) {
+    let last = lines[maximumLines - 1]
+    while (last.length && context.measureText(`${last}…`).width > maximumWidth) last = last.slice(0, -1)
+    lines[maximumLines - 1] = `${last.trim()}…`
+  }
+  return lines
+}
+
+function drawTicketField(context, label, value, x, y, width) {
+  context.fillStyle = '#6b6b65'
+  context.font = '600 20px monospace'
+  context.fillText(label.toUpperCase(), x, y)
+  context.fillStyle = '#0a0a0a'
+  context.font = '700 34px Arial, sans-serif'
+  wrapCanvasText(context, value, width).forEach((line, index) => context.fillText(line, x, y + 48 + index * 40))
+}
+
+function downloadRegistrationTicket(registration) {
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 1600
+    canvas.height = 1000
+    const context = canvas.getContext('2d')
+    if (!context) {
+      reject(new Error('Ticket download is not supported in this browser.'))
+      return
+    }
+
+    context.fillStyle = '#f7f7f4'
+    context.fillRect(0, 0, canvas.width, canvas.height)
+    context.fillStyle = '#fff'
+    context.fillRect(55, 55, 1490, 890)
+    context.strokeStyle = '#0a0a0a'
+    context.lineWidth = 3
+    context.strokeRect(55, 55, 1490, 890)
+    context.fillStyle = '#ff1e1e'
+    context.fillRect(55, 55, 1490, 18)
+
+    context.fillStyle = '#ff1e1e'
+    context.fillRect(105, 115, 86, 86)
+    context.fillStyle = '#0a0a0a'
+    context.font = '700 30px monospace'
+    context.fillText('AC', 128, 169)
+    context.font = '700 34px monospace'
+    context.fillText('AI CONCLAVE 2026', 225, 151)
+    context.fillStyle = '#6b6b65'
+    context.font = '600 20px monospace'
+    context.fillText('AJCE · KANJIRAPPALLY', 225, 187)
+
+    context.strokeStyle = '#1a6b3c'
+    context.lineWidth = 2
+    context.strokeRect(1158, 123, 287, 62)
+    context.fillStyle = '#1a6b3c'
+    context.beginPath()
+    context.arc(1190, 154, 8, 0, Math.PI * 2)
+    context.fill()
+    context.font = '700 18px monospace'
+    context.fillText('REGISTRATION RECEIVED', 1212, 161)
+
+    context.fillStyle = '#6b6b65'
+    context.font = '600 22px monospace'
+    context.fillText(`${PANEL_EVENT.day.toUpperCase()} · ${PANEL_EVENT.name.toUpperCase()}`, 105, 275)
+    context.fillStyle = '#0a0a0a'
+    context.font = '700 66px monospace'
+    context.fillText(registration.panelSelection || PANEL_EVENT.name, 105, 355)
+    context.strokeStyle = '#deded8'
+    context.lineWidth = 2
+    context.beginPath()
+    context.moveTo(105, 405)
+    context.lineTo(1495, 405)
+    context.stroke()
+
+    drawTicketField(context, 'Name', registration.name, 105, 470, 610)
+    drawTicketField(context, 'Participant type', registration.participantType, 835, 470, 560)
+    drawTicketField(context, 'Organisation', registration.organisation, 105, 630, 610)
+    drawTicketField(context, 'Panel selection', registration.panelSelection, 835, 630, 560)
+    drawTicketField(context, 'Event date', `${PANEL_EVENT.date} · ${PANEL_EVENT.time}`, 105, 790, 610)
+    drawTicketField(context, 'Ticket reference', ticketReference(registration), 835, 790, 560)
+
+    context.fillStyle = '#1a6b3c'
+    context.fillRect(55, 915, 1490, 30)
+    context.fillStyle = '#6b6b65'
+    context.font = '600 17px monospace'
+    context.fillText('Present this ticket at the event registration desk.', 105, 900)
+
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error('The ticket could not be generated.'))
+        return
+      }
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = ticketFileName(registration)
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+      resolve()
+    }, 'image/png')
+  })
+}
+
+function TicketDownloadButton({ registration }) {
+  const [state, setState] = useState('idle')
+  const download = async () => {
+    if (state === 'working') return
+    setState('working')
+    try {
+      await downloadRegistrationTicket(registration)
+      setState('idle')
+    } catch {
+      setState('error')
+    }
+  }
+  return <div className="ticket-download-control"><button type="button" className="btn btn-primary ticket-download-button" onClick={download} disabled={state === 'working'}>{state === 'working' ? 'Preparing Ticket…' : <>Download Ticket <span aria-hidden="true">↓</span></>}</button>{state === 'error' && <small role="alert">Ticket download failed. Please try again.</small>}</div>
+}
+
+function RegistrationTicket({ registration }) {
+  return <section className="event-ticket" aria-label={`Ticket for ${registration.panelSelection}`}>
+    <header className="event-ticket-header"><div className="event-ticket-brand"><span>AC</span><div><strong>AI CONCLAVE 2026</strong><small>AJCE · Kanjirappally</small></div></div><span className="event-ticket-status"><i aria-hidden="true"></i> Registered</span></header>
+    <div className="event-ticket-title"><small>{PANEL_EVENT.day} · {PANEL_EVENT.name}</small><h3>{registration.panelSelection}</h3></div>
+    <dl className="event-ticket-grid"><div><dt>Name</dt><dd>{registration.name}</dd></div><div><dt>Participant type</dt><dd>{registration.participantType}</dd></div><div><dt>Organisation</dt><dd>{registration.organisation}</dd></div><div><dt>Panel selection</dt><dd>{registration.panelSelection}</dd></div><div><dt>Event date</dt><dd>{PANEL_EVENT.date} · {PANEL_EVENT.time}</dd></div><div><dt>Ticket reference</dt><dd>{ticketReference(registration)}</dd></div></dl>
+    <footer><span>Present this ticket at the event registration desk.</span><strong>{ticketReference(registration)}</strong></footer>
+    <div className="event-ticket-actions"><TicketDownloadButton registration={registration} /><small>Downloads as a high-quality PNG.</small></div>
+  </section>
 }
 
 function RegistrationDetail({ registration }) {
@@ -814,10 +977,10 @@ function RegistrationDetail({ registration }) {
     ['Official updates', registration.updatesOptIn ? 'Yes' : 'No'],
   ].filter(([, value]) => value)
   const submitted = registration.createdAt ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(registration.createdAt)) : ''
-  return <article className="registration-record">
-    <header className="registration-record-head"><div><span className="stamp">{registration.type}</span><h2>{registration.panelSelection}</h2><p>Submitted {submitted}</p></div><span className="registration-status"><i aria-hidden="true"></i>{registration.status}</span></header>
-    <dl className="registration-record-grid">{details.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
-  </article>
+  return <details className="registration-record">
+    <summary className="registration-record-summary"><div><span className="stamp">{registration.type}</span><h2>{registration.panelSelection}</h2><p>Submitted {submitted}</p></div><div className="registration-record-action"><span className="registration-status"><i aria-hidden="true"></i>{registration.status}</span><span className="registration-toggle"><span className="registration-toggle-closed">View details</span><span className="registration-toggle-open">Hide details</span><i aria-hidden="true"></i></span></div></summary>
+    <div className="registration-record-body"><RegistrationTicket registration={registration} /><dl className="registration-record-grid">{details.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl></div>
+  </details>
 }
 
 function MyRegistrationPage() {

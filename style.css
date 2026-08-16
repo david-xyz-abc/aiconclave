@@ -1708,7 +1708,7 @@ a {
 
 .participant-bar small,
 .participant-bar span,
-.registration-record-head p {
+.registration-record-summary p {
   color: var(--color-text-soft);
   font-size: 0.75rem;
 }
@@ -1750,30 +1750,102 @@ a {
 }
 
 .registration-record {
-  padding: clamp(1.25rem, 4vw, 2.25rem);
+  overflow: hidden;
   border: 1px solid var(--color-line-strong);
   border-top: 5px solid #1a6b3c;
   background: #fff;
   box-shadow: 8px 8px 0 rgba(26, 107, 60, 0.08);
 }
 
-.registration-record-head {
+.registration-record-summary {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 1.5rem;
-  padding-bottom: 1.25rem;
-  border-bottom: 1px solid var(--color-line);
+  padding: clamp(1.15rem, 3vw, 1.65rem);
+  list-style: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
 }
 
-.registration-record-head h2 {
+.registration-record-summary::-webkit-details-marker {
+  display: none;
+}
+
+.registration-record-summary:hover,
+.registration-record-summary:focus-visible {
+  background: #f5f6f3;
+  outline: none;
+}
+
+.registration-record-summary:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--color-signal);
+}
+
+.registration-record-summary h2 {
   margin: 0.85rem 0 0.2rem;
   font-family: var(--font-display);
   font-size: clamp(1.25rem, 3vw, 1.75rem);
 }
 
-.registration-record-head p {
+.registration-record-summary p {
   margin: 0;
+  color: var(--color-text-soft);
+  font-size: 0.75rem;
+}
+
+.registration-record-action {
+  display: grid;
+  justify-items: end;
+  gap: 0.8rem;
+}
+
+.registration-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.registration-toggle > i {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg) translateY(-0.15rem);
+  transition: transform 0.2s ease;
+}
+
+.registration-toggle-open {
+  display: none;
+}
+
+.registration-record[open] .registration-toggle-closed {
+  display: none;
+}
+
+.registration-record[open] .registration-toggle-open {
+  display: inline;
+}
+
+.registration-record[open] .registration-toggle > i {
+  transform: rotate(225deg) translate(-0.1rem, -0.1rem);
+}
+
+.registration-record-body {
+  padding: clamp(1rem, 3vw, 1.65rem);
+  border-top: 1px solid var(--color-line);
+  background: #fafaf8;
+  animation: registration-details-in 0.22s ease both;
+}
+
+@keyframes registration-details-in {
+  from { opacity: 0; transform: translateY(-0.4rem); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .registration-status {
@@ -1801,6 +1873,190 @@ a {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0;
   margin: 1.25rem 0 0;
+}
+
+.event-ticket {
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--color-line-strong);
+  border-top: 6px solid var(--color-signal);
+  background: #fff;
+  box-shadow: 7px 7px 0 rgba(10, 10, 10, 0.06);
+}
+
+.event-ticket::after {
+  content: '';
+  position: absolute;
+  right: -2.4rem;
+  bottom: -2.4rem;
+  width: 8rem;
+  height: 8rem;
+  border: 1px solid rgba(255, 30, 30, 0.16);
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+
+.event-ticket-header,
+.event-ticket-title,
+.event-ticket-grid,
+.event-ticket footer,
+.event-ticket-actions {
+  position: relative;
+  z-index: 1;
+}
+
+.event-ticket-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.15rem;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.event-ticket-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.event-ticket-brand > span {
+  display: grid;
+  width: 2.6rem;
+  height: 2.6rem;
+  place-items: center;
+  background: var(--color-signal);
+  color: #090909;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.event-ticket-brand div {
+  display: grid;
+}
+
+.event-ticket-brand strong,
+.event-ticket-brand small,
+.event-ticket-status,
+.event-ticket-title small,
+.event-ticket-grid dt,
+.event-ticket footer,
+.event-ticket-actions > small {
+  font-family: var(--font-display);
+}
+
+.event-ticket-brand strong {
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+}
+
+.event-ticket-brand small {
+  color: var(--color-text-soft);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.event-ticket-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.38rem 0.55rem;
+  border: 1px solid #1a6b3c;
+  color: #1a5936;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.event-ticket-status i {
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 50%;
+  background: #1a6b3c;
+}
+
+.event-ticket-title {
+  padding: clamp(1.25rem, 3vw, 2rem) 1.15rem 1.25rem;
+}
+
+.event-ticket-title small {
+  color: var(--color-text-soft);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.event-ticket-title h3 {
+  margin: 0.5rem 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.45rem, 4vw, 2.4rem);
+}
+
+.event-ticket-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0 1.15rem;
+  border-top: 2px solid var(--color-text);
+}
+
+.event-ticket-grid div {
+  min-width: 0;
+  padding: 0.85rem 0.75rem 0.85rem 0;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.event-ticket-grid dt {
+  color: var(--color-text-soft);
+  font-size: 0.62rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.event-ticket-grid dd {
+  margin: 0.25rem 0 0;
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+
+.event-ticket footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1.15rem;
+  color: var(--color-text-soft);
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+}
+
+.event-ticket footer strong {
+  color: #1a5936;
+}
+
+.event-ticket-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 1rem 1.15rem;
+  border-top: 1px dashed var(--color-line-strong);
+  background: #f5f6f3;
+}
+
+.ticket-download-control {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.ticket-download-control small {
+  color: var(--color-signal);
+  font-size: 0.72rem;
+}
+
+.event-ticket-actions > small {
+  color: var(--color-text-soft);
+  font-size: 0.65rem;
 }
 
 .registration-record-grid div {
@@ -2503,8 +2759,13 @@ a {
     justify-self: start;
   }
 
-  .registration-record-head {
+  .registration-record-summary {
     display: grid;
+    gap: 1rem;
+  }
+
+  .registration-record-action {
+    justify-items: start;
   }
 
   .registration-status {
@@ -2512,6 +2773,17 @@ a {
   }
 
   .registration-record-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .event-ticket-header,
+  .event-ticket footer,
+  .event-ticket-actions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .event-ticket-grid {
     grid-template-columns: 1fr;
   }
 
