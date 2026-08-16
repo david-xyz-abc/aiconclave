@@ -806,7 +806,7 @@ function PanelRegisterPage({ participant }) {
         <fieldset className="form-section" data-reveal><legend><span>04</span> Confirmation</legend><label className={`confirmation-check${fieldErrors.informationConfirmed ? ' has-error' : ''}`}><input type="checkbox" name="informationConfirmed" checked={form.informationConfirmed} onChange={updateField} required aria-invalid={Boolean(fieldErrors.informationConfirmed)} aria-describedby={fieldErrors.informationConfirmed ? 'confirmation-error' : undefined} /><span>I confirm that the information provided above is accurate. *</span></label><FieldError id="confirmation-error" message={fieldErrors.informationConfirmed} /><label className="confirmation-check"><input type="checkbox" name="updatesOptIn" checked={form.updatesOptIn} onChange={updateField} /><span>I agree to receive official AI Conclave updates regarding the panel discussion.</span></label></fieldset>
         <div className="form-submit-row"><button type="submit" className="btn btn-primary" disabled={submitting} aria-busy={submitting}>{submitting ? 'Submitting…' : <>Submit Panel Registration <span aria-hidden="true">→</span></>}</button><p className={`form-error${error ? ' is-visible' : ''}`} role="alert" aria-live="polite">{error}</p></div>
       </form>
-      <div className={`confirmation-panel${submitted ? ' is-visible' : ''}`} role="status" aria-live="polite" tabIndex={submitted ? -1 : undefined}><span className="stamp">Panel Registration Received</span><h2>Your seat request is recorded.</h2><p>Thanks for registering for the AI Conclave 2026 Industry Panel Discussions.</p>{confirmation && <><RegistrationTicket registration={confirmation} /><dl className="confirmation-summary"><dt>Name</dt><dd>{confirmation.name}</dd><dt>Email</dt><dd>{confirmation.email}</dd><dt>Participant</dt><dd>{confirmation.participantType}</dd><dt>Panel</dt><dd>{confirmation.panelSelection}</dd></dl></>}<div className="confirmation-actions"><a className="btn btn-primary" href={PATHS.myRegistration}>View My Registrations <span className="btn-arrow" aria-hidden="true">→</span></a><button type="button" className="btn btn-outline" onClick={reset}>Register for Another Panel</button></div></div>
+      <div className={`confirmation-panel${submitted ? ' is-visible' : ''}`} role="status" aria-live="polite" tabIndex={submitted ? -1 : undefined}><span className="stamp">Panel Registration Received</span><h2>Your seat request is recorded.</h2><p>Thanks for registering for the AI Conclave 2026 Industry Panel Discussions.</p>{confirmation && <><RegistrationTicket registration={confirmation} /><dl className="confirmation-summary"><dt>Name</dt><dd>{confirmation.name}</dd><dt>Email</dt><dd>{confirmation.email}</dd><dt>Participant</dt><dd>{confirmation.participantType}</dd><dt>Panel</dt><dd>{confirmation.panelSelection}</dd></dl></>}<div className="confirmation-actions">{confirmation && <TicketDownloadButton registration={confirmation} />}<a className="btn btn-primary" href={PATHS.myRegistration}>View My Registrations <span className="btn-arrow" aria-hidden="true">→</span></a><button type="button" className="btn btn-outline" onClick={reset}>Register for Another Panel</button></div></div>
     </div></section>
   </main>
 }
@@ -843,82 +843,102 @@ function wrapCanvasText(context, value, maximumWidth, maximumLines = 2) {
   return lines
 }
 
-function drawTicketField(context, label, value, x, y, width) {
+function drawTicketValue(context, label, value, x, y, width) {
   context.fillStyle = '#6b6b65'
-  context.font = '600 20px monospace'
+  context.font = '600 17px monospace'
   context.fillText(label.toUpperCase(), x, y)
   context.fillStyle = '#0a0a0a'
-  context.font = '700 34px Arial, sans-serif'
-  wrapCanvasText(context, value, width).forEach((line, index) => context.fillText(line, x, y + 48 + index * 40))
+  context.font = '700 27px Arial, sans-serif'
+  wrapCanvasText(context, value, width, 1).forEach((line) => context.fillText(line, x, y + 36))
+}
+
+function drawTicketBarcode(context, reference, x, y, height) {
+  let cursor = x
+  const source = [...reference].map((character) => character.charCodeAt(0))
+  for (let index = 0; index < 42; index += 1) {
+    const width = source[index % source.length] % 3 === 0 ? 7 : 3
+    context.fillRect(cursor, y, width, height)
+    cursor += width + (index % 2 === 0 ? 5 : 3)
+  }
 }
 
 function downloadRegistrationTicket(registration) {
   return new Promise((resolve, reject) => {
     const canvas = document.createElement('canvas')
     canvas.width = 1600
-    canvas.height = 1000
+    canvas.height = 570
     const context = canvas.getContext('2d')
     if (!context) {
       reject(new Error('Ticket download is not supported in this browser.'))
       return
     }
 
-    context.fillStyle = '#f7f7f4'
+    context.fillStyle = '#f1f1ed'
     context.fillRect(0, 0, canvas.width, canvas.height)
     context.fillStyle = '#fff'
-    context.fillRect(55, 55, 1490, 890)
+    context.fillRect(40, 40, 1520, 490)
     context.strokeStyle = '#0a0a0a'
     context.lineWidth = 3
-    context.strokeRect(55, 55, 1490, 890)
+    context.strokeRect(40, 40, 1520, 490)
     context.fillStyle = '#ff1e1e'
-    context.fillRect(55, 55, 1490, 18)
+    context.fillRect(40, 40, 1520, 16)
 
     context.fillStyle = '#ff1e1e'
-    context.fillRect(105, 115, 86, 86)
+    context.fillRect(88, 86, 68, 68)
     context.fillStyle = '#0a0a0a'
-    context.font = '700 30px monospace'
-    context.fillText('AC', 128, 169)
-    context.font = '700 34px monospace'
-    context.fillText('AI CONCLAVE 2026', 225, 151)
-    context.fillStyle = '#6b6b65'
-    context.font = '600 20px monospace'
-    context.fillText('AJCE · KANJIRAPPALLY', 225, 187)
-
-    context.strokeStyle = '#1a6b3c'
-    context.lineWidth = 2
-    context.strokeRect(1158, 123, 287, 62)
-    context.fillStyle = '#1a6b3c'
-    context.beginPath()
-    context.arc(1190, 154, 8, 0, Math.PI * 2)
-    context.fill()
-    context.font = '700 18px monospace'
-    context.fillText('REGISTRATION RECEIVED', 1212, 161)
-
-    context.fillStyle = '#6b6b65'
-    context.font = '600 22px monospace'
-    context.fillText(`${PANEL_EVENT.day.toUpperCase()} · ${PANEL_EVENT.name.toUpperCase()}`, 105, 275)
-    context.fillStyle = '#0a0a0a'
-    context.font = '700 66px monospace'
-    context.fillText(registration.panelSelection || PANEL_EVENT.name, 105, 355)
-    context.strokeStyle = '#deded8'
-    context.lineWidth = 2
-    context.beginPath()
-    context.moveTo(105, 405)
-    context.lineTo(1495, 405)
-    context.stroke()
-
-    drawTicketField(context, 'Name', registration.name, 105, 470, 610)
-    drawTicketField(context, 'Participant type', registration.participantType, 835, 470, 560)
-    drawTicketField(context, 'Organisation', registration.organisation, 105, 630, 610)
-    drawTicketField(context, 'Panel selection', registration.panelSelection, 835, 630, 560)
-    drawTicketField(context, 'Event date', `${PANEL_EVENT.date} · ${PANEL_EVENT.time}`, 105, 790, 610)
-    drawTicketField(context, 'Ticket reference', ticketReference(registration), 835, 790, 560)
-
-    context.fillStyle = '#1a6b3c'
-    context.fillRect(55, 915, 1490, 30)
+    context.font = '700 23px monospace'
+    context.fillText('AC', 105, 129)
+    context.font = '700 28px monospace'
+    context.fillText('AI CONCLAVE 2026', 184, 112)
     context.fillStyle = '#6b6b65'
     context.font = '600 17px monospace'
-    context.fillText('Present this ticket at the event registration desk.', 105, 900)
+    context.fillText('AJCE · KANJIRAPPALLY', 184, 143)
+
+    context.fillStyle = '#6b6b65'
+    context.font = '600 18px monospace'
+    context.fillText(`${PANEL_EVENT.day.toUpperCase()} · ${PANEL_EVENT.name.toUpperCase()}`, 88, 205)
+    context.fillStyle = '#0a0a0a'
+    context.font = '700 57px monospace'
+    context.fillText(registration.panelSelection || PANEL_EVENT.name, 88, 270)
+    context.fillStyle = '#1a6b3c'
+    context.fillRect(88, 295, 1020, 5)
+
+    drawTicketValue(context, 'Name', registration.name, 88, 342, 410)
+    drawTicketValue(context, 'Participant type', registration.participantType, 540, 342, 250)
+    drawTicketValue(context, 'Event date', `${PANEL_EVENT.date} · ${PANEL_EVENT.time}`, 825, 342, 300)
+    drawTicketValue(context, 'Organisation', registration.organisation, 88, 435, 1020)
+
+    context.fillStyle = '#f5f6f3'
+    context.fillRect(1200, 56, 360, 474)
+    context.strokeStyle = '#0a0a0a'
+    context.lineWidth = 2
+    context.setLineDash([10, 10])
+    context.beginPath()
+    context.moveTo(1200, 56)
+    context.lineTo(1200, 530)
+    context.stroke()
+    context.setLineDash([])
+    context.fillStyle = '#fff'
+    for (const y of [78, 508]) {
+      context.beginPath()
+      context.arc(1200, y, 18, 0, Math.PI * 2)
+      context.fill()
+    }
+    context.fillStyle = '#1a6b3c'
+    context.font = '700 18px monospace'
+    context.fillText('ADMIT ONE', 1260, 110)
+    context.fillStyle = '#0a0a0a'
+    context.font = '700 58px monospace'
+    context.fillText('15 SEP', 1255, 185)
+    context.fillStyle = '#6b6b65'
+    context.font = '600 18px monospace'
+    context.fillText(PANEL_EVENT.time, 1260, 220)
+    context.fillStyle = '#0a0a0a'
+    drawTicketBarcode(context, ticketReference(registration), 1260, 260, 115)
+    context.font = '600 17px monospace'
+    context.fillText(ticketReference(registration), 1260, 410)
+    context.fillStyle = '#ff1e1e'
+    context.fillRect(1260, 452, 230, 8)
 
     canvas.toBlob((blob) => {
       if (!blob) {
@@ -938,7 +958,7 @@ function downloadRegistrationTicket(registration) {
   })
 }
 
-function TicketDownloadButton({ registration }) {
+function TicketDownloadButton({ registration, compact = false }) {
   const [state, setState] = useState('idle')
   const download = async () => {
     if (state === 'working') return
@@ -950,20 +970,22 @@ function TicketDownloadButton({ registration }) {
       setState('error')
     }
   }
-  return <div className="ticket-download-control"><button type="button" className="btn btn-primary ticket-download-button" onClick={download} disabled={state === 'working'}>{state === 'working' ? 'Preparing Ticket…' : <>Download Ticket <span aria-hidden="true">↓</span></>}</button>{state === 'error' && <small role="alert">Ticket download failed. Please try again.</small>}</div>
+  return <div className={`ticket-download-control${compact ? ' is-compact' : ''}`}><button type="button" className={compact ? 'registration-download-button' : 'btn btn-primary ticket-download-button'} onClick={download} disabled={state === 'working'}>{state === 'working' ? 'Preparing...' : <>Download ticket <span aria-hidden="true">↓</span></>}</button>{state === 'error' && <small role="alert">Ticket download failed. Please try again.</small>}</div>
 }
 
 function RegistrationTicket({ registration }) {
   return <section className="event-ticket" aria-label={`Ticket for ${registration.panelSelection}`}>
-    <header className="event-ticket-header"><div className="event-ticket-brand"><span>AC</span><div><strong>AI CONCLAVE 2026</strong><small>AJCE · Kanjirappally</small></div></div><span className="event-ticket-status"><i aria-hidden="true"></i> Registered</span></header>
-    <div className="event-ticket-title"><small>{PANEL_EVENT.day} · {PANEL_EVENT.name}</small><h3>{registration.panelSelection}</h3></div>
-    <dl className="event-ticket-grid"><div><dt>Name</dt><dd>{registration.name}</dd></div><div><dt>Participant type</dt><dd>{registration.participantType}</dd></div><div><dt>Organisation</dt><dd>{registration.organisation}</dd></div><div><dt>Panel selection</dt><dd>{registration.panelSelection}</dd></div><div><dt>Event date</dt><dd>{PANEL_EVENT.date} · {PANEL_EVENT.time}</dd></div><div><dt>Ticket reference</dt><dd>{ticketReference(registration)}</dd></div></dl>
-    <footer><span>Present this ticket at the event registration desk.</span><strong>{ticketReference(registration)}</strong></footer>
-    <div className="event-ticket-actions"><TicketDownloadButton registration={registration} /><small>Downloads as a high-quality PNG.</small></div>
+    <div className="event-ticket-main">
+      <header className="event-ticket-header"><div className="event-ticket-brand"><span>AC</span><div><strong>AI CONCLAVE 2026</strong><small>AJCE · Kanjirappally</small></div></div><span className="event-ticket-status"><i aria-hidden="true"></i> Registered</span></header>
+      <div className="event-ticket-title"><small>{PANEL_EVENT.day} · {PANEL_EVENT.name}</small><h3>{registration.panelSelection}</h3></div>
+      <dl className="event-ticket-grid"><div><dt>Name</dt><dd>{registration.name}</dd></div><div><dt>Participant type</dt><dd>{registration.participantType}</dd></div><div><dt>Event date</dt><dd>{PANEL_EVENT.date}</dd></div><div className="event-ticket-organisation"><dt>Organisation</dt><dd>{registration.organisation}</dd></div></dl>
+    </div>
+    <aside className="event-ticket-stub" aria-label="Ticket stub"><small>Admit one</small><strong>15 SEP</strong><span>{PANEL_EVENT.time}</span><i className="event-ticket-barcode" aria-hidden="true"></i><code>{ticketReference(registration)}</code></aside>
   </section>
 }
 
 function RegistrationDetail({ registration }) {
+  const [expanded, setExpanded] = useState(false)
   const details = [
     ['Name', registration.name],
     ['Verified email', registration.email],
@@ -977,10 +999,13 @@ function RegistrationDetail({ registration }) {
     ['Official updates', registration.updatesOptIn ? 'Yes' : 'No'],
   ].filter(([, value]) => value)
   const submitted = registration.createdAt ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(registration.createdAt)) : ''
-  return <details className="registration-record">
-    <summary className="registration-record-summary"><div><span className="stamp">{registration.type}</span><h2>{registration.panelSelection}</h2><p>Submitted {submitted}</p></div><div className="registration-record-action"><span className="registration-status"><i aria-hidden="true"></i>{registration.status}</span><span className="registration-toggle"><span className="registration-toggle-closed">View details</span><span className="registration-toggle-open">Hide details</span><i aria-hidden="true"></i></span></div></summary>
-    <div className="registration-record-body"><RegistrationTicket registration={registration} /><dl className="registration-record-grid">{details.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl></div>
-  </details>
+  return <article className={`registration-record${expanded ? ' is-open' : ''}`}>
+    <header className="registration-record-summary">
+      <button type="button" className="registration-summary-main" onClick={() => setExpanded((current) => !current)} aria-expanded={expanded}><span className="stamp">{registration.type}</span><h2>{registration.panelSelection}</h2><p>Submitted {submitted}</p></button>
+      <div className="registration-record-action"><span className="registration-status"><i aria-hidden="true"></i>{registration.status}</span><div className="registration-summary-controls"><TicketDownloadButton registration={registration} compact /><button type="button" className="registration-toggle" onClick={() => setExpanded((current) => !current)} aria-expanded={expanded}>{expanded ? 'Hide details' : 'View details'}<i aria-hidden="true"></i></button></div></div>
+    </header>
+    {expanded && <div className="registration-record-body"><RegistrationTicket registration={registration} /><dl className="registration-record-grid">{details.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl></div>}
+  </article>
 }
 
 function MyRegistrationPage() {

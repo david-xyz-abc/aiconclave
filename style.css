@@ -1763,32 +1763,38 @@ a {
   justify-content: space-between;
   gap: 1.5rem;
   padding: clamp(1.15rem, 3vw, 1.65rem);
-  list-style: none;
-  cursor: pointer;
   transition: background 0.2s ease;
 }
 
-.registration-record-summary::-webkit-details-marker {
-  display: none;
+.registration-summary-main {
+  min-width: 0;
+  flex: 1;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
-.registration-record-summary:hover,
-.registration-record-summary:focus-visible {
-  background: #f5f6f3;
-  outline: none;
+.registration-summary-main:focus-visible {
+  outline: 2px solid var(--color-signal);
+  outline-offset: 0.35rem;
 }
 
-.registration-record-summary:focus-visible {
-  box-shadow: inset 0 0 0 2px var(--color-signal);
-}
-
-.registration-record-summary h2 {
+.registration-summary-main h2 {
   margin: 0.85rem 0 0.2rem;
   font-family: var(--font-display);
   font-size: clamp(1.25rem, 3vw, 1.75rem);
+  transition: color 0.2s ease;
 }
 
-.registration-record-summary p {
+.registration-summary-main:hover h2,
+.registration-summary-main:focus-visible h2 {
+  color: var(--color-signal);
+}
+
+.registration-summary-main p {
   margin: 0;
   color: var(--color-text-soft);
   font-size: 0.75rem;
@@ -1800,15 +1806,52 @@ a {
   gap: 0.8rem;
 }
 
-.registration-toggle {
+.registration-summary-controls {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.registration-toggle,
+.registration-download-button {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.55rem;
+  min-height: 2.4rem;
+  padding: 0.55rem 0.72rem;
+  border: 1px solid var(--color-line-strong);
+  background: #fff;
   color: var(--color-text);
   font-family: var(--font-display);
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.registration-download-button {
+  border-color: var(--color-signal);
+  background: var(--color-signal);
+  color: #080808;
+}
+
+.registration-toggle:hover,
+.registration-download-button:hover {
+  transform: translateY(-2px);
+}
+
+.registration-toggle:hover {
+  background: #f0f0ed;
+}
+
+.registration-download-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+  transform: none;
 }
 
 .registration-toggle > i {
@@ -1820,19 +1863,7 @@ a {
   transition: transform 0.2s ease;
 }
 
-.registration-toggle-open {
-  display: none;
-}
-
-.registration-record[open] .registration-toggle-closed {
-  display: none;
-}
-
-.registration-record[open] .registration-toggle-open {
-  display: inline;
-}
-
-.registration-record[open] .registration-toggle > i {
+.registration-record.is-open .registration-toggle > i {
   transform: rotate(225deg) translate(-0.1rem, -0.1rem);
 }
 
@@ -1877,7 +1908,10 @@ a {
 
 .event-ticket {
   position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(10rem, 25%);
   overflow: hidden;
+  min-height: 19rem;
   margin-bottom: 1.25rem;
   border: 1px solid var(--color-line-strong);
   border-top: 6px solid var(--color-signal);
@@ -1885,25 +1919,11 @@ a {
   box-shadow: 7px 7px 0 rgba(10, 10, 10, 0.06);
 }
 
-.event-ticket::after {
-  content: '';
-  position: absolute;
-  right: -2.4rem;
-  bottom: -2.4rem;
-  width: 8rem;
-  height: 8rem;
-  border: 1px solid rgba(255, 30, 30, 0.16);
-  transform: rotate(45deg);
-  pointer-events: none;
-}
-
-.event-ticket-header,
-.event-ticket-title,
-.event-ticket-grid,
-.event-ticket footer,
-.event-ticket-actions {
-  position: relative;
-  z-index: 1;
+.event-ticket-main {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  padding: clamp(0.9rem, 2.2vw, 1.35rem);
 }
 
 .event-ticket-header {
@@ -1911,7 +1931,7 @@ a {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1rem 1.15rem;
+  padding-bottom: 0.8rem;
   border-bottom: 1px solid var(--color-line);
 }
 
@@ -1942,8 +1962,7 @@ a {
 .event-ticket-status,
 .event-ticket-title small,
 .event-ticket-grid dt,
-.event-ticket footer,
-.event-ticket-actions > small {
+.event-ticket-stub {
   font-family: var(--font-display);
 }
 
@@ -1979,7 +1998,7 @@ a {
 }
 
 .event-ticket-title {
-  padding: clamp(1.25rem, 3vw, 2rem) 1.15rem 1.25rem;
+  padding: clamp(1rem, 2.5vw, 1.5rem) 0 0.9rem;
 }
 
 .event-ticket-title small {
@@ -1992,20 +2011,24 @@ a {
 .event-ticket-title h3 {
   margin: 0.5rem 0 0;
   font-family: var(--font-display);
-  font-size: clamp(1.45rem, 4vw, 2.4rem);
+  font-size: clamp(1.45rem, 3.2vw, 2.15rem);
 }
 
 .event-ticket-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin: 0 1.15rem;
-  border-top: 2px solid var(--color-text);
+  grid-template-columns: 1.15fr 0.9fr 1fr;
+  margin: auto 0 0;
+  border-top: 4px solid #1a6b3c;
 }
 
 .event-ticket-grid div {
   min-width: 0;
-  padding: 0.85rem 0.75rem 0.85rem 0;
+  padding: 0.7rem 0.7rem 0.45rem 0;
   border-bottom: 1px solid var(--color-line);
+}
+
+.event-ticket-grid .event-ticket-organisation {
+  grid-column: 1 / -1;
 }
 
 .event-ticket-grid dt {
@@ -2021,27 +2044,68 @@ a {
   font-weight: 700;
 }
 
-.event-ticket footer {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.85rem 1.15rem;
-  color: var(--color-text-soft);
-  font-size: 0.65rem;
-  letter-spacing: 0.04em;
-}
-
-.event-ticket footer strong {
-  color: #1a5936;
-}
-
-.event-ticket-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  padding: 1rem 1.15rem;
-  border-top: 1px dashed var(--color-line-strong);
+.event-ticket-stub {
+  position: relative;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 0.45rem;
+  padding: 1rem 0.8rem;
+  border-left: 2px dashed var(--color-line-strong);
   background: #f5f6f3;
+  text-align: center;
+}
+
+.event-ticket-stub::before,
+.event-ticket-stub::after {
+  content: '';
+  position: absolute;
+  left: -0.7rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 50%;
+  background: #fafaf8;
+}
+
+.event-ticket-stub::before {
+  top: -0.7rem;
+}
+
+.event-ticket-stub::after {
+  bottom: -0.7rem;
+}
+
+.event-ticket-stub small {
+  color: #1a5936;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.event-ticket-stub strong {
+  font-size: clamp(1.5rem, 3.5vw, 2.35rem);
+}
+
+.event-ticket-stub span {
+  color: var(--color-text-soft);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.event-ticket-stub code {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-size: 0.58rem;
+  font-weight: 700;
+}
+
+.event-ticket-barcode {
+  width: 72%;
+  height: 4.2rem;
+  margin: 0.5rem 0;
+  background: repeating-linear-gradient(90deg, #0a0a0a 0 2px, transparent 2px 5px, #0a0a0a 5px 8px, transparent 8px 11px);
 }
 
 .ticket-download-control {
@@ -2054,9 +2118,8 @@ a {
   font-size: 0.72rem;
 }
 
-.event-ticket-actions > small {
-  color: var(--color-text-soft);
-  font-size: 0.65rem;
+.ticket-download-control.is-compact {
+  justify-items: end;
 }
 
 .registration-record-grid div {
@@ -2765,6 +2828,9 @@ a {
   }
 
   .registration-record-action {
+    width: 100%;
+    grid-template-columns: auto 1fr;
+    align-items: center;
     justify-items: start;
   }
 
@@ -2772,19 +2838,52 @@ a {
     justify-self: start;
   }
 
+  .registration-summary-controls {
+    justify-self: end;
+  }
+
   .registration-record-grid {
     grid-template-columns: 1fr;
   }
 
-  .event-ticket-header,
-  .event-ticket footer,
-  .event-ticket-actions {
-    align-items: flex-start;
-    flex-direction: column;
+  .event-ticket {
+    grid-template-columns: minmax(0, 1fr) 7.2rem;
+    min-height: 14rem;
   }
 
   .event-ticket-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .event-ticket-grid div:nth-child(3) {
+    grid-column: 1 / -1;
+  }
+
+  .event-ticket-brand small,
+  .event-ticket-status {
+    display: none;
+  }
+
+  .event-ticket-title h3 {
+    font-size: 1.15rem;
+  }
+
+  .event-ticket-grid dt,
+  .event-ticket-stub small,
+  .event-ticket-stub code {
+    font-size: 0.52rem;
+  }
+
+  .event-ticket-grid dd {
+    font-size: 0.75rem;
+  }
+
+  .event-ticket-stub strong {
+    font-size: 1.3rem;
+  }
+
+  .event-ticket-barcode {
+    height: 3rem;
   }
 
   .registration-choice-grid,
