@@ -549,14 +549,35 @@ function getGoogleConfig(force = false) {
 
 function GoogleSignInButton({ onSignedIn }) {
   const hostRef = useRef(null)
+  const onSignedInRef = useRef(onSignedIn)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(true)
+  const [buttonReady, setButtonReady] = useState(false)
   const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
+    onSignedInRef.current = onSignedIn
+  }, [onSignedIn])
+
+  useEffect(() => {
     let active = true
+    let buttonReadyLocally = false
+    let iframeObserver
+    let buttonTimeout
+
     setBusy(true)
+    setButtonReady(false)
     setError('')
+
+    const markButtonReady = () => {
+      if (!active || buttonReadyLocally) return
+      buttonReadyLocally = true
+      window.clearTimeout(buttonTimeout)
+      iframeObserver?.disconnect()
+      setButtonReady(true)
+      setBusy(false)
+    }
+
     Promise.all([loadGoogleIdentity(), getGoogleConfig(attempt > 0)]).then(([google, config]) => {
       if (!active || !hostRef.current) return
       hostRef.current.replaceChildren()
@@ -578,7 +599,7 @@ function GoogleSignInButton({ onSignedIn }) {
             const data = await response.json().catch(() => ({}))
             if (!response.ok || !data.ok) throw new Error(data.error || 'Google Sign-In could not be completed.')
             googleConfigPromise = undefined
-            onSignedIn(data.participant)
+            onSignedInRef.current(data.participant)
           } catch (signInError) {
             googleConfigPromise = undefined
             if (active) {
@@ -591,19 +612,62 @@ function GoogleSignInButton({ onSignedIn }) {
       })
       google.accounts.id.renderButton(hostRef.current, {
         type: 'standard', theme: 'outline', size: 'large', shape: 'rectangular', text: 'continue_with',
-        width: Math.min(360, Math.max(240, hostRef.current.clientWidth)),
+        width: Math.min(400, Math.max(200, Math.floor(hostRef.current.getBoundingClientRect().width || 320))),
       })
-      setBusy(false)
+
+      const watchForButtonIframe = () => {
+        const host = hostRef.current
+        if (!host) return
+
+        const attachIframe = (iframe) => {
+          if (!(iframe instanceof HTMLIFrameElement) || iframe.dataset.googleReadyListener) return
+          iframe.dataset.googleReadyListener = 'true'
+          iframe.addEventListener('load', markButtonReady, { once: true })
+        }
+
+        const existingIframe = host.querySelector('iframe')
+        if (existingIframe) attachIframe(existingIframe)
+        iframeObserver = new MutationObserver(() => {
+          const iframe = host.querySelector('iframe')
+          if (iframe) attachIframe(iframe)
+        })
+        iframeObserver.observe(host, { childList: true, subtree: true })
+      }
+
+      watchForButtonIframe()
+      buttonTimeout = window.setTimeout(() => {
+        if (!active || buttonReadyLocally) return
+        iframeObserver?.disconnect()
+        setBusy(false)
+        setError('Google Sign-In is taking too long to load. Please try again.')
+      }, 8000)
     }).catch((loadError) => {
       if (!active) return
+      iframeObserver?.disconnect()
+      window.clearTimeout(buttonTimeout)
       setBusy(false)
       setError(loadError.message || 'Google Sign-In is unavailable right now.')
     })
-    return () => { active = false }
-  }, [attempt, onSignedIn])
+    return () => {
+      active = false
+      iframeObserver?.disconnect()
+      window.clearTimeout(buttonTimeout)
+    }
+  }, [attempt])
 
   return <div className="google-sign-in-control">
-    <div ref={hostRef} className="google-button-host" aria-busy={busy}></div>
+    <div className="google-button-shell">
+      <div className="google-button-custom" aria-hidden="true">
+        <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+        </svg>
+        <span>Continue with Google</span>
+      </div>
+      <div ref={hostRef} className="google-button-host" data-state={buttonReady ? 'ready' : 'loading'} aria-busy={busy}></div>
+    </div>
     {busy && <p className="account-state"><span className="account-spinner" aria-hidden="true"></span> Preparing secure sign-in…</p>}
     {error && <div className="account-error" role="alert"><p>{error}</p><button type="button" className="text-button" onClick={() => setAttempt((value) => value + 1)}>Try again</button></div>}
   </div>
