@@ -77,7 +77,7 @@ const hackathonThemes = {
 
 const registrationSections = [
   { id: "panel", path: "/panel-registrations", number: "01", label: "Panel Discussion", status: "Live" },
-  { id: "hackathon", path: "/hackathon-registrations", number: "02", label: "Hackathon", status: "Themes ready" },
+  { id: "hackathon", path: "/hackathon-registrations", number: "02", label: "Hackathon", status: "Live" },
   { id: "workshops", path: "/workshop-registrations", number: "03", label: "Workshops", status: "Awaiting list" },
 ];
 
@@ -107,6 +107,16 @@ function formatDate(value) {
 
 function displayValue(value) {
   return value === null || value === undefined || value === "" ? "Not provided" : value;
+}
+
+function parseTracks(value) {
+  if (Array.isArray(value)) return value;
+  try {
+    const parsed = JSON.parse(value || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
 }
 
 function Login({ onLogin }) {
@@ -222,11 +232,27 @@ function PanelTable({ registrations, loading, onOpen }) {
   );
 }
 
+function HackathonTable({ registrations, loading, onOpen }) {
+  if (loading) return <div className="table-state">Loading hackathon registrations…</div>;
+  if (!registrations.length) return <div className="table-state">No hackathon registrations match the current filters.</div>;
+
+  return <div className="table-scroll"><table><thead><tr><th scope="col">Participant</th><th scope="col">Type</th><th scope="col">Track</th><th scope="col">Challenge</th><th scope="col">Registered</th><th scope="col" className="action-heading"><span className="sr-only">Actions</span></th></tr></thead><tbody>
+    {registrations.map((registration) => <tr key={registration.id}>
+      <td data-label="Name"><strong className="cell-name">{registration.name}</strong><a className="cell-secondary" href={`mailto:${registration.email}`}>{registration.email}</a></td>
+      <td data-label="Type"><span className="category-mark">{registration.participant_type}</span></td>
+      <td data-label="Track">{parseTracks(registration.tracks).map((track) => <span className="track-mark" key={track}>{track.replace("Hackathon ", "")}</span>)}</td>
+      <td data-label="Challenge"><span className="panel-mark">{registration.challenge_area}</span><span className="cell-secondary">{registration.subcategory} · {registration.problem_area}</span></td>
+      <td data-label="Registered" className="cell-date">{formatDate(registration.created_at)}</td>
+      <td data-label="Actions" className="cell-action"><button type="button" className="view-button" onClick={() => onOpen(registration)}>View details <span aria-hidden="true">→</span></button></td>
+    </tr>)}
+  </tbody></table></div>;
+}
+
 function DetailItem({ label, children, wide = false, important = false }) {
   return <div className={`detail-item${wide ? " detail-item-wide" : ""}${important ? " detail-item-important" : ""}`}><dt>{label}</dt><dd>{children}</dd></div>;
 }
 
-function RegistrationDetails({ registration, onClose, onDelete, deleting }) {
+function RegistrationDetails({ registration, registrationType, onClose, onDelete, deleting }) {
   useEffect(() => {
     const handleKey = (event) => { if (event.key === "Escape") onClose(); };
     window.addEventListener("keydown", handleKey);
@@ -234,6 +260,8 @@ function RegistrationDetails({ registration, onClose, onDelete, deleting }) {
   }, [onClose]);
 
   if (!registration) return null;
+  const isHackathon = registrationType === "hackathon";
+  const tracks = parseTracks(registration.tracks);
   return (
     <div className="detail-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
       <aside className="detail-drawer" role="dialog" aria-modal="true" aria-labelledby="detail-title">
@@ -241,7 +269,7 @@ function RegistrationDetails({ registration, onClose, onDelete, deleting }) {
           <div>
             <p className="eyebrow">Participant · Registration #{registration.id}</p>
             <h2 id="detail-title">{registration.name}</h2>
-            <span className="detail-panel-mark">{registration.panel_selection}</span>
+            <span className="detail-panel-mark">{isHackathon ? `${registration.challenge_area} · ${registration.subcategory}` : registration.panel_selection}</span>
           </div>
           <button className="close-button" type="button" onClick={onClose} aria-label="Close registration details">×</button>
         </div>
@@ -251,13 +279,21 @@ function RegistrationDetails({ registration, onClose, onDelete, deleting }) {
           <DetailItem label="Participant type" important>{registration.participant_type}</DetailItem>
           <DetailItem label="Registered">{formatDate(registration.created_at)}</DetailItem>
           <DetailItem label="Organisation" wide important>{registration.organisation}</DetailItem>
-          <DetailItem label="Department / Branch" wide important>{displayValue(registration.department)}</DetailItem>
-          <DetailItem label="Industry sector">{displayValue(registration.industry_sector)}</DetailItem>
-          <DetailItem label="Sector details">{displayValue(registration.industry_sector_other)}</DetailItem>
-          <DetailItem label="Organisation type">{displayValue(registration.organisation_type)}</DetailItem>
-          <DetailItem label="Organisation details">{displayValue(registration.organisation_type_other)}</DetailItem>
+          {isHackathon ? <>
+            <DetailItem label="Hackathon track" wide important>{tracks.join(", ")}</DetailItem>
+            <DetailItem label="Challenge sector">{registration.challenge_area}</DetailItem>
+            <DetailItem label="Subcategory">{registration.subcategory}</DetailItem>
+            <DetailItem label="Suggested problem area" wide important>{registration.problem_area}</DetailItem>
+            <DetailItem label="Problem statement / idea" wide>{displayValue(registration.idea_summary)}</DetailItem>
+          </> : <>
+            <DetailItem label="Department / Branch" wide important>{displayValue(registration.department)}</DetailItem>
+            <DetailItem label="Industry sector">{displayValue(registration.industry_sector)}</DetailItem>
+            <DetailItem label="Sector details">{displayValue(registration.industry_sector_other)}</DetailItem>
+            <DetailItem label="Organisation type">{displayValue(registration.organisation_type)}</DetailItem>
+            <DetailItem label="Organisation details">{displayValue(registration.organisation_type_other)}</DetailItem>
+          </>}
           <DetailItem label="Information confirmed">{registration.information_confirmed ? "Yes" : "No"}</DetailItem>
-          <DetailItem label="Updates opt-in">{registration.updates_opt_in ? "Yes" : "No"}</DetailItem>
+          {!isHackathon && <DetailItem label="Updates opt-in">{registration.updates_opt_in ? "Yes" : "No"}</DetailItem>}
         </dl>
         <div className="detail-actions">
           <button className="button button-quiet" type="button" onClick={onClose}>Close</button>
@@ -298,7 +334,8 @@ function HackathonThemeCatalog() {
   );
 }
 
-function DashboardNavigation({ route, panelCount, onNavigate }) {
+function DashboardNavigation({ route, counts, onNavigate }) {
+  const itemStatus = (item) => counts[item.id] === undefined ? item.status : `${counts[item.id]} registrations`;
   const navigate = (event, path) => {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
@@ -310,7 +347,7 @@ function DashboardNavigation({ route, panelCount, onNavigate }) {
         <a key={item.id} href={item.path} className={`section-card${route.id === item.id ? " is-active" : ""}`} onClick={(event) => navigate(event, item.path)} aria-current={route.id === item.id ? "page" : undefined}>
           <span className="section-number">{item.number}</span>
           <strong>{item.label}</strong>
-          <small>{item.id === "panel" ? `${panelCount} registrations` : item.status}</small>
+          <small>{itemStatus(item)}</small>
         </a>
       ))}
     </nav>
@@ -320,7 +357,7 @@ function DashboardNavigation({ route, panelCount, onNavigate }) {
         <strong aria-hidden="true">{route.number}</strong>
         <select value={route.path} onChange={(event) => onNavigate(event.target.value)} aria-label="Choose dashboard page">
           {dashboardNavigation.map((item) => (
-            <option value={item.path} key={item.id}>{item.label} — {item.id === "panel" ? `${panelCount} registrations` : item.status}</option>
+            <option value={item.path} key={item.id}>{item.label} — {itemStatus(item)}</option>
           ))}
         </select>
         <i aria-hidden="true"></i>
@@ -332,22 +369,22 @@ function DashboardNavigation({ route, panelCount, onNavigate }) {
 function OverviewPage({ summary, recent, loading, error, onNavigate }) {
   return <div className="overview-page">
     <section className="metrics-grid" aria-label="Registration summary">
-      <MetricCard label="Panel registrations" value={summary.total} detail="Current total" />
-      <MetricCard label="Students" value={summary.students} detail="Panel students" />
-      <MetricCard label="All panels" value={summary.allPanels} detail="Multi-panel interest" />
+      <MetricCard label="All registrations" value={summary.total} detail="Current total" />
+      <MetricCard label="Panel discussion" value={summary.panelTotal} detail="Day 1 registrations" />
+      <MetricCard label="Hackathon" value={summary.hackathonTotal} detail="Day 2 registrations" />
     </section>
     <section className="overview-recent" aria-labelledby="recent-heading">
-      <div className="data-heading"><div><p className="eyebrow">Latest activity</p><h2 id="recent-heading">Recent panel registrations</h2></div><a href="/panel-registrations" onClick={(event) => { event.preventDefault(); onNavigate("/panel-registrations"); }}>Open directory <span aria-hidden="true">→</span></a></div>
-      {error ? <div className="table-state table-error" role="alert">{error}</div> : loading ? <div className="table-state">Loading registrations…</div> : recent.length ? <ul className="recent-list">{recent.map((registration) => <li key={registration.id}><a href="/panel-registrations" onClick={(event) => { event.preventDefault(); onNavigate("/panel-registrations"); }}><span><strong>{registration.name}</strong><small>{registration.panel_selection}</small></span><span>Open <i aria-hidden="true">→</i></span></a></li>)}</ul> : <div className="table-state">No panel registrations yet.</div>}
+      <div className="data-heading"><div><p className="eyebrow">Latest activity</p><h2 id="recent-heading">Recent registrations</h2></div></div>
+      {error ? <div className="table-state table-error" role="alert">{error}</div> : loading ? <div className="table-state">Loading registrations…</div> : recent.length ? <ul className="recent-list">{recent.map((registration) => { const path = registration.registration_type === "hackathon" ? "/hackathon-registrations" : "/panel-registrations"; return <li key={`${registration.registration_type}-${registration.id}`}><a href={path} onClick={(event) => { event.preventDefault(); onNavigate(path); }}><span><strong>{registration.name}</strong><small>{registration.activity_label}</small></span><span>{registration.registration_type} <i aria-hidden="true">→</i></span></a></li>; })}</ul> : <div className="table-state">No registrations yet.</div>}
     </section>
   </div>;
 }
 
 function Dashboard({ route, onNavigate, onLogout }) {
   const [registrations, setRegistrations] = useState([]);
-  const [summary, setSummary] = useState({ total: 0, students: 0, allPanels: 0 });
+  const [summary, setSummary] = useState({ total: 0, panelTotal: 0, hackathonTotal: 0, students: 0 });
   const [recentRegistrations, setRecentRegistrations] = useState([]);
-  const [panelLoaded, setPanelLoaded] = useState(false);
+  const [loadedDirectory, setLoadedDirectory] = useState("");
   const [summaryLoaded, setSummaryLoaded] = useState(false);
   const [query, setQuery] = useState("");
   const [participantType, setParticipantType] = useState("all");
@@ -360,11 +397,20 @@ function Dashboard({ route, onNavigate, onLogout }) {
   const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
+    setQuery("");
+    setParticipantType("all");
+    setPanel("all");
+    setSector("all");
+    setFiltersOpen(false);
+    setSelectedRegistration(null);
+  }, [route.id]);
+
+  useEffect(() => {
     let active = true;
     async function loadPageData() {
       if (route.id === "overview" && summaryLoaded) return;
-      if (route.id === "panel" && panelLoaded) return;
-      if (!new Set(["overview", "panel"]).has(route.id)) {
+      if (new Set(["panel", "hackathon"]).has(route.id) && loadedDirectory === route.id) return;
+      if (!new Set(["overview", "panel", "hackathon"]).has(route.id)) {
         setLoading(false);
         setError("");
         return;
@@ -372,21 +418,22 @@ function Dashboard({ route, onNavigate, onLogout }) {
       setLoading(true);
       setError("");
       try {
-        const response = await fetch(`/api/registrations?type=panel${route.id === "overview" ? "&view=summary" : ""}`);
+        const registrationType = route.id === "hackathon" ? "hackathon" : "panel";
+        const response = await fetch(`/api/registrations?type=${registrationType}${route.id === "overview" ? "&view=summary" : ""}`);
         const data = await response.json().catch(() => ({}));
         if (response.status === 401) {
           onLogout();
           return;
         }
-        if (!response.ok || !data.ok) throw new Error(data.error || "Could not load panel registrations.");
+        if (!response.ok || !data.ok) throw new Error(data.error || "Could not load registrations.");
         if (!active) return;
         if (route.id === "overview") {
-          setSummary(data.summary || { total: 0, students: 0, allPanels: 0 });
+          setSummary(data.summary || { total: 0, panelTotal: 0, hackathonTotal: 0, students: 0 });
           setRecentRegistrations(data.recent || []);
           setSummaryLoaded(true);
         } else {
           setRegistrations(data.registrations || []);
-          setPanelLoaded(true);
+          setLoadedDirectory(route.id);
         }
       } catch (loadError) {
         if (active) setError(loadError.message);
@@ -396,16 +443,18 @@ function Dashboard({ route, onNavigate, onLogout }) {
     }
     loadPageData();
     return () => { active = false; };
-  }, [panelLoaded, route.id, summaryLoaded]);
+  }, [loadedDirectory, route.id, summaryLoaded]);
 
-  const sectorOptions = useMemo(() => [...new Set(registrations.map((item) => item.industry_sector).filter(Boolean))].sort(), [registrations]);
+  const participantOptions = useMemo(() => [...new Set(registrations.map((item) => item.participant_type).filter(Boolean))].sort(), [registrations]);
+  const focusOptions = useMemo(() => [...new Set(registrations.map((item) => route.id === "hackathon" ? item.challenge_area : item.panel_selection).filter(Boolean))].sort(), [registrations, route.id]);
+  const sectorOptions = useMemo(() => [...new Set(registrations.flatMap((item) => route.id === "hackathon" ? parseTracks(item.tracks) : [item.industry_sector]).filter(Boolean))].sort(), [registrations, route.id]);
 
   const filteredRegistrations = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     return registrations.filter((registration) => {
       if (participantType !== "all" && registration.participant_type !== participantType) return false;
-      if (panel !== "all" && registration.panel_selection !== panel) return false;
-      if (sector !== "all" && registration.industry_sector !== sector) return false;
+      if (panel !== "all" && (route.id === "hackathon" ? registration.challenge_area : registration.panel_selection) !== panel) return false;
+      if (sector !== "all" && (route.id === "hackathon" ? !parseTracks(registration.tracks).includes(sector) : registration.industry_sector !== sector)) return false;
       const searchable = [
         registration.name,
         registration.email,
@@ -418,10 +467,15 @@ function Dashboard({ route, onNavigate, onLogout }) {
         registration.industry_sector_other,
         registration.organisation_type,
         registration.organisation_type_other,
+        registration.tracks,
+        registration.challenge_area,
+        registration.subcategory,
+        registration.problem_area,
+        registration.idea_summary,
       ].filter(Boolean).join(" ").toLowerCase();
       return !normalizedQuery || searchable.includes(normalizedQuery);
     });
-  }, [panel, participantType, query, registrations, sector]);
+  }, [panel, participantType, query, registrations, route.id, sector]);
 
   const activeFilterCount = [participantType !== "all", panel !== "all", sector !== "all"].filter(Boolean).length;
 
@@ -434,11 +488,12 @@ function Dashboard({ route, onNavigate, onLogout }) {
   }
 
   async function deleteRegistration(registration) {
-    if (!window.confirm(`Delete the panel registration for ${registration.name}? This cannot be undone.`)) return;
+    const registrationType = route.id === "hackathon" ? "hackathon" : "panel";
+    if (!window.confirm(`Delete the ${registrationType} registration for ${registration.name}? This cannot be undone.`)) return;
     setError("");
     setDeletingId(registration.id);
     try {
-      const response = await fetch(`/api/registrations/${registration.id}?type=panel`, { method: "DELETE" });
+      const response = await fetch(`/api/registrations/${registration.id}?type=${registrationType}`, { method: "DELETE" });
       const data = await response.json().catch(() => ({}));
       if (response.status === 401) {
         onLogout();
@@ -446,6 +501,7 @@ function Dashboard({ route, onNavigate, onLogout }) {
       }
       if (!response.ok || !data.ok) throw new Error(data.error || "Could not delete registration.");
       setRegistrations((current) => current.filter((item) => item.id !== registration.id));
+      setLoadedDirectory("");
       setSummaryLoaded(false);
       setSelectedRegistration(null);
     } catch (deleteError) {
@@ -472,28 +528,28 @@ function Dashboard({ route, onNavigate, onLogout }) {
           <h1>{route.id === "overview" ? "Registration overview" : route.label}</h1>
         </header>
 
-        <DashboardNavigation route={route} panelCount={panelLoaded ? registrations.length : summary.total} onNavigate={onNavigate} />
+        <DashboardNavigation route={route} counts={{ panel: route.id === "panel" ? registrations.length : summary.panelTotal, hackathon: route.id === "hackathon" ? registrations.length : summary.hackathonTotal }} onNavigate={onNavigate} />
 
-        {route.id === "overview" ? <OverviewPage summary={summary} recent={recentRegistrations} loading={loading} error={error} onNavigate={onNavigate} /> : route.id === "hackathon" ? <HackathonThemeCatalog /> : route.id !== "panel" ? <EmptyRegistrationSection section={route} /> : <section className="data-section panel-directory" aria-labelledby="table-heading">
+        {route.id === "overview" ? <OverviewPage summary={summary} recent={recentRegistrations} loading={loading} error={error} onNavigate={onNavigate} /> : !new Set(["panel", "hackathon"]).has(route.id) ? <EmptyRegistrationSection section={route} /> : <section className="data-section panel-directory" aria-labelledby="table-heading">
             <div className="data-heading">
-              <div><p className="eyebrow">Panel discussion</p><h2 id="table-heading">Registered participants</h2><p>{filteredRegistrations.length} of {registrations.length} entries shown</p></div>
+              <div><p className="eyebrow">{route.id === "hackathon" ? "Day 2 · Hackathon" : "Panel discussion"}</p><h2 id="table-heading">Registered participants</h2><p>{filteredRegistrations.length} of {registrations.length} entries shown</p></div>
               <button className="reset-button" type="button" onClick={resetFilters}>Clear filters</button>
             </div>
             <div className="filters">
               <label className="search-control"><span>Search all details</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Name, email, phone or organisation" /></label>
               <button className="mobile-filter-toggle" type="button" aria-expanded={filtersOpen} aria-controls="advanced-filters" onClick={() => setFiltersOpen((current) => !current)}>Filters{activeFilterCount ? ` (${activeFilterCount})` : ""}<span aria-hidden="true">⌄</span></button>
               <div className={`advanced-filters${filtersOpen ? " is-open" : ""}`} id="advanced-filters">
-                <label><span>Participant type</span><select value={participantType} onChange={(event) => setParticipantType(event.target.value)}><option value="all">All participant types</option>{participantTypeOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
-                <label><span>Panel selection</span><select value={panel} onChange={(event) => setPanel(event.target.value)}><option value="all">All panel selections</option>{panelOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
-                <label><span>Industry sector</span><select value={sector} onChange={(event) => setSector(event.target.value)}><option value="all">All sectors</option>{sectorOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
+                <label><span>Participant type</span><select value={participantType} onChange={(event) => setParticipantType(event.target.value)}><option value="all">All participant types</option>{participantOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
+                <label><span>{route.id === "hackathon" ? "Challenge sector" : "Panel selection"}</span><select value={panel} onChange={(event) => setPanel(event.target.value)}><option value="all">All {route.id === "hackathon" ? "challenge sectors" : "panel selections"}</option>{focusOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
+                <label><span>{route.id === "hackathon" ? "Hackathon track" : "Industry sector"}</span><select value={sector} onChange={(event) => setSector(event.target.value)}><option value="all">All {route.id === "hackathon" ? "tracks" : "sectors"}</option>{sectorOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
               </div>
             </div>
-            {error ? <div className="table-state table-error" role="alert">{error}</div> : <PanelTable registrations={filteredRegistrations} loading={loading} onOpen={setSelectedRegistration} />}
+            {error ? <div className="table-state table-error" role="alert">{error}</div> : route.id === "hackathon" ? <HackathonTable registrations={filteredRegistrations} loading={loading} onOpen={setSelectedRegistration} /> : <PanelTable registrations={filteredRegistrations} loading={loading} onOpen={setSelectedRegistration} />}
           </section>
         }
       </main>
 
-      <RegistrationDetails registration={selectedRegistration} onClose={() => setSelectedRegistration(null)} onDelete={deleteRegistration} deleting={deletingId === selectedRegistration?.id} />
+      <RegistrationDetails registration={selectedRegistration} registrationType={route.id} onClose={() => setSelectedRegistration(null)} onDelete={deleteRegistration} deleting={deletingId === selectedRegistration?.id} />
     </div>
   );
 }

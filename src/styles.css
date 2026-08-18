@@ -114,8 +114,9 @@ tbody tr:hover { background: rgba(240, 240, 236, .62); }
 .cell-name { display: block; color: var(--text); font: 600 1.08rem/1.25 var(--mono); letter-spacing: -.025em; }
 .cell-secondary { display: block; width: fit-content; margin-top: .38rem; color: var(--muted); font-size: .78rem; }
 td a { text-decoration-thickness: 1px; text-underline-offset: .2em; }
-.category-mark, .panel-mark { display: inline-block; padding: .28rem .48rem; border: 1px solid var(--line-strong); font: .65rem/1.25 var(--mono); }
+.category-mark, .panel-mark, .track-mark { display: inline-block; padding: .28rem .48rem; border: 1px solid var(--line-strong); font: .65rem/1.25 var(--mono); }
 .panel-mark { border-color: rgba(255, 30, 30, .45); background: var(--signal-soft); }
+.track-mark { margin: 0 .3rem .3rem 0; background: #fff; }
 .cell-date { color: var(--muted); white-space: nowrap; font: .72rem/1.4 var(--mono); }
 .action-heading { width: 8.5rem; }
 .cell-action { text-align: right; }
@@ -218,9 +219,12 @@ td a { text-decoration-thickness: 1px; text-underline-offset: .2em; }
   td[data-label="Type"],
   td[data-label="Organisation"],
   td[data-label="Registered"] { display: none; }
-  td[data-label="Panel"] { display: block; padding: 0; border: 0; }
-  td[data-label="Panel"]::before { display: none; }
-  td[data-label="Panel"] .panel-mark { max-width: 11.5rem; overflow: hidden; font-size: .6rem; text-overflow: ellipsis; white-space: nowrap; }
+  td[data-label="Panel"],
+  td[data-label="Challenge"] { display: block; padding: 0; border: 0; }
+  td[data-label="Panel"]::before,
+  td[data-label="Challenge"]::before { display: none; }
+  td[data-label="Panel"] .panel-mark,
+  td[data-label="Challenge"] .panel-mark { max-width: 11.5rem; overflow: hidden; font-size: .6rem; text-overflow: ellipsis; white-space: nowrap; }
   td[data-label="Actions"] { display: block; grid-column: 1 / -1; padding: .5rem 0 0; border-top: 1px solid var(--line); border-bottom: 0; text-align: right; }
   td[data-label="Actions"]::before { display: none; }
   td:last-child { border-bottom: 0; }
