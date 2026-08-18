@@ -15,9 +15,69 @@ const panelOptions = [
   "Interested in All Panels",
 ];
 
+const hackathonThemes = {
+  Agriculture: [
+    ["Smart Farming", "IoT-based crop monitoring · Smart irrigation · Automated farming"],
+    ["Crop Disease Detection", "Image-based disease identification · Early warning systems"],
+    ["Pest Management", "Pest detection · Pest prediction · Eco-friendly pest control"],
+    ["Precision Agriculture", "Soil analysis · Crop-specific fertilizer recommendations"],
+    ["Water Management", "Irrigation optimization · Water-level monitoring · Drought prediction"],
+    ["Weather & Climate", "Weather-based crop advisory · Climate-risk prediction"],
+    ["Soil Health", "Soil quality monitoring · Nutrient recommendation"],
+    ["Crop Yield Prediction", "AI-based yield forecasting"],
+    ["Farmer Support", "Farmer advisory apps · Multilingual voice assistants"],
+    ["Market & Price Prediction", "Crop price forecasting · Direct farmer-to-consumer platforms"],
+    ["Supply Chain", "Cold-chain monitoring · Post-harvest tracking"],
+    ["Post-Harvest Management", "Food spoilage detection · Storage optimization"],
+    ["Livestock & Dairy", "Animal health monitoring · Milk-production prediction"],
+    ["Sustainable Agriculture", "Organic farming · Carbon footprint reduction"],
+    ["Agri-FinTech", "Crop insurance · Agricultural loans · Financial planning"],
+    ["Agri-Robotics", "Autonomous harvesting · Weed detection and removal"],
+  ],
+  Health: [
+    ["Disease Detection", "AI-assisted early detection and screening"],
+    ["Medical Imaging", "X-ray, CT or MRI image analysis"],
+    ["Remote Healthcare", "Telemedicine · Remote consultation"],
+    ["Health Monitoring", "IoT-based monitoring · Wearable-based monitoring"],
+    ["Maternal & Child Health", "Pregnancy monitoring · Child nutrition"],
+    ["Elderly Care", "Fall detection · Medication reminders · Emergency alerts"],
+    ["Mental Wellness", "Stress-management applications · Wellness-support applications"],
+    ["Nutrition", "Personalized diet and nutrition recommendations"],
+    ["Medicine Management", "Medication reminders · Prescription management"],
+    ["Emergency Healthcare", "Ambulance coordination · Emergency response"],
+    ["Hospital Management", "Queue management · Bed allocation · Resource optimization"],
+    ["Public Health", "Disease outbreak monitoring and prediction"],
+    ["Accessibility", "Assistive technologies for people with disabilities"],
+    ["Healthcare NLP", "Medical document summarization · Multilingual health assistants"],
+    ["Health Records", "Secure digital health records"],
+    ["Rural Healthcare", "Low-bandwidth healthcare solutions · Community health support"],
+    ["Preventive Healthcare", "Risk prediction · Personalized preventive recommendations"],
+  ],
+  Education: [
+    ["Personalized Learning", "AI-generated personalized learning paths"],
+    ["AI Tutor", "Intelligent tutoring · Doubt-clearing systems"],
+    ["Learning Analytics", "Student performance prediction · Learning-gap identification"],
+    ["Accessibility", "Tools for visually and hearing impaired learners"],
+    ["Language Learning", "AI-based language learning · Pronunciation systems"],
+    ["Multilingual Education", "Translation · Voice-based learning in regional languages"],
+    ["Digital Assessment", "Automated evaluation · Question generation"],
+    ["Skill Development", "Personalized skill-gap analysis"],
+    ["Career Guidance", "AI-based career and course recommendations"],
+    ["Dropout Prediction", "Identifying students at risk of dropping out"],
+    ["Teacher Support", "Lesson planning · Content generation · Assessment assistance"],
+    ["AR/VR Education", "Virtual laboratories · Immersive learning"],
+    ["STEM Education", "Interactive science and engineering learning"],
+    ["Rural Education", "Offline and low-bandwidth learning platforms"],
+    ["Special Education", "Assistive learning for children with special needs"],
+    ["Academic Integrity", "Plagiarism · AI-generated content detection"],
+    ["Gamification", "Game-based learning and engagement"],
+    ["Digital Library", "Intelligent search and recommendation systems"],
+  ],
+};
+
 const registrationSections = [
   { id: "panel", path: "/panel-registrations", number: "01", label: "Panel Discussion", status: "Live" },
-  { id: "hackathon", path: "/hackathon-registrations", number: "02", label: "Hackathon", status: "Awaiting themes" },
+  { id: "hackathon", path: "/hackathon-registrations", number: "02", label: "Hackathon", status: "Themes ready" },
   { id: "workshops", path: "/workshop-registrations", number: "03", label: "Workshops", status: "Awaiting list" },
 ];
 
@@ -220,6 +280,24 @@ function EmptyRegistrationSection({ section }) {
   );
 }
 
+function HackathonThemeCatalog() {
+  const [activeTheme, setActiveTheme] = useState("Agriculture");
+  const themes = hackathonThemes[activeTheme];
+  return (
+    <section className="theme-catalog" aria-labelledby="theme-catalog-heading">
+      <header className="theme-catalog-head">
+        <div><p className="eyebrow">Hackathon form configuration</p><h2 id="theme-catalog-heading">Challenge themes</h2><p>The participant form now uses these sector, subcategory and suggested problem-area options. Registration data will appear here after backend integration.</p></div>
+        <span className="setup-status">Frontend ready</span>
+      </header>
+      <div className="theme-summary" aria-label="Theme summary">
+        {Object.entries(hackathonThemes).map(([theme, entries]) => <button type="button" className={activeTheme === theme ? "is-active" : ""} key={theme} onClick={() => setActiveTheme(theme)} aria-pressed={activeTheme === theme}><span>{String(Object.keys(hackathonThemes).indexOf(theme) + 1).padStart(2, "0")}</span><strong>{theme}</strong><small>{entries.length} subcategories</small></button>)}
+      </div>
+      <div className="theme-list-head"><div><p className="eyebrow">Selected sector</p><h3>{activeTheme}</h3></div><strong>{themes.length}</strong></div>
+      <ol className="theme-list">{themes.map(([subcategory, ideas], index) => <li key={subcategory}><span>{String(index + 1).padStart(2, "0")}</span><div><strong>{subcategory}</strong><p>{ideas}</p></div></li>)}</ol>
+    </section>
+  );
+}
+
 function DashboardNavigation({ route, panelCount, onNavigate }) {
   const navigate = (event, path) => {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -396,7 +474,7 @@ function Dashboard({ route, onNavigate, onLogout }) {
 
         <DashboardNavigation route={route} panelCount={panelLoaded ? registrations.length : summary.total} onNavigate={onNavigate} />
 
-        {route.id === "overview" ? <OverviewPage summary={summary} recent={recentRegistrations} loading={loading} error={error} onNavigate={onNavigate} /> : route.id !== "panel" ? <EmptyRegistrationSection section={route} /> : <section className="data-section panel-directory" aria-labelledby="table-heading">
+        {route.id === "overview" ? <OverviewPage summary={summary} recent={recentRegistrations} loading={loading} error={error} onNavigate={onNavigate} /> : route.id === "hackathon" ? <HackathonThemeCatalog /> : route.id !== "panel" ? <EmptyRegistrationSection section={route} /> : <section className="data-section panel-directory" aria-labelledby="table-heading">
             <div className="data-heading">
               <div><p className="eyebrow">Panel discussion</p><h2 id="table-heading">Registered participants</h2><p>{filteredRegistrations.length} of {registrations.length} entries shown</p></div>
               <button className="reset-button" type="button" onClick={resetFilters}>Clear filters</button>
