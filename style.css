@@ -2454,6 +2454,10 @@ a {
   border-top: 5px solid #1a6b3c;
 }
 
+.hackathon-register-header {
+  border-top: 5px solid var(--color-signal);
+}
+
 .panel-theme-line {
   margin: -0.25rem 0 1rem;
   font-family: var(--font-display);
@@ -2468,6 +2472,33 @@ a {
 
 .register-layout {
   max-width: 760px;
+}
+
+.form-preview-note {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.8rem 1rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid #d8b758;
+  border-left: 5px solid #d8a514;
+  background: #fff8df;
+  color: #634a08;
+}
+
+.form-preview-note span {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.form-preview-note p {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
 }
 
 #register-form {
@@ -2660,7 +2691,8 @@ a {
 }
 
 .form-field input:not([type="radio"]):not([type="checkbox"]),
-.form-field select {
+.form-field select,
+.form-field textarea {
   width: 100%;
   padding: 0.85rem 0.9rem;
   border: 1px solid var(--color-line-strong);
@@ -2672,12 +2704,27 @@ a {
 }
 
 .form-field input:not([type="radio"]):not([type="checkbox"]):focus,
-.form-field select:focus {
+.form-field select:focus,
+.form-field textarea:focus {
   outline: 2px solid var(--color-signal);
   outline-offset: 1px;
 }
 
+.form-field textarea {
+  min-height: 8rem;
+  resize: vertical;
+}
+
+.form-field select:disabled {
+  border-color: var(--color-line);
+  background: #f2f2ef;
+  color: #777;
+  cursor: not-allowed;
+  opacity: 0.82;
+}
+
 .form-field input[aria-invalid="true"]:not([type="radio"]):not([type="checkbox"]),
+.form-field select[aria-invalid="true"],
 .radio-options[aria-invalid="true"] .radio-option,
 .confirmation-check.has-error {
   border-color: #b42318;
@@ -2719,6 +2766,12 @@ a {
 .track-options {
   display: grid;
   gap: 0.75rem;
+}
+
+.track-options.has-error {
+  padding: 0.35rem;
+  outline: 2px solid rgba(180, 35, 24, 0.2);
+  outline-offset: 2px;
 }
 
 .track-option {
@@ -2766,6 +2819,134 @@ a {
   height: 1.15rem;
   accent-color: var(--color-signal);
   cursor: pointer;
+}
+
+.challenge-section {
+  gap: 1.5rem;
+}
+
+.challenge-area-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.challenge-area-card {
+  position: relative;
+  display: grid;
+  min-height: 8.75rem;
+  align-content: end;
+  overflow: hidden;
+  padding: 1rem;
+  border: 1px solid var(--color-line-strong);
+  background: var(--color-surface);
+  cursor: pointer;
+  isolation: isolate;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.challenge-area-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(145deg, transparent 42%, rgba(255, 30, 30, 0.1));
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.challenge-area-card:hover {
+  transform: translateY(-3px);
+}
+
+.challenge-area-card:has(input:checked) {
+  border-color: var(--color-signal);
+  background: #fff;
+  box-shadow: inset 0 -5px 0 var(--color-signal), 0 10px 24px rgba(10, 10, 10, 0.08);
+  transform: translateY(-3px);
+}
+
+.challenge-area-card:has(input:checked)::before {
+  opacity: 1;
+}
+
+.challenge-area-card input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.challenge-area-card:has(input:focus-visible) {
+  outline: 3px solid var(--color-text);
+  outline-offset: 3px;
+}
+
+.challenge-area-card strong {
+  position: relative;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.challenge-area-card small {
+  position: relative;
+  margin-top: 0.25rem;
+  color: var(--color-text-soft);
+  font-size: 0.72rem;
+}
+
+.challenge-area-index {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.7rem;
+  color: var(--color-line);
+  font-family: var(--font-display);
+  font-size: 2.8rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.challenge-area-agriculture:has(input:checked) {
+  border-color: #1a6b3c;
+  box-shadow: inset 0 -5px 0 #1a6b3c, 0 10px 24px rgba(10, 10, 10, 0.08);
+}
+
+.challenge-area-agriculture::before {
+  background: linear-gradient(145deg, transparent 42%, rgba(26, 107, 60, 0.12));
+}
+
+.challenge-area-health:has(input:checked) {
+  border-color: #b32929;
+  box-shadow: inset 0 -5px 0 #b32929, 0 10px 24px rgba(10, 10, 10, 0.08);
+}
+
+.challenge-area-education:has(input:checked) {
+  border-color: #315f9e;
+  box-shadow: inset 0 -5px 0 #315f9e, 0 10px 24px rgba(10, 10, 10, 0.08);
+}
+
+.challenge-area-education::before {
+  background: linear-gradient(145deg, transparent 42%, rgba(49, 95, 158, 0.12));
+}
+
+.challenge-area-options[aria-invalid="true"] .challenge-area-card {
+  border-color: #b42318;
+}
+
+.challenge-dependent-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  padding: 1.1rem;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+}
+
+.optional-label {
+  color: var(--color-text-soft);
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
 }
 
 .form-submit-row {
@@ -2962,6 +3143,16 @@ a {
     grid-template-columns: 1fr;
   }
 
+  .challenge-area-options,
+  .challenge-dependent-fields,
+  .form-preview-note {
+    grid-template-columns: 1fr;
+  }
+
+  .challenge-area-card {
+    min-height: 6.5rem;
+  }
+
   .confirmation-summary {
     grid-template-columns: 1fr;
     gap: 0.2rem;
@@ -2985,6 +3176,8 @@ a {
   .radio-option input::before,
   .radio-option-check,
   .track-option,
+  .challenge-area-card,
+  .challenge-area-card::before,
   .conditional-field,
   .closed-status i {
     animation: none;
