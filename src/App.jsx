@@ -14,6 +14,8 @@ const PATHS = {
 
 const HACKATHON_REGISTRATION_OPEN = true
 const HACKATHON_SUBMISSIONS_OPEN = false
+const GOOGLE_SIGN_IN_ENABLED = false
+const DEV_PREVIEW_PARTICIPANT = Object.freeze({ displayName: '', email: '', isPreview: true })
 const PANEL_EVENT = Object.freeze({
   name: 'Panel Discussion',
   day: 'Day 1',
@@ -193,6 +195,7 @@ function validateHackathonForm(form) {
 
   if (!form.name.trim()) errors.name = 'Enter your full name.'
   if (!form.email.trim()) errors.email = 'Enter your email address.'
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) errors.email = 'Enter a valid email address, for example name@example.com.'
   if (!form.phone.trim()) errors.phone = 'Enter your phone number.'
   else if (!/^[+\d\s().-]+$/.test(form.phone) || phoneDigits.length < 7 || phoneDigits.length > 15) errors.phone = 'Enter a valid phone number containing 7 to 15 digits.'
   if (!form.organisation.trim()) errors.organisation = 'Enter your school, college or organization name.'
@@ -705,8 +708,11 @@ function SignInCard({ onSignedIn }) {
 }
 
 function useParticipantSession() {
-  const [state, setState] = useState({ status: 'loading', participant: null, error: '' })
+  const [state, setState] = useState(() => GOOGLE_SIGN_IN_ENABLED
+    ? { status: 'loading', participant: null, error: '' }
+    : { status: 'preview', participant: DEV_PREVIEW_PARTICIPANT, error: '' })
   useEffect(() => {
+    if (!GOOGLE_SIGN_IN_ENABLED) return undefined
     let active = true
     fetch('/api/auth/session', { headers: { accept: 'application/json' } }).then(async (response) => {
       const data = await response.json().catch(() => ({}))
@@ -722,6 +728,7 @@ function useParticipantSession() {
 
 function RegistrationGate({ children }) {
   const [session, setSession] = useParticipantSession()
+  if (session.status === 'preview') return children(session.participant)
   if (session.status === 'loading') return <main id="main"><section className="account-loading"><span className="account-spinner" aria-hidden="true"></span><p>Checking your sign-in…</p></section></main>
   if (session.status === 'error') return <main id="main"><section className="section"><div className="container register-layout"><div className="account-error account-error-page" role="alert"><h1>Sign-in could not be checked.</h1><p>{session.error}</p><button type="button" className="btn btn-outline" onClick={() => window.location.reload()}>Try again</button></div></div></section></main>
   if (session.status !== 'signed-in') return <SignInCard onSignedIn={(participant) => setSession({ status: 'signed-in', participant, error: '' })} />
@@ -729,6 +736,7 @@ function RegistrationGate({ children }) {
 }
 
 function ParticipantBar({ participant }) {
+  if (participant.isPreview) return <div className="participant-bar participant-preview-bar"><span className="participant-status-dot" aria-hidden="true"></span><div><small>Development mode</small><strong>Google sign-in disabled</strong><span>Participant details can be entered directly in each form.</span></div></div>
   return <div className="participant-bar"><span className="participant-status-dot" aria-hidden="true"></span><div><small>Signed in as</small><strong>{participant.displayName || participant.email}</strong><span>{participant.email}</span></div><a href={PATHS.myRegistration}>My registrations <span aria-hidden="true">→</span></a></div>
 }
 
@@ -817,7 +825,7 @@ function HackathonRegisterPage({ participant }) {
       <div className="form-preview-note" role="status"><span>Frontend preview</span><p>You can explore and validate the complete form. Submissions will be enabled when the registration backend is connected.</p></div>
       <form id="register-form" className="sectioned-form hackathon-register-form" noValidate onSubmit={submit}>
         <fieldset className="form-section"><legend><span>01</span> Participant Details</legend>
-          <div className="form-row"><div className="form-field"><label htmlFor="hackathon-name">Full Name *</label><input ref={nameRef} id="hackathon-name" name="name" type="text" autoComplete="name" required value={form.name} onChange={updateField} aria-invalid={Boolean(fieldErrors.name)} aria-describedby={fieldErrors.name ? 'hackathon-name-error' : undefined} /><FieldError id="hackathon-name-error" message={fieldErrors.name} /></div><div className="form-field"><label htmlFor="hackathon-email">Verified Google Email</label><input className="verified-email-input" id="hackathon-email" name="email" type="email" autoComplete="email" readOnly value={form.email} aria-describedby="hackathon-email-hint" /><p className="field-hint" id="hackathon-email-hint">Connected securely through Google Sign-In.</p></div></div>
+          <div className="form-row"><div className="form-field"><label htmlFor="hackathon-name">Full Name *</label><input ref={nameRef} id="hackathon-name" name="name" type="text" autoComplete="name" required value={form.name} onChange={updateField} aria-invalid={Boolean(fieldErrors.name)} aria-describedby={fieldErrors.name ? 'hackathon-name-error' : undefined} /><FieldError id="hackathon-name-error" message={fieldErrors.name} /></div><div className="form-field"><label htmlFor="hackathon-email">{participant.isPreview ? 'Email Address *' : 'Verified Google Email'}</label><input className={participant.isPreview ? undefined : 'verified-email-input'} id="hackathon-email" name="email" type="email" autoComplete="email" readOnly={!participant.isPreview} required value={form.email} onChange={participant.isPreview ? updateField : undefined} aria-invalid={Boolean(fieldErrors.email)} aria-describedby={fieldErrors.email ? 'hackathon-email-error' : 'hackathon-email-hint'} /><p className="field-hint" id="hackathon-email-hint">{participant.isPreview ? 'Google sign-in is disabled on the development branch.' : 'Connected securely through Google Sign-In.'}</p><FieldError id="hackathon-email-error" message={fieldErrors.email} /></div></div>
           <div className="form-row"><div className="form-field"><label htmlFor="hackathon-phone">Phone Number *</label><input id="hackathon-phone" name="phone" type="tel" inputMode="tel" autoComplete="tel" maxLength={24} placeholder="+91 98765 43210" required value={form.phone} onChange={updateField} aria-invalid={Boolean(fieldErrors.phone)} aria-describedby={fieldErrors.phone ? 'hackathon-phone-error' : 'hackathon-phone-hint'} /><p className="field-hint" id="hackathon-phone-hint">Use 7 to 15 digits.</p><FieldError id="hackathon-phone-error" message={fieldErrors.phone} /></div><div className="form-field"><label htmlFor="hackathon-organisation">School / College / Organization *</label><input id="hackathon-organisation" name="organisation" type="text" autoComplete="organization" required value={form.organisation} onChange={updateField} aria-invalid={Boolean(fieldErrors.organisation)} aria-describedby={fieldErrors.organisation ? 'hackathon-organisation-error' : undefined} /><FieldError id="hackathon-organisation-error" message={fieldErrors.organisation} /></div></div>
           <div className="form-field"><label htmlFor="hackathon-category">Participant Type *</label><select id="hackathon-category" name="category" required value={form.category} onChange={updateField} aria-invalid={Boolean(fieldErrors.category)} aria-describedby={fieldErrors.category ? 'hackathon-category-error' : undefined}><option value="" disabled>Select participant type</option>{hackathonCategories.map((category) => <option value={category} key={category}>{category}</option>)}</select><FieldError id="hackathon-category-error" message={fieldErrors.category} /></div>
         </fieldset>
@@ -912,7 +920,7 @@ function PanelRegisterPage({ participant }) {
     <section className="section"><div className="container register-layout">
       <form id="panel-register-form" className="sectioned-form" noValidate hidden={submitted} onSubmit={submit}>
         <fieldset className="form-section" data-reveal><legend><span>01</span> Participant Details</legend>
-          <div className="form-row"><div className="form-field"><label htmlFor="panel-name">Full Name *</label><input ref={nameRef} id="panel-name" name="name" type="text" autoComplete="name" required value={form.name} onChange={updateField} aria-invalid={Boolean(fieldErrors.name)} aria-describedby={fieldErrors.name ? 'panel-name-error' : undefined} /><FieldError id="panel-name-error" message={fieldErrors.name} /></div><div className="form-field"><label htmlFor="panel-email">Verified Google Email</label><input className="verified-email-input" id="panel-email" name="email" type="email" autoComplete="email" readOnly value={form.email} aria-describedby="panel-email-hint" /><p className="field-hint" id="panel-email-hint">Connected securely through Google Sign-In.</p></div></div>
+          <div className="form-row"><div className="form-field"><label htmlFor="panel-name">Full Name *</label><input ref={nameRef} id="panel-name" name="name" type="text" autoComplete="name" required value={form.name} onChange={updateField} aria-invalid={Boolean(fieldErrors.name)} aria-describedby={fieldErrors.name ? 'panel-name-error' : undefined} /><FieldError id="panel-name-error" message={fieldErrors.name} /></div><div className="form-field"><label htmlFor="panel-email">{participant.isPreview ? 'Email Address *' : 'Verified Google Email'}</label><input className={participant.isPreview ? undefined : 'verified-email-input'} id="panel-email" name="email" type="email" autoComplete="email" readOnly={!participant.isPreview} required value={form.email} onChange={participant.isPreview ? updateField : undefined} aria-invalid={Boolean(fieldErrors.email)} aria-describedby={fieldErrors.email ? 'panel-email-error' : 'panel-email-hint'} /><p className="field-hint" id="panel-email-hint">{participant.isPreview ? 'Google sign-in is disabled on the development branch.' : 'Connected securely through Google Sign-In.'}</p><FieldError id="panel-email-error" message={fieldErrors.email} /></div></div>
           <div className="form-field"><label htmlFor="panel-phone">Phone Number *</label><input id="panel-phone" name="phone" type="tel" inputMode="tel" autoComplete="tel" maxLength={24} placeholder="+91 98765 43210" required value={form.phone} onChange={updateField} aria-invalid={Boolean(fieldErrors.phone)} aria-describedby={fieldErrors.phone ? 'panel-phone-error' : 'panel-phone-hint'} /><p className="field-hint" id="panel-phone-hint">Use 7 to 15 digits. Spaces, +, hyphens and brackets are allowed.</p><FieldError id="panel-phone-error" message={fieldErrors.phone} /></div>
           <div className="form-field"><span className="form-legend">Participant Type *</span><RadioOptions name="participantType" options={participantTypes} value={form.participantType} onChange={updateField} required invalid={Boolean(fieldErrors.participantType)} errorId="participant-type-error" /><FieldError id="participant-type-error" message={fieldErrors.participantType} /></div>
           <div className="form-row"><div className="form-field"><label htmlFor="panel-organisation">College / Institution / Organization Name *</label><input id="panel-organisation" name="organisation" type="text" autoComplete="organization" required value={form.organisation} onChange={updateField} aria-invalid={Boolean(fieldErrors.organisation)} aria-describedby={fieldErrors.organisation ? 'panel-organisation-error' : undefined} /><FieldError id="panel-organisation-error" message={fieldErrors.organisation} /></div><div className="form-field"><label htmlFor="panel-department">Department / Branch</label><input id="panel-department" name="department" type="text" value={form.department} onChange={updateField} /></div></div>
@@ -1157,6 +1165,7 @@ function MyRegistrationPage() {
     }
   }
 
+  if (state.status === 'signed-out' && !GOOGLE_SIGN_IN_ENABLED) return <main id="main"><section className="page-header"><div className="container"><p className="eyebrow">Development mode</p><h1 className="section-heading">My registrations is unavailable.</h1><p className="section-lede">Google sign-in is disabled on the dev branch, so registrations cannot be linked to or retrieved for an account.</p></div></section><section className="section"><div className="container register-layout"><a className="btn btn-primary" href={PATHS.register}>Open registration forms <span aria-hidden="true">→</span></a></div></section></main>
   if (state.status === 'signed-out') return <SignInCard onSignedIn={() => setRefresh((value) => value + 1)} />
   if (state.status === 'loading') return <main id="main"><section className="account-loading"><span className="account-spinner" aria-hidden="true"></span><p>Loading your registrations…</p></section></main>
   if (state.status === 'error') return <main id="main"><section className="section"><div className="container register-layout"><div className="account-error account-error-page" role="alert"><h1>Registrations could not be loaded.</h1><p>{state.error}</p><button type="button" className="btn btn-outline" onClick={() => setRefresh((value) => value + 1)}>Try again</button></div></div></section></main>

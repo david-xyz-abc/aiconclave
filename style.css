@@ -1693,6 +1693,17 @@ a {
   background: #fff;
 }
 
+.participant-preview-bar {
+  grid-template-columns: auto 1fr;
+  border-top: 3px solid #d8a514;
+  background: #fff8df;
+}
+
+.participant-preview-bar .participant-status-dot {
+  background: #d8a514;
+  box-shadow: 0 0 0 4px rgba(216, 165, 20, 0.15);
+}
+
 .participant-status-dot {
   width: 0.65rem;
   height: 0.65rem;
