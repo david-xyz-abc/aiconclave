@@ -2716,6 +2716,11 @@ a {
 .participant-organisation { grid-area: organisation; }
 .participant-department { grid-area: department; }
 
+.panel-participant-details-grid .participant-organisation > label,
+.panel-participant-details-grid .participant-department > label {
+  min-height: 2.65em;
+}
+
 .form-field {
   display: grid;
   gap: 0.45rem;
@@ -3259,6 +3264,11 @@ a {
       "type"
       "organisation"
       "department";
+  }
+
+  .panel-participant-details-grid .participant-organisation > label,
+  .panel-participant-details-grid .participant-department > label {
+    min-height: 0;
   }
 
   .challenge-area-options,

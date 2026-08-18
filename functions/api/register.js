@@ -1,10 +1,13 @@
 import { isSameOrigin, json, readJsonBody } from '../_lib/http.js'
+import { HACKATHON_CHALLENGES, isValidHackathonSelection } from '../_lib/hackathon.js'
 import { getParticipantSession } from '../_lib/session.js'
 
 const ALLOWED_PARTICIPANT_TYPES = new Set(['Student', 'Faculty / Academic', 'Professional / Industry Delegate', 'Researcher', 'Other'])
 const ALLOWED_PANELS = new Set(['AI in Agriculture', 'AI in Education', 'AI in Healthcare'])
 const ALLOWED_SECTORS = new Set(['', 'Agriculture', 'Education', 'Healthcare', 'IT / Technology', 'Government', 'Other'])
 const ALLOWED_ORGANISATION_TYPES = new Set(['', 'Startup', 'MSME', 'Corporate', 'Government', 'Academic Institution', 'Research Organization', 'NGO', 'Other'])
+const ALLOWED_HACKATHON_TYPES = new Set(['Student', 'Faculty', 'Professional / Industry Delegate', 'Researcher', 'Other'])
+const ALLOWED_HACKATHON_TRACKS = new Set(['Hackathon (Technical)', 'Hackathon (Non-Technical)'])
 
 const MAX_LEN = {
   name: 120,
@@ -12,6 +15,7 @@ const MAX_LEN = {
   phone: 40,
   organisation: 200,
   category: 80,
+  ideaSummary: 800,
 }
 
 function trimStr(value, max) {
@@ -39,8 +43,6 @@ export async function onRequestPost(context) {
     console.error(JSON.stringify({ event: 'registration_session_failed', reason: error instanceof Error ? error.message : 'unknown' }))
     return json({ ok: false, error: 'We could not verify your sign-in. Please try again.' }, 500)
   }
-  if (!participant) return json({ ok: false, error: 'Sign in with Google before registering.' }, 401)
-
   let body
   try {
     body = await readJsonBody(context.request)
@@ -52,7 +54,7 @@ export async function onRequestPost(context) {
 
   if (body.registrationType === 'panel') {
     const name = trimStr(body.name, MAX_LEN.name)
-    const email = participant.email
+    const email = participant?.email || trimStr(body.email, MAX_LEN.email)
     const phone = trimStr(body.phone, MAX_LEN.phone)
     const participantType = trimStr(body.participantType, 80)
     const organisation = trimStr(body.organisation, MAX_LEN.organisation)
@@ -81,15 +83,52 @@ export async function onRequestPost(context) {
     if (Object.keys(fields).length) return json({ ok: false, error: 'Please review the highlighted fields.', fields }, 400)
 
     try {
-      const result = await db.prepare(`INSERT INTO panel_registrations (name, email, phone, participant_type, organisation, department, panel_selection, industry_sector, industry_sector_other, organisation_type, organisation_type_other, information_confirmed, updates_opt_in, participant_account_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(name, email, phone, participantType, organisation, department, panelSelection, industrySector, industrySectorOther, organisationType, organisationTypeOther, 1, updatesOptIn ? 1 : 0, participant.id).run()
+      const result = await db.prepare(`INSERT INTO panel_registrations (name, email, phone, participant_type, organisation, department, panel_selection, industry_sector, industry_sector_other, organisation_type, organisation_type_other, information_confirmed, updates_opt_in, participant_account_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(name, email, phone, participantType, organisation, department, panelSelection, industrySector, industrySectorOther, organisationType, organisationTypeOther, 1, updatesOptIn ? 1 : 0, participant?.id ?? null).run()
       return json({ ok: true, id: result?.meta?.last_row_id ?? null, registration: { name, email, phone, participantType, organisation, department, panelSelection, industrySector, industrySectorOther, organisationType, organisationTypeOther, updatesOptIn } }, 201)
     } catch (error) {
-      console.error('panel registration insert failed', error?.message || error)
+      console.error(JSON.stringify({ event: 'panel_registration_insert_failed', reason: error instanceof Error ? error.message : 'unknown' }))
       return json({ ok: false, error: 'Could not save panel registration. Try again.' }, 500)
     }
   }
 
-  if (body.registrationType === 'hackathon') return json({ ok: false, error: 'Hackathon registration has not started yet.' }, 409)
+  if (body.registrationType === 'hackathon') {
+    const name = trimStr(body.name, MAX_LEN.name)
+    const email = participant?.email || trimStr(body.email, MAX_LEN.email)
+    const phone = trimStr(body.phone, MAX_LEN.phone)
+    const participantType = trimStr(body.category, MAX_LEN.category)
+    const organisation = trimStr(body.organisation, MAX_LEN.organisation)
+    const tracks = Array.isArray(body.tracks)
+      ? [...new Set(body.tracks.map((track) => trimStr(track, 80)).filter((track) => ALLOWED_HACKATHON_TRACKS.has(track)))]
+      : []
+    const challengeArea = trimStr(body.challengeArea, 80)
+    const subcategory = trimStr(body.subcategory, 120)
+    const problemArea = trimStr(body.problemArea, 180)
+    const ideaSummary = trimStr(body.ideaSummary, MAX_LEN.ideaSummary)
+    const informationConfirmed = body.informationConfirmed === true
+    const fields = {}
+
+    if (!name) fields.name = 'Enter your full name.'
+    if (!email) fields.email = 'Enter your email address.'
+    else if (!isValidEmail(email)) fields.email = 'Enter a valid email address, for example name@example.com.'
+    if (!phone) fields.phone = 'Enter your phone number.'
+    else if (!isValidPhone(phone)) fields.phone = 'Enter a valid phone number containing 7 to 15 digits.'
+    if (!ALLOWED_HACKATHON_TYPES.has(participantType)) fields.category = 'Choose your participant type.'
+    if (!organisation) fields.organisation = 'Enter your school, college or organization name.'
+    if (!Array.isArray(body.tracks) || tracks.length !== new Set(body.tracks).size || !tracks.length) fields.tracks = 'Choose at least one valid hackathon track.'
+    if (!HACKATHON_CHALLENGES[challengeArea]) fields.challengeArea = 'Choose a valid challenge sector.'
+    else if (!HACKATHON_CHALLENGES[challengeArea][subcategory]) fields.subcategory = 'Choose a valid subcategory.'
+    else if (!isValidHackathonSelection(challengeArea, subcategory, problemArea)) fields.problemArea = 'Choose a valid suggested problem area.'
+    if (!informationConfirmed) fields.informationConfirmed = 'Confirm that the information provided is accurate.'
+    if (Object.keys(fields).length) return json({ ok: false, error: 'Please review the highlighted fields.', fields }, 400)
+
+    try {
+      const result = await db.prepare(`INSERT INTO hackathon_registrations (name, email, phone, participant_type, organisation, tracks, challenge_area, subcategory, problem_area, idea_summary, information_confirmed, participant_account_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(name, email, phone, participantType, organisation, JSON.stringify(tracks), challengeArea, subcategory, problemArea, ideaSummary, 1, participant?.id ?? null).run()
+      return json({ ok: true, id: result?.meta?.last_row_id ?? null, registration: { name, email, phone, participantType, organisation, tracks, challengeArea, subcategory, problemArea, ideaSummary } }, 201)
+    } catch (error) {
+      console.error(JSON.stringify({ event: 'hackathon_registration_insert_failed', reason: error instanceof Error ? error.message : 'unknown' }))
+      return json({ ok: false, error: 'Could not save hackathon registration. Try again.' }, 500)
+    }
+  }
   return json({ ok: false, error: 'Choose a valid registration type.' }, 400)
 }
 

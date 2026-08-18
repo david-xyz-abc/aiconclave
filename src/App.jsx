@@ -13,7 +13,6 @@ const PATHS = {
 }
 
 const HACKATHON_REGISTRATION_OPEN = true
-const HACKATHON_SUBMISSIONS_OPEN = false
 const GOOGLE_SIGN_IN_ENABLED = false
 const DEV_PREVIEW_PARTICIPANT = Object.freeze({ displayName: '', email: '', isPreview: true })
 const PANEL_EVENT = Object.freeze({
@@ -754,6 +753,8 @@ function HackathonRegisterPage({ participant }) {
   const freshHackathonForm = () => ({ ...initialHackathonForm, tracks: [], name: participant.displayName || '', email: participant.email })
   const [form, setForm] = useState(freshHackathonForm)
   const [error, setError] = useState('')
+  const [submitted, setSubmitted] = useState(false)
+  const [confirmation, setConfirmation] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [fieldErrors, setFieldErrors] = useState({})
   const nameRef = useRef(null)
@@ -796,19 +797,19 @@ function HackathonRegisterPage({ participant }) {
       return
     }
     setFieldErrors({})
-    if (!HACKATHON_SUBMISSIONS_OPEN) {
-      setError('The form preview is ready. Saving will be enabled when hackathon registration opens.')
-      return
-    }
     setError('')
     setSubmitting(true)
     try {
       const response = await fetch('/api/register', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...form, registrationType: 'hackathon' }) })
       const data = await response.json().catch(() => ({}))
       if (!response.ok || !data.ok) {
+        if (data.fields && typeof data.fields === 'object') setFieldErrors(data.fields)
         setError(data.error || 'Could not save registration. Please try again.')
         return
       }
+      setConfirmation(data.registration)
+      setSubmitted(true)
+      window.setTimeout(() => document.querySelector('.hackathon-confirmation-panel')?.focus(), 0)
     } catch {
       setError('Network error. Check your connection and try again.')
     } finally {
@@ -818,12 +819,19 @@ function HackathonRegisterPage({ participant }) {
 
   const subcategories = form.challengeArea ? Object.keys(hackathonChallengeAreas[form.challengeArea]) : []
   const problemAreas = form.challengeArea && form.subcategory ? hackathonChallengeAreas[form.challengeArea][form.subcategory] : []
+  const reset = () => {
+    setForm(freshHackathonForm())
+    setError('')
+    setFieldErrors({})
+    setConfirmation(null)
+    setSubmitted(false)
+    window.setTimeout(() => nameRef.current?.focus(), 0)
+  }
 
   return <main id="main">
     <section className="page-header hackathon-register-header"><div className="container"><a className="back-link" href={PATHS.register}>← All registrations</a><p className="eyebrow">Day 2 · Hackathon</p><h1 className="section-heading">Hackathon Registration</h1><p className="panel-theme-line">Agriculture <span>•</span> Health <span>•</span> Education</p><p className="section-lede">Choose your track and the challenge you want to solve with AI.</p></div></section>
     <section id="registration-form" className="section"><div className="container register-layout">
-      <div className="form-preview-note" role="status"><span>Frontend preview</span><p>You can explore and validate the complete form. Submissions will be enabled when the registration backend is connected.</p></div>
-      <form id="register-form" className="sectioned-form hackathon-register-form" noValidate onSubmit={submit}>
+      <form id="register-form" className="sectioned-form hackathon-register-form" noValidate hidden={submitted} onSubmit={submit}>
         <fieldset className="form-section"><legend><span>01</span> Participant Details</legend>
           <div className="participant-details-grid">
             <div className="form-field participant-name"><label htmlFor="hackathon-name">Full Name *</label><input ref={nameRef} id="hackathon-name" name="name" type="text" autoComplete="name" required value={form.name} onChange={updateField} aria-invalid={Boolean(fieldErrors.name)} aria-describedby={fieldErrors.name ? 'hackathon-name-error' : undefined} /><FieldError id="hackathon-name-error" message={fieldErrors.name} /></div>
@@ -848,8 +856,9 @@ function HackathonRegisterPage({ participant }) {
         </fieldset>
 
         <fieldset className="form-section"><legend><span>04</span> Confirmation</legend><label className={`confirmation-check${fieldErrors.informationConfirmed ? ' has-error' : ''}`}><input type="checkbox" name="informationConfirmed" checked={form.informationConfirmed} onChange={updateField} required aria-invalid={Boolean(fieldErrors.informationConfirmed)} aria-describedby={fieldErrors.informationConfirmed ? 'hackathon-confirmation-error' : undefined} /><span>I confirm that the information provided above is accurate. *</span></label><FieldError id="hackathon-confirmation-error" message={fieldErrors.informationConfirmed} /></fieldset>
-        <div className="form-submit-row"><button type="submit" className="btn btn-primary" disabled={submitting} aria-busy={submitting}>{submitting ? 'Submitting…' : <>Review Frontend Form <span aria-hidden="true">→</span></>}</button><p className={`form-error${error ? ' is-visible' : ''}`} role="alert" aria-live="polite">{error}</p></div>
+        <div className="form-submit-row"><button type="submit" className="btn btn-primary" disabled={submitting} aria-busy={submitting}>{submitting ? 'Submitting…' : <>Submit Hackathon Registration <span aria-hidden="true">→</span></>}</button><p className={`form-error${error ? ' is-visible' : ''}`} role="alert" aria-live="polite">{error}</p></div>
       </form>
+      <div className={`confirmation-panel hackathon-confirmation-panel${submitted ? ' is-visible' : ''}`} role="status" aria-live="polite" tabIndex={submitted ? -1 : undefined}><span className="stamp">Hackathon Registration Received</span><h2>Your entry is recorded.</h2><p>Thanks for registering for the AI Conclave 2026 Hackathon.</p>{confirmation && <dl className="confirmation-summary"><dt>Name</dt><dd>{confirmation.name}</dd><dt>Email</dt><dd>{confirmation.email}</dd><dt>Participant</dt><dd>{confirmation.participantType}</dd><dt>Track</dt><dd>{confirmation.tracks.join(', ')}</dd><dt>Challenge</dt><dd>{confirmation.challengeArea} · {confirmation.subcategory}</dd><dt>Problem area</dt><dd>{confirmation.problemArea}</dd></dl>}<div className="confirmation-actions"><button type="button" className="btn btn-primary" onClick={reset}>Register Another Entry <span aria-hidden="true">→</span></button><a className="btn btn-outline" href={PATHS.register}>Back to Registrations</a></div></div>
     </div></section>
   </main>
 }
@@ -931,7 +940,7 @@ function PanelRegisterPage({ participant }) {
             <div className="form-field participant-email"><label htmlFor="panel-email">{participant.isPreview ? 'Email Address *' : 'Verified Google Email'}</label><input className={participant.isPreview ? undefined : 'verified-email-input'} id="panel-email" name="email" type="email" autoComplete="email" readOnly={!participant.isPreview} required value={form.email} onChange={participant.isPreview ? updateField : undefined} aria-invalid={Boolean(fieldErrors.email)} aria-describedby={fieldErrors.email ? 'panel-email-error' : participant.isPreview ? undefined : 'panel-email-hint'} />{!participant.isPreview && <p className="field-hint" id="panel-email-hint">Connected securely through Google Sign-In.</p>}<FieldError id="panel-email-error" message={fieldErrors.email} /></div>
             <div className="form-field participant-phone"><label htmlFor="panel-phone">Phone Number *</label><input id="panel-phone" name="phone" type="tel" inputMode="tel" autoComplete="tel" maxLength={24} placeholder="+91 98765 43210" required value={form.phone} onChange={updateField} aria-invalid={Boolean(fieldErrors.phone)} aria-describedby={fieldErrors.phone ? 'panel-phone-error' : 'panel-phone-hint'} /><p className="field-hint" id="panel-phone-hint">Use 7 to 15 digits.</p><FieldError id="panel-phone-error" message={fieldErrors.phone} /></div>
             <div className="form-field participant-type"><label htmlFor="panel-participant-type">Participant Type *</label><select id="panel-participant-type" name="participantType" required value={form.participantType} onChange={updateField} aria-invalid={Boolean(fieldErrors.participantType)} aria-describedby={fieldErrors.participantType ? 'participant-type-error' : undefined}><option value="" disabled>Select participant type</option>{participantTypes.map((type) => <option value={type} key={type}>{type}</option>)}</select><FieldError id="participant-type-error" message={fieldErrors.participantType} /></div>
-            <div className="form-field participant-organisation"><label htmlFor="panel-organisation">College / Institution / Organization Name *</label><input id="panel-organisation" name="organisation" type="text" autoComplete="organization" required value={form.organisation} onChange={updateField} aria-invalid={Boolean(fieldErrors.organisation)} aria-describedby={fieldErrors.organisation ? 'panel-organisation-error' : undefined} /><FieldError id="panel-organisation-error" message={fieldErrors.organisation} /></div>
+            <div className="form-field participant-organisation"><label htmlFor="panel-organisation">College / Institution / Organization *</label><input id="panel-organisation" name="organisation" type="text" autoComplete="organization" required value={form.organisation} onChange={updateField} aria-invalid={Boolean(fieldErrors.organisation)} aria-describedby={fieldErrors.organisation ? 'panel-organisation-error' : undefined} /><FieldError id="panel-organisation-error" message={fieldErrors.organisation} /></div>
             <div className="form-field participant-department"><label htmlFor="panel-department">Department / Branch</label><input id="panel-department" name="department" type="text" value={form.department} onChange={updateField} /></div>
           </div>
         </fieldset>
@@ -1123,7 +1132,8 @@ function RegistrationTicket({ registration }) {
 
 function RegistrationDetail({ registration }) {
   const [expanded, setExpanded] = useState(false)
-  const details = [
+  const isHackathon = registration.type === 'Hackathon'
+  const panelDetails = [
     ['Name', registration.name],
     ['Verified email', registration.email],
     ['Phone', registration.phone],
@@ -1135,13 +1145,27 @@ function RegistrationDetail({ registration }) {
     ['Organisation type', registration.organisationType === 'Other' ? registration.organisationTypeOther : registration.organisationType],
     ['Official updates', registration.updatesOptIn ? 'Yes' : 'No'],
   ].filter(([, value]) => value)
+  const hackathonDetails = [
+    ['Name', registration.name],
+    ['Email', registration.email],
+    ['Phone', registration.phone],
+    ['Participant type', registration.participantType],
+    ['Organisation', registration.organisation],
+    ['Track', registration.tracks?.join(', ')],
+    ['Challenge sector', registration.challengeArea],
+    ['Subcategory', registration.subcategory],
+    ['Problem area', registration.problemArea],
+    ['Problem statement / idea', registration.ideaSummary],
+  ].filter(([, value]) => value)
+  const details = isHackathon ? hackathonDetails : panelDetails
+  const title = isHackathon ? `${registration.challengeArea} · ${registration.subcategory}` : registration.panelSelection
   const submitted = registration.createdAt ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(registration.createdAt)) : ''
   return <article className={`registration-record${expanded ? ' is-open' : ''}`}>
     <header className="registration-record-summary">
-      <button type="button" className="registration-summary-main" onClick={() => setExpanded((current) => !current)} aria-expanded={expanded}><span className="stamp">{registration.type}</span><h2>{registration.panelSelection}</h2><p>Submitted {submitted}</p></button>
-      <div className="registration-record-action"><span className="registration-status"><i aria-hidden="true"></i>{registration.status}</span><div className="registration-summary-controls"><TicketDownloadButton registration={registration} compact /><button type="button" className="registration-toggle" onClick={() => setExpanded((current) => !current)} aria-expanded={expanded}>{expanded ? 'Hide details' : 'View details'}<i aria-hidden="true"></i></button></div></div>
+      <button type="button" className="registration-summary-main" onClick={() => setExpanded((current) => !current)} aria-expanded={expanded}><span className="stamp">{registration.type}</span><h2>{title}</h2><p>Submitted {submitted}</p></button>
+      <div className="registration-record-action"><span className="registration-status"><i aria-hidden="true"></i>{registration.status}</span><div className="registration-summary-controls">{!isHackathon && <TicketDownloadButton registration={registration} compact />}<button type="button" className="registration-toggle" onClick={() => setExpanded((current) => !current)} aria-expanded={expanded}>{expanded ? 'Hide details' : 'View details'}<i aria-hidden="true"></i></button></div></div>
     </header>
-    {expanded && <div className="registration-record-body"><RegistrationTicket registration={registration} /><dl className="registration-record-grid">{details.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl></div>}
+    {expanded && <div className="registration-record-body">{!isHackathon && <RegistrationTicket registration={registration} />}<dl className="registration-record-grid">{details.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl></div>}
   </article>
 }
 
