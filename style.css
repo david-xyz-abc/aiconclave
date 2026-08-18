@@ -2698,11 +2698,23 @@ a {
   align-items: start;
 }
 
+.panel-participant-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas:
+    "name email"
+    "phone type"
+    "organisation department";
+  gap: 1.25rem 1rem;
+  align-items: start;
+}
+
 .participant-name { grid-area: name; }
 .participant-email { grid-area: email; }
 .participant-phone { grid-area: phone; }
 .participant-type { grid-area: type; }
 .participant-organisation { grid-area: organisation; }
+.participant-department { grid-area: department; }
 
 .form-field {
   display: grid;
@@ -3236,6 +3248,17 @@ a {
       "phone"
       "type"
       "organisation";
+  }
+
+  .panel-participant-details-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "name"
+      "email"
+      "phone"
+      "type"
+      "organisation"
+      "department";
   }
 
   .challenge-area-options,
