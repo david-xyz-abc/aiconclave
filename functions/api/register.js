@@ -6,7 +6,6 @@ const ALLOWED_PARTICIPANT_TYPES = new Set(['Student', 'Faculty / Academic', 'Pro
 const ALLOWED_PANELS = new Set(['AI in Agriculture', 'AI in Education', 'AI in Healthcare'])
 const ALLOWED_SECTORS = new Set(['', 'Agriculture', 'Education', 'Healthcare', 'IT / Technology', 'Government', 'Other'])
 const ALLOWED_ORGANISATION_TYPES = new Set(['', 'Startup', 'MSME', 'Corporate', 'Government', 'Academic Institution', 'Research Organization', 'NGO', 'Other'])
-const ALLOWED_HACKATHON_TYPES = new Set(['Student', 'Faculty', 'Professional / Industry Delegate', 'Researcher', 'Other'])
 const ALLOWED_HACKATHON_TRACKS = new Set(['Hackathon (Technical)', 'Hackathon (Non-Technical)'])
 
 const MAX_LEN = {
@@ -14,7 +13,6 @@ const MAX_LEN = {
   email: 254,
   phone: 40,
   organisation: 200,
-  category: 80,
   ideaSummary: 800,
 }
 
@@ -94,8 +92,9 @@ export async function onRequestPost(context) {
   if (body.registrationType === 'hackathon') {
     const name = trimStr(body.name, MAX_LEN.name)
     const email = participant?.email || trimStr(body.email, MAX_LEN.email)
-    const phone = trimStr(body.phone, MAX_LEN.phone)
-    const participantType = trimStr(body.category, MAX_LEN.category)
+    const phoneInput = trimStr(body.phone, MAX_LEN.phone)
+    const phone = `+91${phoneInput}`
+    const participantType = 'Student'
     const organisation = trimStr(body.organisation, MAX_LEN.organisation)
     const tracks = Array.isArray(body.tracks)
       ? [...new Set(body.tracks.map((track) => trimStr(track, 80)).filter((track) => ALLOWED_HACKATHON_TRACKS.has(track)))]
@@ -110,11 +109,10 @@ export async function onRequestPost(context) {
     if (!name) fields.name = 'Enter your full name.'
     if (!email) fields.email = 'Enter your email address.'
     else if (!isValidEmail(email)) fields.email = 'Enter a valid email address, for example name@example.com.'
-    if (!phone) fields.phone = 'Enter your phone number.'
-    else if (!isValidPhone(phone)) fields.phone = 'Enter a valid phone number containing 7 to 15 digits.'
-    if (!ALLOWED_HACKATHON_TYPES.has(participantType)) fields.category = 'Choose your participant type.'
+    if (!phoneInput) fields.phone = 'Enter your phone number.'
+    else if (!/^\d{10}$/.test(phoneInput)) fields.phone = 'Enter exactly 10 digits after +91.'
     if (!organisation) fields.organisation = 'Enter your school, college or organization name.'
-    if (!Array.isArray(body.tracks) || tracks.length !== new Set(body.tracks).size || !tracks.length) fields.tracks = 'Choose at least one valid hackathon track.'
+    if (!Array.isArray(body.tracks) || body.tracks.length !== 1 || tracks.length !== 1) fields.tracks = 'Choose exactly one valid hackathon track.'
     if (!HACKATHON_CHALLENGES[challengeArea]) fields.challengeArea = 'Choose a valid challenge sector.'
     else if (!HACKATHON_CHALLENGES[challengeArea][subcategory]) fields.subcategory = 'Choose a valid subcategory.'
     else if (!isValidHackathonSelection(challengeArea, subcategory, problemArea)) fields.problemArea = 'Choose a valid suggested problem area.'
