@@ -816,22 +816,36 @@ function useParticipantSession() {
 
 function RegistrationGate({ children }) {
   const [session, setSession] = useParticipantSession()
+  const [signingOut, setSigningOut] = useState(false)
+
+  const signOut = async () => {
+    if (signingOut) return
+    setSigningOut(true)
+    try {
+      await fetch('/api/auth/logout', { method: 'POST', headers: { accept: 'application/json' } })
+    } finally {
+      window.google?.accounts?.id?.disableAutoSelect()
+      setSession({ status: 'signed-out', participant: null, error: '' })
+      setSigningOut(false)
+    }
+  }
+
   if (session.status === 'preview') return children(session.participant)
   if (session.status === 'loading') return <main id="main"><section className="account-loading"><span className="account-spinner" aria-hidden="true"></span><p>Checking your sign-in…</p></section></main>
   if (session.status === 'error') return <main id="main"><section className="section"><div className="container register-layout"><div className="account-error account-error-page" role="alert"><h1>Sign-in could not be checked.</h1><p>{session.error}</p><button type="button" className="btn btn-outline" onClick={() => window.location.reload()}>Try again</button></div></div></section></main>
   if (session.status !== 'signed-in') return <SignInCard onSignedIn={(participant) => setSession({ status: 'signed-in', participant, error: '' })} />
-  return children(session.participant)
+  return children(session.participant, signOut, signingOut)
 }
 
-function ParticipantBar({ participant }) {
+function ParticipantBar({ participant, onSignOut, signingOut = false }) {
   if (participant.isPreview) return <div className="participant-bar participant-preview-bar"><span className="participant-status-dot" aria-hidden="true"></span><div><small>Development mode</small><strong>Google sign-in disabled</strong><span>Participant details can be entered directly in each form.</span></div></div>
-  return <div className="participant-bar"><span className="participant-status-dot" aria-hidden="true"></span><div><small>Signed in as</small><strong>{participant.displayName || participant.email}</strong><span>{participant.email}</span></div><a href={PATHS.myRegistration}>My registrations <span aria-hidden="true">→</span></a></div>
+  return <div className="participant-bar"><span className="participant-status-dot" aria-hidden="true"></span><div><small>Signed in as</small><strong>{participant.displayName || participant.email}</strong><span>{participant.email}</span></div><div className="participant-bar-actions"><a href={PATHS.myRegistration}>My registrations <span aria-hidden="true">→</span></a>{onSignOut && <button type="button" className="participant-sign-out" onClick={onSignOut} disabled={signingOut}>{signingOut ? 'Signing out…' : 'Sign out'}</button>}</div></div>
 }
 
-function RegistrationChoicePage({ participant }) {
+function RegistrationChoicePage({ participant, onSignOut, signingOut }) {
   return <main id="main">
     <section className="page-header"><div className="container"><p className="eyebrow">Registration</p><h1 className="section-heading">Choose your experience</h1><p className="section-lede">Start with Day 1 panel discussions or register for the Day 2 hackathon.</p></div></section>
-    <section className="section"><div className="container"><ParticipantBar participant={participant} /><div className="registration-choice-grid">
+    <section className="section"><div className="container"><ParticipantBar participant={participant} onSignOut={onSignOut} signingOut={signingOut} /><div className="registration-choice-grid">
       <a className="registration-choice registration-choice-panel" href={PATHS.registerPanel} data-reveal><span className="choice-number" aria-hidden="true">01</span><span className="stamp">Day 1 · Industry Panels</span><h2>Panel Discussion Registration</h2><p>For students, educators, researchers, professionals and delegates attending the Agriculture, Education or Healthcare panels.</p><span className="choice-action">Register for Panel Discussion <span aria-hidden="true">→</span></span></a>
       {HACKATHON_REGISTRATION_OPEN ? <a className="registration-choice registration-choice-hackathon" href={PATHS.registerHackathon} data-reveal><span className="choice-number" aria-hidden="true">02</span><span className="stamp">Day 2 · Hackathon</span><h2>Hackathon Registration</h2><p>For school and college students joining either the Technical or Non-Technical track.</p><div className="hackathon-instruction-preview"><strong>Before you apply</strong><p>Read the hackathon instructions carefully before applying. Make sure you understand and meet every eligibility criterion and participation requirement.</p></div><span className="choice-action">Register for Hackathon <span aria-hidden="true">→</span></span></a> : <div className="registration-choice registration-choice-hackathon is-registration-closed" aria-disabled="true" data-reveal><span className="choice-number" aria-hidden="true">02</span><span className="stamp">Day 2 · Hackathon</span><h2>Hackathon Registration</h2><p>For school and college students joining the Technical or Non-Technical hackathon.</p><span className="choice-action choice-action-disabled">Registration Not Started</span><div className="registration-closed-layer"><span className="closed-status"><i aria-hidden="true"></i> Registration update</span><strong>Opening Soon</strong><small>Hackathon registration has not started yet.</small></div></div>}
     </div></div></section>
@@ -1383,7 +1397,7 @@ function App() {
   const content = page === 'about' ? <AboutPage />
     : page === 'schedule' ? <SchedulePage />
       : page === 'participate' ? <ParticipatePage />
-        : page === 'register' ? <RegistrationGate>{(participant) => <RegistrationChoicePage participant={participant} />}</RegistrationGate>
+        : page === 'register' ? <RegistrationGate>{(participant, signOut, signingOut) => <RegistrationChoicePage participant={participant} onSignOut={signOut} signingOut={signingOut} />}</RegistrationGate>
           : page === 'register-hackathon' ? <RegistrationGate>{(participant) => HACKATHON_REGISTRATION_OPEN ? <HackathonRegisterPage participant={participant} /> : <HackathonRegistrationClosedPage />}</RegistrationGate>
             : page === 'register-panel' ? <RegistrationGate>{(participant) => <PanelRegisterPage participant={participant} />}</RegistrationGate>
               : page === 'my-registration' ? <MyRegistrationPage />

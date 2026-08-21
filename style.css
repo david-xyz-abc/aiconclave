@@ -1804,6 +1804,36 @@ a {
   color: currentColor;
 }
 
+.participant-bar .participant-bar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.participant-sign-out {
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  background: transparent;
+  color: #9f1919;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.participant-sign-out:hover,
+.participant-sign-out:focus-visible {
+  color: var(--color-signal);
+}
+
+.participant-sign-out:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
 .verified-email-input {
   border-color: #1a6b3c !important;
   background: #edf6f0 !important;
@@ -3473,6 +3503,12 @@ a {
   .participant-bar > button {
     grid-column: 2;
     justify-self: start;
+  }
+
+  .participant-bar .participant-bar-actions {
+    grid-column: 2;
+    justify-content: flex-start;
+    flex-wrap: wrap;
   }
 
   .registration-record-summary {
