@@ -100,7 +100,20 @@ export async function onRequestGet(context) {
       createdAt: row.submitted_at || row.created_at,
     }))
     const registrations = [...panelRegistrations, ...teamRegistrations, ...legacyHackathonRegistrations].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-    return json({ ok: true, participant: { email: session.email, displayName: session.display_name || '' }, registrations, partial: sourceFailures.length > 0 })
+    if (sourceFailures.length > 0 && registrations.length === 0) {
+      return json({
+        ok: false,
+        error: 'Your registration records could not be checked completely. Please try again.',
+        failedSources: sourceFailures,
+      }, 503)
+    }
+    return json({
+      ok: true,
+      participant: { email: session.email, displayName: session.display_name || '' },
+      registrations,
+      partial: sourceFailures.length > 0,
+      failedSources: sourceFailures,
+    })
   } catch (error) {
     console.error(JSON.stringify({ event: 'participant_registrations_failed', reason: error instanceof Error ? error.message : 'unknown' }))
     return json({ ok: false, error: 'We could not load your registrations. Please try again.' }, 500)

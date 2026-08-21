@@ -1,0 +1,781 @@
+/* ===== Register ===== */
+.registration-login-page .page-header {
+  padding-bottom: clamp(2rem, 5vw, 3.5rem);
+}
+
+.participant-login-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(19rem, 23rem);
+  align-items: center;
+  gap: clamp(2rem, 6vw, 5rem);
+  overflow: hidden;
+  padding: clamp(1.5rem, 5vw, 3rem);
+  border: 1px solid var(--color-line-strong);
+  border-top: 6px solid var(--color-signal);
+  background: linear-gradient(135deg, rgba(255, 30, 30, 0.07), #fff 46%);
+  box-shadow: 10px 10px 0 rgba(10, 10, 10, 0.07);
+}
+
+.participant-login-card h2,
+.account-error-page h1,
+.empty-registration h2 {
+  margin: 1.2rem 0 0.65rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.55rem, 4vw, 2.25rem);
+  line-height: 1.15;
+}
+
+.participant-login-card p {
+  max-width: 48ch;
+  margin: 0;
+  color: var(--color-text-soft);
+}
+
+.participant-login-copy {
+  padding-block: clamp(0.5rem, 2vw, 1.5rem);
+}
+
+.participant-login-kicker {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--color-text-soft);
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.participant-login-kicker i {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  background: #1a6b3c;
+  box-shadow: 0 0 0 4px rgba(26, 107, 60, 0.12);
+}
+
+.participant-login-action {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1rem;
+  min-width: 0;
+  padding: 1.4rem;
+  border: 1px solid var(--color-line);
+  border-top: 3px solid #1a6b3c;
+  background: #fff;
+}
+
+.participant-login-action small {
+  color: var(--color-text-soft);
+  font-size: 0.76rem;
+}
+
+.google-sign-in-control {
+  width: 100%;
+}
+
+.google-official-button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 44px;
+  min-height: 44px;
+  overflow: hidden;
+  transition: opacity 160ms ease;
+}
+
+.google-official-button > div,
+.google-official-button > div > div,
+.google-official-button iframe {
+  width: 100%;
+  max-width: 100%;
+}
+
+/*
+ * GIS normally styles this light-DOM button itself. Some browsers briefly or
+ * permanently miss that remote stylesheet, leaving the raw Google SVG at its
+ * intrinsic size. These semantic fallbacks keep the supported GIS control
+ * usable without replacing its click handler or authentication flow.
+ */
+.google-official-button [role='button'] {
+  box-sizing: border-box;
+  display: flex !important;
+  align-items: center;
+  width: 100% !important;
+  height: 44px;
+  min-height: 44px;
+  overflow: hidden;
+  border: 1px solid #747775;
+  border-radius: 3px;
+  background: #fff;
+  color: #1f1f1f;
+  cursor: pointer;
+}
+
+.google-official-button [role='button'] > div:last-child {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.google-official-button [role='button'] svg {
+  display: block;
+  width: 18px !important;
+  height: 18px !important;
+  margin: 0 12px;
+  flex: 0 0 18px;
+}
+
+.google-official-button [role='button'] span:not(#button-label) {
+  overflow: hidden;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.google-official-button #button-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.google-official-button.is-busy {
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+.google-sign-in-status {
+  display: block;
+  margin-top: 0.5rem;
+  color: var(--color-text-soft);
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+}
+
+.account-state,
+.account-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: var(--color-text-soft);
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+}
+
+.account-loading {
+  min-height: 56vh;
+  justify-content: center;
+}
+
+.account-spinner {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  border: 2px solid var(--color-line-strong);
+  border-top-color: var(--color-signal);
+  border-radius: 50%;
+  animation: account-spin 0.7s linear infinite;
+}
+
+@keyframes account-spin {
+  to { transform: rotate(360deg); }
+}
+
+.account-error {
+  padding: 0.8rem 1rem;
+  border-left: 3px solid var(--color-signal);
+  background: rgba(255, 30, 30, 0.06);
+  color: #941b1b;
+}
+
+.account-error p {
+  margin: 0 0 0.45rem;
+}
+
+.account-error-page {
+  padding: clamp(1.5rem, 5vw, 3rem);
+  border: 1px solid var(--color-line-strong);
+  border-top: 5px solid var(--color-signal);
+  background: #fff;
+  color: var(--color-text);
+}
+
+.text-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+
+.participant-bar {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.8rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--color-line-strong);
+  background: #fff;
+}
+
+.participant-preview-bar {
+  grid-template-columns: auto 1fr;
+  border-top: 3px solid #d8a514;
+  background: #fff8df;
+}
+
+.participant-preview-bar .participant-status-dot {
+  background: #d8a514;
+  box-shadow: 0 0 0 4px rgba(216, 165, 20, 0.15);
+}
+
+.participant-status-dot {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  background: #1a6b3c;
+  box-shadow: 0 0 0 4px rgba(26, 107, 60, 0.12);
+}
+
+.participant-bar div {
+  display: grid;
+  min-width: 0;
+}
+
+.participant-bar small,
+.participant-bar span,
+.registration-record-summary p {
+  color: var(--color-text-soft);
+  font-size: 0.75rem;
+}
+
+.participant-bar strong {
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  text-overflow: ellipsis;
+}
+
+.participant-bar a {
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.participant-bar a:hover,
+.participant-bar a:focus-visible {
+  color: var(--color-signal);
+}
+
+.participant-bar a span {
+  color: currentColor;
+}
+
+.participant-bar .participant-bar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.participant-sign-out {
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  background: transparent;
+  color: #9f1919;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.participant-sign-out:hover,
+.participant-sign-out:focus-visible {
+  color: var(--color-signal);
+}
+
+.participant-sign-out:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.verified-email-input {
+  border-color: #1a6b3c !important;
+  background: #edf6f0 !important;
+  color: #164d30 !important;
+  cursor: default;
+}
+
+.registration-records {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.registration-record {
+  overflow: hidden;
+  border: 1px solid var(--color-line-strong);
+  border-top: 5px solid #1a6b3c;
+  background: #fff;
+  box-shadow: 8px 8px 0 rgba(26, 107, 60, 0.08);
+}
+
+.registration-record-summary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: clamp(1.15rem, 3vw, 1.65rem);
+  transition: background 0.2s ease;
+}
+
+.registration-summary-main {
+  min-width: 0;
+  flex: 1;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.registration-summary-main:focus-visible {
+  outline: 2px solid var(--color-signal);
+  outline-offset: 0.35rem;
+}
+
+.registration-summary-main h2 {
+  margin: 0.85rem 0 0.2rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.25rem, 3vw, 1.75rem);
+  transition: color 0.2s ease;
+}
+
+.registration-summary-main:hover h2,
+.registration-summary-main:focus-visible h2 {
+  color: var(--color-signal);
+}
+
+.registration-summary-main p {
+  margin: 0;
+  color: var(--color-text-soft);
+  font-size: 0.75rem;
+}
+
+.registration-record-action {
+  display: grid;
+  justify-items: end;
+  gap: 0.8rem;
+}
+
+.registration-summary-controls {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.registration-toggle,
+.registration-download-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 2.4rem;
+  padding: 0.55rem 0.72rem;
+  border: 1px solid var(--color-line-strong);
+  background: #fff;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.registration-download-button {
+  border-color: var(--color-signal);
+  background: var(--color-signal);
+  color: #080808;
+}
+
+.registration-toggle:hover,
+.registration-download-button:hover {
+  transform: translateY(-2px);
+}
+
+.registration-toggle:hover {
+  background: #f0f0ed;
+}
+
+.registration-download-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+  transform: none;
+}
+
+.registration-toggle > i {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg) translateY(-0.15rem);
+  transition: transform 0.2s ease;
+}
+
+.registration-record.is-open .registration-toggle > i {
+  transform: rotate(225deg) translate(-0.1rem, -0.1rem);
+}
+
+.registration-record-body {
+  padding: clamp(1rem, 3vw, 1.65rem);
+  border-top: 1px solid var(--color-line);
+  background: #fafaf8;
+  animation: registration-details-in 0.22s ease both;
+}
+
+@keyframes registration-details-in {
+  from { opacity: 0; transform: translateY(-0.4rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.registration-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.65rem;
+  border: 1px solid #1a6b3c;
+  color: #1a5936;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.registration-status i {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: #1a6b3c;
+}
+
+.registration-record-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  margin: 1.25rem 0 0;
+}
+
+.event-ticket {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(10rem, 25%);
+  overflow: hidden;
+  min-height: 19rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--color-line-strong);
+  border-top: 6px solid var(--color-signal);
+  background: #fff;
+  box-shadow: 7px 7px 0 rgba(10, 10, 10, 0.06);
+}
+
+.event-ticket-main {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  padding: clamp(0.9rem, 2.2vw, 1.35rem);
+}
+
+.event-ticket-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.event-ticket-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.event-ticket-brand > span {
+  display: grid;
+  width: 2.6rem;
+  height: 2.6rem;
+  place-items: center;
+  background: var(--color-signal);
+  color: #090909;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.event-ticket-brand div {
+  display: grid;
+}
+
+.event-ticket-brand strong,
+.event-ticket-brand small,
+.event-ticket-status,
+.event-ticket-title small,
+.event-ticket-grid dt,
+.event-ticket-stub {
+  font-family: var(--font-display);
+}
+
+.event-ticket-brand strong {
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+}
+
+.event-ticket-brand small {
+  color: var(--color-text-soft);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.event-ticket-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.38rem 0.55rem;
+  border: 1px solid #1a6b3c;
+  color: #1a5936;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.event-ticket-status i {
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 50%;
+  background: #1a6b3c;
+}
+
+.event-ticket-title {
+  padding: clamp(1rem, 2.5vw, 1.5rem) 0 0.9rem;
+}
+
+.event-ticket-title small {
+  color: var(--color-text-soft);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.event-ticket-title h3 {
+  margin: 0.5rem 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.45rem, 3.2vw, 2.15rem);
+}
+
+.event-ticket-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.9fr 1fr;
+  margin: auto 0 0;
+  border-top: 4px solid #1a6b3c;
+}
+
+.event-ticket-grid div {
+  min-width: 0;
+  padding: 0.7rem 0.7rem 0.45rem 0;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.event-ticket-grid .event-ticket-organisation {
+  grid-column: 1 / -1;
+}
+
+.event-ticket-grid dt {
+  color: var(--color-text-soft);
+  font-size: 0.62rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.event-ticket-grid dd {
+  margin: 0.25rem 0 0;
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+
+.event-ticket-stub {
+  position: relative;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 0.45rem;
+  padding: 1rem 0.8rem;
+  border-left: 2px dashed var(--color-line-strong);
+  background: #f5f6f3;
+  text-align: center;
+}
+
+.event-ticket-stub::before,
+.event-ticket-stub::after {
+  content: '';
+  position: absolute;
+  left: -0.7rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 50%;
+  background: #fafaf8;
+}
+
+.event-ticket-stub::before {
+  top: -0.7rem;
+}
+
+.event-ticket-stub::after {
+  bottom: -0.7rem;
+}
+
+.event-ticket-stub small {
+  color: #1a5936;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.event-ticket-stub > strong {
+  font-size: clamp(1.5rem, 3.5vw, 2.35rem);
+}
+
+.event-ticket-stub span {
+  color: var(--color-text-soft);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.event-ticket-stub code {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-size: 0.58rem;
+  font-weight: 700;
+}
+
+.event-ticket-pass-mark {
+  display: grid;
+  width: 88%;
+  gap: 0.16rem;
+  margin: 0.5rem 0;
+  padding: 0.65rem 0 0;
+  border: 0;
+  border-top: 4px solid #1a6b3c;
+  background: transparent;
+  text-align: left;
+}
+
+.event-ticket-pass-mark small {
+  color: #1a5936;
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+}
+
+.event-ticket-pass-mark strong {
+  margin-top: 0.2rem;
+  font-size: 1rem;
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+
+.event-ticket-pass-mark b {
+  font-size: 0.58rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.event-ticket-pass-mark span {
+  color: var(--color-text-soft);
+  font-size: 0.5rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.event-ticket-pass-mark address {
+  margin-top: 0.28rem;
+  color: var(--color-text-soft);
+  font-family: var(--font-display);
+  font-size: 0.48rem;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 1.45;
+  text-transform: uppercase;
+}
+
+.ticket-download-control {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.ticket-download-control small {
+  color: var(--color-signal);
+  font-size: 0.72rem;
+}
+
+.ticket-download-control.is-compact {
+  justify-items: end;
+}
+
+.registration-record-grid div {
+  min-width: 0;
+  padding: 0.9rem 1rem 0.9rem 0;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.registration-record-grid dt {
+  color: var(--color-text-soft);
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.registration-record-grid dd {
+  margin: 0.2rem 0 0;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+
+.empty-registration {
+  padding: clamp(1.5rem, 5vw, 3rem);
+  border: 1px solid var(--color-line-strong);
+  border-top: 5px solid var(--color-signal);
+  background: linear-gradient(135deg, rgba(255, 30, 30, 0.06), #fff 52%);
+}
+
+.empty-registration p {
+  margin: 0 0 1.5rem;
+  color: var(--color-text-soft);
+}
