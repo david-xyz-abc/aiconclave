@@ -19,7 +19,7 @@ const PANEL_EVENT = Object.freeze({
   name: 'Panel Discussion',
   day: 'Day 1',
   date: '15 September 2026',
-  time: '10:30 AM',
+  time: '10:00 AM',
 })
 const HACKATHON_EVENT = Object.freeze({
   name: 'Hackathon',
@@ -375,7 +375,7 @@ function Footer() {
       <div className="container footer-grid">
         <div className="footer-org">
           <span className="site-logo">AI CONCLAVE <span className="logo-year">2026</span></span>
-          <p className="footer-departments">Organised by AI Club, Student Council – AJCE · CA · CSE · AD · ECE · EEE</p>
+          <p className="footer-departments">Organised by AI Club, Student Council – AJCE · CA · CSE · AI · ECE · EEE</p>
         </div>
         <div className="footer-meta">
           <p>Amal Jyothi College of Engineering<br />Kanjirappally, Kerala</p>
@@ -468,7 +468,7 @@ function HomePage() {
         <div className="container">
           <div className="section-head hackathon-intro" data-reveal>
             <h2 className="section-heading">Hackathon</h2>
-            <p className="section-lede">Open to school and college students. Build across two tracks, get evaluated the same day, and take the stage at the valedictory function.</p>
+            <p className="section-lede">Open to internal and external school and college students. Build a technical or non-technical solution, present it to external evaluators, and take the stage at the closing ceremony.</p>
           </div>
           <div className="hackathon-grid">
             <div className="hackathon-track"><span className="hackathon-track-label">Track 01</span><h3>Technical</h3><p>For students building AI-driven solutions with code — open to school &amp; college participants.</p></div>
@@ -514,26 +514,32 @@ function ScheduleTable({ day }) {
   const rows = day === 1
     ? [
         ['9:00 AM', 'Registration', 'Participant check-in'],
-        ['10:00 AM', 'Inaugural Function', 'Opening ceremony'],
-        ['10:30 AM', 'Panel Discussion', 'AI Across Sectors: Agriculture, Health & Education'],
-        ['1:00 PM – 4:00 PM', 'Workshops', 'Parallel workshops organised by departments and clubs of AJCE'],
+        ['9:30 AM', 'Inauguration', 'Inauguration by Shri Dean Kuriakose'],
+        ['10:00 AM', 'Panel Discussions', 'AI Across Sectors: Agriculture, Healthcare & Education'],
+        ['12:30 PM', 'Lunch Break', 'Morning panel sessions conclude'],
+        ['1:30 PM', 'Workshop Registration', 'Registration for afternoon industry workshops'],
+        ['2:00 PM – 4:40 PM', 'Industry Workshops', 'Parallel workshops open to internal and external students'],
       ]
     : [
-        ['9:00 AM', 'Registration', 'Participant check-in'],
+        ['8:30 AM', 'Registration', 'Hackathon registration and team verification'],
         ['9:30 AM – 2:30 PM', 'Hackathon', 'Technical and Non-Technical tracks for school & college students. Prize pool ₹1,00,000'],
-        ['2:30 PM', 'Evaluation', 'Judging and assessment of hackathon projects'],
-        ['4:00 PM', 'Valedictory Function', 'Closing ceremony and prize distribution'],
+        ['2:30 PM – 4:30 PM', 'Project Evaluation', 'Project presentation and assessment by external evaluators'],
+        ['5:00 PM', 'Closing Ceremony', 'Closing ceremony and announcement of results'],
       ]
   return <table className="schedule-table"><caption>Day {day} schedule</caption><thead><tr><th scope="col">Time</th><th scope="col">Event</th><th scope="col">Details</th></tr></thead><tbody>{rows.map(([time, event, details]) => <tr key={`${time}-${event}`}><td className="schedule-time mono-figure">{time}</td><td className="schedule-event">{event}</td><td className="schedule-desc">{details}</td></tr>)}</tbody></table>
 }
 
 function PanelTracks() {
   const panels = [
-    ['panel-agriculture', 'stamp-agri', 'Agriculture', 'Dr. Nikki', [['Alexy Binu', 'Founder & CEO, AetherSphere Ecosystem'], ['Prasad GopalaKrishnan', 'Retired Professor, TNAU']]],
-    ['panel-health', 'stamp-health', 'Health', 'Dr. S.N. Kumar', [['Vivek V. George', 'MD, Trivia Innovations'], ['Thomas Paulose Nechupadam', 'Doctorepreneur, PalluDoctor'], ['Robin Tomy', '—'], ['Berin Pathrose', 'Professor (Pathology), KAU']]],
-    ['panel-education', 'stamp-edu', 'Education', 'Dr. Soney C. George', [['Dr. Jagathy Raj V.P.', 'Vice Chancellor, Sree Narayana Open University'], ['Dr. M.V. Rajesh', 'Director, IHRD'], ['Dr. Shailesh Sivan', 'Speaker']]],
+    ['panel-agriculture', 'stamp-agri', 'Agriculture', [['Mr. Alexy Binu', 'CEO, AetherSphere'], ['Dr. Berin Pathrose', 'Director of Planning, Kerala Agricultural University'], ['Dr. Leena Mary', 'Professor, IIIT Kottayam; Former Principal, Government Engineering College, Kozhikode']]],
+    ['panel-health', 'stamp-health', 'Healthcare', [['Mr. Vivek V. George', 'CEO, Trivia Innovations'], ['Dr. Thomas Paul', 'Chief Orthodontist and Cosmetic Dental Surgeon'], ['Mr. Robin Tomy', 'Technology Innovator and Social Innovation Leader, TCS and K-DISC']]],
+    ['panel-education', 'stamp-edu', 'Education / Academic', [['Dr. M. V. Rajesh', 'Director, IHRD'], ['Dr. Shailesh S.', 'Principal AI Architect, Laennec AI India Pvt. Ltd.'], ['Dr. Ajith Kumar R.', 'Director, Centre for Digital Innovation and Product Development'], ['Dr. Sunil T. T.', 'Director, ICFOSS']]],
   ]
-  return <div className="panel-grid">{panels.map(([id, stamp, name, moderator, speakers]) => <section id={id} className="panel-track" aria-labelledby={`${id}-heading`} key={id}><div className="panel-track-head"><span className={`stamp ${stamp}`}>{name}</span><h3 id={`${id}-heading`}>{name}</h3></div><p className="panel-moderator"><span className="panel-role-label">Moderator</span><span className="panel-moderator-name">{moderator}</span></p><ul className="speaker-list">{speakers.map(([speaker, role]) => <li key={speaker}><span className="speaker-kicker">Expert</span><span className="speaker-name">{speaker}</span><span className="speaker-role">{role}</span></li>)}</ul></section>)}</div>
+  return <div className="panel-grid">{panels.map(([id, stamp, name, speakers]) => <section id={id} className="panel-track" aria-labelledby={`${id}-heading`} key={id}><div className="panel-track-head"><span className={`stamp ${stamp}`}>{name}</span><h3 id={`${id}-heading`}>{name}</h3></div><ul className="speaker-list">{speakers.map(([speaker, role]) => <li key={speaker}><span className="speaker-kicker">Expert</span><span className="speaker-name">{speaker}</span><span className="speaker-role">{role}</span></li>)}</ul></section>)}</div>
+}
+
+function HackathonProgrammeDetails() {
+  return <section id="hackathon-details" className="section programme-detail-section"><div className="container"><div className="section-head"><p className="eyebrow">Day 2 · Student Hackathon</p><h2 className="section-heading">Participation &amp; Evaluation</h2><p className="section-lede">An open five-hour hackathon for internal and external school and college students, followed by project presentation and evaluation.</p></div><div className="programme-detail-grid"><article className="programme-detail-card"><span className="stamp">Team format</span><h3>2–4 students</h3><p>School and college teams will be considered separately. Each team selects one sector: Education, Agriculture or Healthcare.</p></article><article className="programme-detail-card"><span className="stamp">Accepted solutions</span><h3>Technical or non-technical</h3><p>Applications, AI models, hardware, robotics, prototypes, process improvements, service models, strategies and policy ideas are accepted.</p></article><article className="programme-detail-card"><span className="stamp">Project preparation</span><h3>Build before or during the event</h3><p>Teams may prepare projects at home, present completed work, or continue improving it during the five-hour session. No preliminary shortlisting is required.</p></article><article className="programme-detail-card"><span className="stamp">Evaluation</span><h3>External evaluators</h3><p>Teams will present or demonstrate their work from 2:30 PM to 4:30 PM. Assessment may consider relevance, originality, quality, feasibility, impact and presentation.</p></article></div></div></section>
 }
 
 function SchedulePage() {
@@ -548,11 +554,11 @@ function SchedulePage() {
   }
 
   return <main id="main">
-    <section className="page-header"><div className="container"><p className="eyebrow">Programme</p><h1 className="section-heading">Schedule</h1><p className="section-lede">Two days, laid out end to end — registration through valedictory. Times and venues are fixed by the organisers.</p></div></section>
+    <section className="page-header"><div className="container"><p className="eyebrow">Programme</p><h1 className="section-heading">Schedule</h1><p className="section-lede">The proposed two-day programme, from registration through the closing ceremony. Speaker and workshop details may be updated after confirmation.</p></div></section>
     <div className="container day-toggle-wrap"><div className="day-toggle" role="tablist" aria-label="Select schedule day"><button type="button" id="day-1-tab" role="tab" className={`day-toggle-btn${day === 1 ? ' is-active' : ''}`} aria-selected={day === 1} aria-controls="day-1-content" tabIndex={day === 1 ? 0 : -1} onClick={() => selectDay(1)}>Day 1</button><button type="button" id="day-2-tab" role="tab" className={`day-toggle-btn${day === 2 ? ' is-active' : ''}`} aria-selected={day === 2} aria-controls="day-2-content" tabIndex={day === 2 ? 0 : -1} onClick={() => selectDay(2)}>Day 2</button></div><span className="day-toggle-status" aria-live="polite">Showing Day {day}</span></div>
     <div key={day} className="schedule-day-content">
-      {day === 1 && <div id="day-1-content" role="tabpanel" aria-labelledby="day-1-tab"><section id="schedule-day1" className="section"><div className="container"><div className="section-head"><p className="eyebrow">{PANEL_EVENT.date}</p><h2 className="section-heading">Day 1 <span className="mono-figure">— Inauguration, Panel &amp; Workshops</span></h2></div><ScheduleTable day={1} /></div></section><section id="panel" className="section"><div className="container"><div className="section-head"><p className="eyebrow">{PANEL_EVENT.day} · {PANEL_EVENT.date} · {PANEL_EVENT.time}</p><h2 className="section-heading">Panel Discussion: AI Across Sectors</h2><p className="section-lede">Industry leaders and academic experts come together to discuss how Artificial Intelligence is transforming Kerala's agriculture, healthcare and education sectors.</p></div><PanelTracks /></div></section></div>}
-      {day === 2 && <div id="day-2-content" role="tabpanel" aria-labelledby="day-2-tab"><section id="schedule-day2" className="section"><div className="container"><div className="section-head"><p className="eyebrow">{HACKATHON_EVENT.date}</p><h2 className="section-heading">Day 2 <span className="mono-figure">— Hackathon &amp; Valedictory</span></h2></div><ScheduleTable day={2} /></div></section></div>}
+      {day === 1 && <div id="day-1-content" role="tabpanel" aria-labelledby="day-1-tab"><section id="schedule-day1" className="section"><div className="container"><div className="section-head"><p className="eyebrow">{PANEL_EVENT.date}</p><h2 className="section-heading">Day 1 <span className="mono-figure">— Inauguration, Panel &amp; Workshops</span></h2></div><ScheduleTable day={1} /></div></section><section id="panel" className="section"><div className="container"><div className="section-head"><p className="eyebrow">{PANEL_EVENT.day} · {PANEL_EVENT.date} · {PANEL_EVENT.time}</p><h2 className="section-heading">Panel Discussion: AI Across Sectors</h2><p className="section-lede">Industry leaders and academic experts come together to discuss how Artificial Intelligence is transforming Kerala's agriculture, healthcare and education sectors. Panellists remain subject to final confirmation.</p></div><PanelTracks /></div></section></div>}
+      {day === 2 && <div id="day-2-content" role="tabpanel" aria-labelledby="day-2-tab"><section id="schedule-day2" className="section"><div className="container"><div className="section-head"><p className="eyebrow">{HACKATHON_EVENT.date}</p><h2 className="section-heading">Day 2 <span className="mono-figure">— Hackathon &amp; Closing Ceremony</span></h2></div><ScheduleTable day={2} /></div></section><HackathonProgrammeDetails /></div>}
     </div>
   </main>
 }
@@ -928,10 +934,10 @@ function HackathonRegisterPage({ participant }) {
   }
 
   return <main id="main">
-    <section className="page-header hackathon-register-header"><div className="container"><a className="back-link" href={PATHS.register}>← All registrations</a><p className="eyebrow">Day 2 · Hackathon</p><h1 className="section-heading">Create your team</h1><p className="panel-theme-line">Agriculture <span>•</span> Healthcare <span>•</span> Education</p><p className="section-lede">Register one team of 2 to 4 school or college students. The captain completes this form for everyone.</p></div></section>
+    <section className="page-header hackathon-register-header"><div className="container"><a className="back-link" href={PATHS.register}>← All registrations</a><p className="eyebrow">Day 2 · Hackathon</p><h1 className="section-heading">Create your team</h1><p className="panel-theme-line">Agriculture <span>•</span> Healthcare <span>•</span> Education</p><p className="section-lede">Register one team of 2 to 4 internal or external school or college students. The captain completes this form for everyone.</p></div></section>
     <section id="registration-form" className="section"><div className="container register-layout">
       <form id="register-form" className="sectioned-form hackathon-register-form" noValidate hidden={submitted} onSubmit={submit}>
-        <div className="hackathon-rules-banner"><strong>Before you apply</strong><p>Read the hackathon instructions carefully. Make sure every student meets the eligibility criteria before submitting the team.</p><ul><li>No preliminary idea selection or shortlisting.</li><li>Projects may be prepared at home and presented at the event.</li><li>Technical and non-technical solutions are accepted.</li></ul></div>
+        <div className="hackathon-rules-banner"><strong>Before you apply</strong><p>Read the hackathon instructions carefully. Make sure every student meets the eligibility criteria before submitting the team.</p><ul><li>The five-hour session is open to internal and external students.</li><li>No preliminary idea selection or shortlisting.</li><li>Projects may be prepared at home and presented at the event.</li><li>Technical and non-technical solutions are accepted.</li><li>Final presentations will be assessed by external evaluators.</li></ul></div>
 
         <fieldset className="form-section"><legend><span>01</span> Team Setup</legend>
           <div className="team-setup-grid">

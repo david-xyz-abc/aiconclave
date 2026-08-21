@@ -1484,8 +1484,40 @@ a {
   line-height: 1.4;
 }
 
+.programme-detail-section {
+  border-top: 1px solid var(--color-line);
+}
+
+.programme-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.programme-detail-card {
+  padding: clamp(1.35rem, 3vw, 2rem);
+  border: 1px solid var(--color-line-strong);
+  border-top: 4px solid var(--color-signal);
+  background: #fff;
+}
+
+.programme-detail-card h3 {
+  margin: 1.1rem 0 0.7rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.2rem, 2.5vw, 1.55rem);
+}
+
+.programme-detail-card p {
+  margin: 0.65rem 0 0;
+  color: var(--color-text-soft);
+}
+
 @media (max-width: 900px) {
   .panel-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .programme-detail-grid {
     grid-template-columns: 1fr;
   }
 
