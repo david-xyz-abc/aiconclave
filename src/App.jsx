@@ -13,7 +13,7 @@ const PATHS = {
 }
 
 const HACKATHON_REGISTRATION_OPEN = true
-const GOOGLE_SIGN_IN_ENABLED = false
+const GOOGLE_SIGN_IN_ENABLED = import.meta.env.VITE_GOOGLE_SIGN_IN_ENABLED !== 'false'
 const DEV_PREVIEW_PARTICIPANT = Object.freeze({ displayName: '', email: '', isPreview: true })
 const PANEL_EVENT = Object.freeze({
   name: 'Panel Discussion',
@@ -166,34 +166,45 @@ const participantGroups = [
   },
 ]
 
+const blankTeamMember = () => ({ fullName: '', email: '', phone: '', institution: '', departmentOrCourse: '', yearOrGrade: '' })
+
 const initialHackathonForm = {
-  name: '',
-  email: '',
-  phone: '',
-  organisation: '',
-  tracks: [],
-  challengeArea: '',
-  subcategory: '',
-  problemArea: '',
-  ideaSummary: '',
+  teamName: '',
+  participantCategory: '',
+  sectorTrack: '',
+  solutionType: '',
+  members: [blankTeamMember(), blankTeamMember()],
   informationConfirmed: false,
+  rulesAccepted: false,
+  updatesOptIn: false,
 }
 
 function validateHackathonForm(form) {
   const errors = {}
+  const normalizedEmails = new Set()
 
-  if (!form.name.trim()) errors.name = 'Enter your full name.'
-  if (!form.email.trim()) errors.email = 'Enter your email address.'
-  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) errors.email = 'Enter a valid email address, for example name@example.com.'
-  if (!form.phone.trim()) errors.phone = 'Enter your phone number.'
-  else if (!/^\d{10}$/.test(form.phone)) errors.phone = 'Enter exactly 10 digits after +91.'
-  if (!form.organisation.trim()) errors.organisation = 'Enter your school, college or organization name.'
-  if (form.tracks.length !== 1) errors.tracks = 'Choose one hackathon track.'
-  if (!hackathonChallengeAreas[form.challengeArea]) errors.challengeArea = 'Choose a challenge sector.'
-  else if (!hackathonChallengeAreas[form.challengeArea][form.subcategory]) errors.subcategory = 'Choose a subcategory.'
-  else if (!hackathonChallengeAreas[form.challengeArea][form.subcategory].includes(form.problemArea)) errors.problemArea = 'Choose a suggested problem area.'
-  if (!form.informationConfirmed) errors.informationConfirmed = 'Confirm that the information provided is accurate.'
+  if (form.teamName.trim().length < 2) errors.teamName = 'Enter a team name using at least 2 characters.'
+  if (!['School', 'College'].includes(form.participantCategory)) errors.participantCategory = 'Choose School or College.'
+  if (!['Agriculture', 'Education', 'Healthcare'].includes(form.sectorTrack)) errors.sectorTrack = 'Choose one hackathon sector.'
+  if (!['Technical', 'Non-Technical'].includes(form.solutionType)) errors.solutionType = 'Choose Technical or Non-Technical.'
+  if (!Array.isArray(form.members) || form.members.length < 2 || form.members.length > 4) errors.members = 'A team must have 2 to 4 students.'
 
+  form.members.forEach((member, index) => {
+    const prefix = `members.${index}`
+    const email = member.email.trim().toLowerCase()
+    if (member.fullName.trim().length < 2) errors[`${prefix}.fullName`] = 'Enter the student’s full name.'
+    if (!email) errors[`${prefix}.email`] = 'Enter the student’s email address.'
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors[`${prefix}.email`] = 'Enter a valid email address.'
+    else if (normalizedEmails.has(email)) errors[`${prefix}.email`] = 'Each student must use a different email address.'
+    else normalizedEmails.add(email)
+    if (!/^\d{10}$/.test(member.phone)) errors[`${prefix}.phone`] = 'Enter exactly 10 digits after +91.'
+    if (member.institution.trim().length < 2) errors[`${prefix}.institution`] = `Enter the student’s ${form.participantCategory === 'School' ? 'school' : 'college'} name.`
+    if (form.participantCategory === 'College' && member.departmentOrCourse.trim().length < 2) errors[`${prefix}.departmentOrCourse`] = 'Enter the department or course.'
+    if (!member.yearOrGrade.trim()) errors[`${prefix}.yearOrGrade`] = form.participantCategory === 'School' ? 'Enter the class or grade.' : 'Enter the year of study.'
+  })
+
+  if (!form.informationConfirmed) errors.informationConfirmed = 'Confirm that the team information is accurate.'
+  if (!form.rulesAccepted) errors.rulesAccepted = 'Confirm that every team member meets the participation rules.'
   return errors
 }
 
@@ -588,16 +599,18 @@ function loadGoogleIdentity() {
   if (googleScriptPromise) return googleScriptPromise
   googleScriptPromise = new Promise((resolve, reject) => {
     const existing = document.querySelector('script[data-google-identity]')
-    const script = existing || document.createElement('script')
+    existing?.remove()
+    const script = document.createElement('script')
     script.addEventListener('load', () => window.google?.accounts?.id ? resolve(window.google) : reject(new Error('Google Sign-In did not load.')), { once: true })
-    script.addEventListener('error', () => reject(new Error('Google Sign-In could not be loaded.')), { once: true })
-    if (!existing) {
-      script.src = 'https://accounts.google.com/gsi/client'
-      script.async = true
-      script.defer = true
-      script.dataset.googleIdentity = 'true'
-      document.head.appendChild(script)
-    }
+    script.addEventListener('error', () => {
+      script.remove()
+      reject(new Error('Google Sign-In could not be loaded. Check your connection and try again.'))
+    }, { once: true })
+    script.src = 'https://accounts.google.com/gsi/client'
+    script.async = true
+    script.defer = true
+    script.dataset.googleIdentity = 'true'
+    document.head.appendChild(script)
   }).catch((error) => {
     googleScriptPromise = undefined
     throw error
@@ -623,19 +636,52 @@ function getGoogleConfig(force = false) {
   return googleConfigPromise
 }
 
+function waitForGoogleIdentityStyles(timeout = 5000) {
+  return new Promise((resolve, reject) => {
+    const startedAt = performance.now()
+    let frame = 0
+    const check = () => {
+      const stylesheet = document.querySelector('link#googleidentityservice[href*="accounts.google.com/gsi/style"]')
+      if (stylesheet?.sheet) {
+        resolve()
+        return
+      }
+      if (performance.now() - startedAt >= timeout) {
+        reject(new Error('Your browser blocked Google Sign-In. Allow accounts.google.com for this site, then reload the page.'))
+        return
+      }
+      frame = window.requestAnimationFrame(check)
+    }
+    check()
+    return () => window.cancelAnimationFrame(frame)
+  })
+}
+
 function GoogleSignInButton({ onSignedIn }) {
   const hostRef = useRef(null)
+  const googleRef = useRef(null)
+  const onSignedInRef = useRef(onSignedIn)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(true)
+  const [buttonReady, setButtonReady] = useState(false)
+  const [fallbackReady, setFallbackReady] = useState(false)
   const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
+    onSignedInRef.current = onSignedIn
+  }, [onSignedIn])
+
+  useEffect(() => {
     let active = true
+    let readinessFrame = 0
+    let readinessTimer = 0
     setBusy(true)
+    setButtonReady(false)
+    setFallbackReady(false)
     setError('')
     Promise.all([loadGoogleIdentity(), getGoogleConfig(attempt > 0)]).then(([google, config]) => {
       if (!active || !hostRef.current) return
-      hostRef.current.replaceChildren()
+      googleRef.current = google
       google.accounts.id.initialize({
         client_id: config.clientId,
         nonce: config.nonce,
@@ -654,7 +700,7 @@ function GoogleSignInButton({ onSignedIn }) {
             const data = await response.json().catch(() => ({}))
             if (!response.ok || !data.ok) throw new Error(data.error || 'Google Sign-In could not be completed.')
             googleConfigPromise = undefined
-            onSignedIn(data.participant)
+            onSignedInRef.current(data.participant)
           } catch (signInError) {
             googleConfigPromise = undefined
             if (active) {
@@ -665,21 +711,75 @@ function GoogleSignInButton({ onSignedIn }) {
           }
         },
       })
-      google.accounts.id.renderButton(hostRef.current, {
-        type: 'standard', theme: 'outline', size: 'large', shape: 'rectangular', text: 'continue_with',
-        width: Math.min(360, Math.max(240, hostRef.current.clientWidth)),
+      waitForGoogleIdentityStyles().then(() => {
+        if (!active || !hostRef.current) return
+        const host = hostRef.current
+        const availableWidth = Math.floor(host.getBoundingClientRect().width)
+        host.replaceChildren()
+        google.accounts.id.renderButton(host, {
+          type: 'standard', theme: 'outline', size: 'large', shape: 'rectangular', text: 'continue_with', logo_alignment: 'left',
+          width: String(Math.min(400, Math.max(200, availableWidth))),
+        })
+
+        const renderedAt = performance.now()
+        const confirmButtonReady = () => {
+          if (!active || !hostRef.current) return
+          const frame = host.querySelector('iframe')
+          const frameRect = frame?.getBoundingClientRect()
+          if (frame && frameRect.width >= 200 && frameRect.height >= 30) {
+            setButtonReady(true)
+            setBusy(false)
+            return
+          }
+          if (performance.now() - renderedAt < 5000) {
+            readinessFrame = window.requestAnimationFrame(confirmButtonReady)
+            return
+          }
+          host.replaceChildren()
+          setButtonReady(false)
+          setFallbackReady(true)
+          setBusy(false)
+        }
+        readinessFrame = window.requestAnimationFrame(confirmButtonReady)
+        readinessTimer = window.setTimeout(confirmButtonReady, 5000)
+      }).catch(() => {
+        if (!active || !hostRef.current) return
+        hostRef.current.replaceChildren()
+        setButtonReady(false)
+        setFallbackReady(true)
+        setBusy(false)
       })
-      setBusy(false)
     }).catch((loadError) => {
       if (!active) return
       setBusy(false)
+      setButtonReady(false)
       setError(loadError.message || 'Google Sign-In is unavailable right now.')
     })
-    return () => { active = false }
-  }, [attempt, onSignedIn])
+    return () => {
+      active = false
+      window.cancelAnimationFrame(readinessFrame)
+      window.clearTimeout(readinessTimer)
+      hostRef.current?.replaceChildren()
+    }
+  }, [attempt])
+
+  const openGooglePrompt = () => {
+    const google = googleRef.current
+    if (!google?.accounts?.id) {
+      setError('Google Sign-In is unavailable right now. Please try again.')
+      return
+    }
+    setError('')
+    google.accounts.id.prompt((notification) => {
+      if (notification.isNotDisplayed?.() || notification.isSkippedMoment?.()) {
+        setError('Google Sign-In was blocked by the browser. Allow Google pop-ups for this site and try again.')
+      }
+    })
+  }
 
   return <div className="google-sign-in-control">
-    <div ref={hostRef} className="google-button-host" aria-busy={busy}></div>
+    <div ref={hostRef} className={`google-button-host${buttonReady ? ' is-ready' : ''}${fallbackReady ? ' is-fallback' : ''}`} aria-busy={busy}></div>
+    {fallbackReady && <button type="button" className="google-fallback-button" onClick={openGooglePrompt}><span aria-hidden="true">G</span><strong>Continue with Google</strong><i aria-hidden="true">→</i></button>}
     {busy && <p className="account-state"><span className="account-spinner" aria-hidden="true"></span> Preparing secure sign-in…</p>}
     {error && <div className="account-error" role="alert"><p>{error}</p><button type="button" className="text-button" onClick={() => setAttempt((value) => value + 1)}>Try again</button></div>}
   </div>
@@ -733,30 +833,30 @@ function RegistrationChoicePage({ participant }) {
     <section className="page-header"><div className="container"><p className="eyebrow">Registration</p><h1 className="section-heading">Choose your experience</h1><p className="section-lede">Start with Day 1 panel discussions or register for the Day 2 hackathon.</p></div></section>
     <section className="section"><div className="container"><ParticipantBar participant={participant} /><div className="registration-choice-grid">
       <a className="registration-choice registration-choice-panel" href={PATHS.registerPanel} data-reveal><span className="choice-number" aria-hidden="true">01</span><span className="stamp">Day 1 · Industry Panels</span><h2>Panel Discussion Registration</h2><p>For students, educators, researchers, professionals and delegates attending the Agriculture, Education or Healthcare panels.</p><span className="choice-action">Register for Panel Discussion <span aria-hidden="true">→</span></span></a>
-      {HACKATHON_REGISTRATION_OPEN ? <a className="registration-choice registration-choice-hackathon" href={PATHS.registerHackathon} data-reveal><span className="choice-number" aria-hidden="true">02</span><span className="stamp">Day 2 · Hackathon</span><h2>Hackathon Registration</h2><p>For school and college students joining either the Technical or Non-Technical track.</p><div className="hackathon-instruction-preview"><strong>Before you register</strong><ul><li>The on-campus hackathon session runs for 5 hours.</li><li>Students may build their project at home in advance and demonstrate it at the event.</li></ul></div><span className="choice-action">Register for Hackathon <span aria-hidden="true">→</span></span></a> : <div className="registration-choice registration-choice-hackathon is-registration-closed" aria-disabled="true" data-reveal><span className="choice-number" aria-hidden="true">02</span><span className="stamp">Day 2 · Hackathon</span><h2>Hackathon Registration</h2><p>For school and college students joining the Technical or Non-Technical hackathon.</p><span className="choice-action choice-action-disabled">Registration Not Started</span><div className="registration-closed-layer"><span className="closed-status"><i aria-hidden="true"></i> Registration update</span><strong>Opening Soon</strong><small>Hackathon registration has not started yet.</small></div></div>}
+      {HACKATHON_REGISTRATION_OPEN ? <a className="registration-choice registration-choice-hackathon" href={PATHS.registerHackathon} data-reveal><span className="choice-number" aria-hidden="true">02</span><span className="stamp">Day 2 · Hackathon</span><h2>Hackathon Registration</h2><p>For school and college students joining either the Technical or Non-Technical track.</p><div className="hackathon-instruction-preview"><strong>Before you apply</strong><p>Read the hackathon instructions carefully before applying. Make sure you understand and meet every eligibility criterion and participation requirement.</p></div><span className="choice-action">Register for Hackathon <span aria-hidden="true">→</span></span></a> : <div className="registration-choice registration-choice-hackathon is-registration-closed" aria-disabled="true" data-reveal><span className="choice-number" aria-hidden="true">02</span><span className="stamp">Day 2 · Hackathon</span><h2>Hackathon Registration</h2><p>For school and college students joining the Technical or Non-Technical hackathon.</p><span className="choice-action choice-action-disabled">Registration Not Started</span><div className="registration-closed-layer"><span className="closed-status"><i aria-hidden="true"></i> Registration update</span><strong>Opening Soon</strong><small>Hackathon registration has not started yet.</small></div></div>}
     </div></div></section>
   </main>
 }
 
 function HackathonRegisterPage({ participant }) {
-  const freshHackathonForm = () => ({ ...initialHackathonForm, tracks: [], name: participant.displayName || '', email: participant.email })
+  const freshHackathonForm = () => ({
+    ...initialHackathonForm,
+    members: [
+      { ...blankTeamMember(), fullName: participant.displayName || '', email: participant.email || '' },
+      blankTeamMember(),
+    ],
+  })
   const [form, setForm] = useState(freshHackathonForm)
   const [error, setError] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [confirmation, setConfirmation] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [fieldErrors, setFieldErrors] = useState({})
-  const nameRef = useRef(null)
+  const teamNameRef = useRef(null)
 
   const updateField = (event) => {
     const { name, value, type, checked } = event.target
-    setForm((current) => {
-      const normalizedValue = name === 'phone' ? value.replace(/\D/g, '').slice(0, 10) : value
-      const next = { ...current, [name]: type === 'checkbox' ? checked : normalizedValue }
-      if (name === 'challengeArea') return { ...next, subcategory: '', problemArea: '' }
-      if (name === 'subcategory') return { ...next, problemArea: '' }
-      return next
-    })
+    setForm((current) => ({ ...current, [name]: type === 'checkbox' ? checked : value }))
     setFieldErrors((current) => {
       if (!current[name]) return current
       const next = { ...current }
@@ -765,15 +865,37 @@ function HackathonRegisterPage({ participant }) {
     })
   }
 
-  const selectTrack = (event) => {
-    const { value } = event.target
-    setForm((current) => ({ ...current, tracks: [value] }))
+  const updateMember = (index, field, value) => {
+    const normalizedValue = field === 'phone' ? value.replace(/\D/g, '').slice(0, 10) : value
+    setForm((current) => ({ ...current, members: current.members.map((member, memberIndex) => memberIndex === index ? { ...member, [field]: normalizedValue } : member) }))
+    const errorKey = `members.${index}.${field}`
     setFieldErrors((current) => {
-      if (!current.tracks) return current
+      if (!current[errorKey]) return current
       const next = { ...current }
-      delete next.tracks
+      delete next[errorKey]
       return next
     })
+  }
+
+  const addMember = () => {
+    if (form.members.length >= 4) return
+    setForm((current) => ({ ...current, members: [...current.members, blankTeamMember()] }))
+    setFieldErrors((current) => {
+      const next = { ...current }
+      delete next.members
+      return next
+    })
+  }
+
+  const removeMember = (index) => {
+    if (index < 2 || form.members.length <= 2) return
+    setForm((current) => ({ ...current, members: current.members.filter((_, memberIndex) => memberIndex !== index) }))
+    setFieldErrors({})
+  }
+
+  const focusFirstInvalidField = (errors) => {
+    const firstName = Object.keys(errors)[0]
+    window.setTimeout(() => document.getElementsByName(firstName)[0]?.focus(), 0)
   }
 
   const submit = async (event) => {
@@ -783,7 +905,7 @@ function HackathonRegisterPage({ participant }) {
     if (Object.keys(validationErrors).length) {
       setFieldErrors(validationErrors)
       setError('Please review the highlighted fields below.')
-      window.setTimeout(() => document.querySelector(`[name="${Object.keys(validationErrors)[0]}"]`)?.focus(), 0)
+      focusFirstInvalidField(validationErrors)
       return
     }
     setFieldErrors({})
@@ -793,8 +915,10 @@ function HackathonRegisterPage({ participant }) {
       const response = await fetch('/api/register', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...form, registrationType: 'hackathon' }) })
       const data = await response.json().catch(() => ({}))
       if (!response.ok || !data.ok) {
-        if (data.fields && typeof data.fields === 'object') setFieldErrors(data.fields)
+        const serverErrors = data.fields && typeof data.fields === 'object' ? data.fields : {}
+        setFieldErrors(serverErrors)
         setError(data.error || 'Could not save registration. Please try again.')
+        if (Object.keys(serverErrors).length) focusFirstInvalidField(serverErrors)
         return
       }
       setConfirmation(data.registration)
@@ -807,47 +931,53 @@ function HackathonRegisterPage({ participant }) {
     }
   }
 
-  const subcategories = form.challengeArea ? Object.keys(hackathonChallengeAreas[form.challengeArea]) : []
-  const problemAreas = form.challengeArea && form.subcategory ? hackathonChallengeAreas[form.challengeArea][form.subcategory] : []
-  const reset = () => {
-    setForm(freshHackathonForm())
-    setError('')
-    setFieldErrors({})
-    setConfirmation(null)
-    setSubmitted(false)
-    window.setTimeout(() => nameRef.current?.focus(), 0)
-  }
-
   return <main id="main">
-    <section className="page-header hackathon-register-header"><div className="container"><a className="back-link" href={PATHS.register}>← All registrations</a><p className="eyebrow">Day 2 · Hackathon</p><h1 className="section-heading">Hackathon Registration</h1><p className="panel-theme-line">Agriculture <span>•</span> Health <span>•</span> Education</p><p className="section-lede">Choose your track and the challenge you want to solve with AI.</p></div></section>
+    <section className="page-header hackathon-register-header"><div className="container"><a className="back-link" href={PATHS.register}>← All registrations</a><p className="eyebrow">Day 2 · Hackathon</p><h1 className="section-heading">Create your team</h1><p className="panel-theme-line">Agriculture <span>•</span> Healthcare <span>•</span> Education</p><p className="section-lede">Register one team of 2 to 4 school or college students. The captain completes this form for everyone.</p></div></section>
     <section id="registration-form" className="section"><div className="container register-layout">
       <form id="register-form" className="sectioned-form hackathon-register-form" noValidate hidden={submitted} onSubmit={submit}>
-        <fieldset className="form-section"><legend><span>01</span> Participant Details</legend>
-          <div className="participant-details-grid">
-            <div className="form-field participant-name"><label htmlFor="hackathon-name">Full Name *</label><input ref={nameRef} id="hackathon-name" name="name" type="text" autoComplete="name" required value={form.name} onChange={updateField} aria-invalid={Boolean(fieldErrors.name)} aria-describedby={fieldErrors.name ? 'hackathon-name-error' : undefined} /><FieldError id="hackathon-name-error" message={fieldErrors.name} /></div>
-            <div className="form-field participant-email"><label htmlFor="hackathon-email">{participant.isPreview ? 'Email Address *' : 'Verified Google Email'}</label><input className={participant.isPreview ? undefined : 'verified-email-input'} id="hackathon-email" name="email" type="email" autoComplete="email" readOnly={!participant.isPreview} required value={form.email} onChange={participant.isPreview ? updateField : undefined} aria-invalid={Boolean(fieldErrors.email)} aria-describedby={fieldErrors.email ? 'hackathon-email-error' : participant.isPreview ? undefined : 'hackathon-email-hint'} />{!participant.isPreview && <p className="field-hint" id="hackathon-email-hint">Connected securely through Google Sign-In.</p>}<FieldError id="hackathon-email-error" message={fieldErrors.email} /></div>
-            <div className="form-field participant-phone"><label htmlFor="hackathon-phone">Phone Number *</label><div className={`india-phone-input${fieldErrors.phone ? ' has-error' : ''}`}><span aria-hidden="true">+91</span><input id="hackathon-phone" name="phone" type="tel" inputMode="numeric" autoComplete="tel-national" maxLength={10} pattern="[0-9]{10}" placeholder="9876543210" required value={form.phone} onChange={updateField} aria-invalid={Boolean(fieldErrors.phone)} aria-describedby={fieldErrors.phone ? 'hackathon-phone-error' : 'hackathon-phone-hint'} /></div><p className="field-hint" id="hackathon-phone-hint">Enter the 10-digit mobile number after +91.</p><FieldError id="hackathon-phone-error" message={fieldErrors.phone} /></div>
-            <div className="form-field participant-organisation"><label htmlFor="hackathon-organisation">School / College / Organization *</label><input id="hackathon-organisation" name="organisation" type="text" autoComplete="organization" required value={form.organisation} onChange={updateField} aria-invalid={Boolean(fieldErrors.organisation)} aria-describedby={fieldErrors.organisation ? 'hackathon-organisation-error' : undefined} /><FieldError id="hackathon-organisation-error" message={fieldErrors.organisation} /></div>
+        <div className="hackathon-rules-banner"><strong>Before you apply</strong><p>Read the hackathon instructions carefully. Make sure every student meets the eligibility criteria before submitting the team.</p><ul><li>No preliminary idea selection or shortlisting.</li><li>Projects may be prepared at home and presented at the event.</li><li>Technical and non-technical solutions are accepted.</li></ul></div>
+
+        <fieldset className="form-section"><legend><span>01</span> Team Setup</legend>
+          <div className="team-setup-grid">
+            <div className="form-field"><label htmlFor="hackathon-team-name">Team Name *</label><input ref={teamNameRef} id="hackathon-team-name" name="teamName" type="text" maxLength="100" autoComplete="off" required value={form.teamName} onChange={updateField} aria-invalid={Boolean(fieldErrors.teamName)} aria-describedby={fieldErrors.teamName ? 'hackathon-team-name-error' : 'hackathon-team-name-hint'} /><p className="field-hint" id="hackathon-team-name-hint">Team names must be unique.</p><FieldError id="hackathon-team-name-error" message={fieldErrors.teamName} /></div>
+            <div className="form-field"><span className="form-legend">Student Category *</span><RadioOptions name="participantCategory" options={['School', 'College']} value={form.participantCategory} onChange={updateField} required invalid={Boolean(fieldErrors.participantCategory)} errorId="hackathon-category-error" /><FieldError id="hackathon-category-error" message={fieldErrors.participantCategory} /></div>
           </div>
         </fieldset>
 
-        <fieldset className="form-section"><legend><span>02</span> Hackathon Track</legend><p className="form-hint">Choose exactly one track for your entry.</p><div className={`track-options${fieldErrors.tracks ? ' has-error' : ''}`} role="radiogroup" aria-invalid={Boolean(fieldErrors.tracks)} aria-describedby={fieldErrors.tracks ? 'hackathon-tracks-error' : undefined}>{hackathonTrackOptions.map((track) => <div className="track-option" key={track.id}><label htmlFor={track.id}><span className="track-option-title">{track.title}</span><span className="track-option-desc">{track.description}</span></label><input type="radio" id={track.id} name="tracks" value={track.value} checked={form.tracks[0] === track.value} onChange={selectTrack} /></div>)}</div><FieldError id="hackathon-tracks-error" message={fieldErrors.tracks} /></fieldset>
-
-        <fieldset className="form-section challenge-section"><legend><span>03</span> Challenge Focus</legend>
-          <div className="form-field"><span className="form-legend">Choose a sector *</span><div className={`challenge-area-options${form.challengeArea ? ' has-selection' : ''}`} role="radiogroup" aria-invalid={Boolean(fieldErrors.challengeArea)} aria-describedby={fieldErrors.challengeArea ? 'challenge-area-error' : undefined}>{Object.keys(hackathonChallengeAreas).map((area) => <label className={`challenge-area-card challenge-area-${area.toLowerCase()}${form.challengeArea === area ? ' is-selected' : form.challengeArea ? ' is-muted' : ''}`} key={area}><input type="radio" name="challengeArea" value={area} checked={form.challengeArea === area} onChange={updateField} /><span className="challenge-area-index" aria-hidden="true">0{Object.keys(hackathonChallengeAreas).indexOf(area) + 1}</span><strong>{area}</strong><small>{Object.keys(hackathonChallengeAreas[area]).length} subcategories</small></label>)}</div><FieldError id="challenge-area-error" message={fieldErrors.challengeArea} /></div>
-          <div className="challenge-dependent-fields" aria-live="polite">
-            {!form.challengeArea ? <div className="challenge-waiting-state"><span>Next step</span><p>Choose a sector above to see its subcategories.</p></div> : <>
-              <div className="challenge-selection-step"><span className="challenge-step-number" aria-hidden="true">01</span><div className="form-field"><label htmlFor="hackathon-subcategory">Subcategory *</label><select id="hackathon-subcategory" name="subcategory" required value={form.subcategory} onChange={updateField} aria-invalid={Boolean(fieldErrors.subcategory)} aria-describedby={fieldErrors.subcategory ? 'hackathon-subcategory-error' : 'hackathon-subcategory-hint'}><option value="">Select a subcategory</option>{subcategories.map((subcategory) => <option value={subcategory} key={subcategory}>{subcategory}</option>)}</select><p className="field-hint" id="hackathon-subcategory-hint">Showing options for {form.challengeArea}.</p><FieldError id="hackathon-subcategory-error" message={fieldErrors.subcategory} /></div></div>
-              {form.subcategory ? <div className="challenge-selection-step"><span className="challenge-step-number" aria-hidden="true">02</span><div className="form-field"><label htmlFor="hackathon-problem-area">Suggested Problem Area / Idea *</label><select id="hackathon-problem-area" name="problemArea" required value={form.problemArea} onChange={updateField} aria-invalid={Boolean(fieldErrors.problemArea)} aria-describedby={fieldErrors.problemArea ? 'hackathon-problem-error' : undefined}><option value="">Select a problem area</option>{problemAreas.map((problemArea) => <option value={problemArea} key={problemArea}>{problemArea}</option>)}</select><FieldError id="hackathon-problem-error" message={fieldErrors.problemArea} /></div></div> : <div className="challenge-waiting-state is-subtle"><span>Then</span><p>Choose a subcategory to reveal its suggested problem areas.</p></div>}
-            </>}
-          </div>
-          <div className="form-field"><label htmlFor="hackathon-idea">Brief Problem Statement / Idea <span className="optional-label">Optional</span></label><textarea id="hackathon-idea" name="ideaSummary" rows="5" maxLength="800" placeholder="Describe the problem, who it affects, and your proposed approach." value={form.ideaSummary} onChange={updateField} /><p className="field-hint">Up to 800 characters. You can refine this later.</p></div>
+        <fieldset className="form-section"><legend><span>02</span> Team Members</legend>
+          <div className="team-members-heading"><div><strong>{form.members.length} of 4 students</strong><p>The captain is member 1. At least one additional student is required.</p></div>{form.members.length < 4 && <button type="button" className="btn btn-outline add-member-button" onClick={addMember}>+ Add student</button>}</div>
+          <FieldError id="hackathon-members-error" message={fieldErrors.members} />
+          <div className="team-member-list">{form.members.map((member, index) => {
+            const prefix = `members.${index}`
+            const isCaptain = index === 0
+            const isSchool = form.participantCategory === 'School'
+            return <section className="team-member-card" key={index} aria-labelledby={`team-member-${index}-title`}>
+              <header><div><span>0{index + 1}</span><h3 id={`team-member-${index}-title`}>{isCaptain ? 'Team Captain' : `Team Member ${index + 1}`}</h3></div>{index >= 2 && <button type="button" className="remove-member-button" onClick={() => removeMember(index)} aria-label={`Remove team member ${index + 1}`}>Remove</button>}</header>
+              <div className="team-member-fields">
+                <div className="form-field"><label htmlFor={`member-${index}-name`}>Full Name *</label><input id={`member-${index}-name`} name={`${prefix}.fullName`} type="text" autoComplete={isCaptain ? 'name' : 'off'} required value={member.fullName} onChange={(event) => updateMember(index, 'fullName', event.target.value)} aria-invalid={Boolean(fieldErrors[`${prefix}.fullName`])} /><FieldError id={`member-${index}-name-error`} message={fieldErrors[`${prefix}.fullName`]} /></div>
+                <div className="form-field"><label htmlFor={`member-${index}-email`}>{isCaptain ? 'Verified Google Email *' : 'Email Address *'}</label><input className={isCaptain ? 'verified-email-input' : undefined} id={`member-${index}-email`} name={`${prefix}.email`} type="email" autoComplete={isCaptain ? 'email' : 'off'} readOnly={isCaptain && !participant.isPreview} required value={member.email} onChange={(event) => updateMember(index, 'email', event.target.value)} aria-invalid={Boolean(fieldErrors[`${prefix}.email`])} /><FieldError id={`member-${index}-email-error`} message={fieldErrors[`${prefix}.email`]} /></div>
+                <div className="form-field"><label htmlFor={`member-${index}-phone`}>Phone Number *</label><div className={`india-phone-input${fieldErrors[`${prefix}.phone`] ? ' has-error' : ''}`}><span aria-hidden="true">+91</span><input id={`member-${index}-phone`} name={`${prefix}.phone`} type="tel" inputMode="numeric" maxLength={10} pattern="[0-9]{10}" placeholder="9876543210" required value={member.phone} onChange={(event) => updateMember(index, 'phone', event.target.value)} aria-invalid={Boolean(fieldErrors[`${prefix}.phone`])} /></div><FieldError id={`member-${index}-phone-error`} message={fieldErrors[`${prefix}.phone`]} /></div>
+                <div className="form-field"><label htmlFor={`member-${index}-institution`}>{isSchool ? 'School Name *' : form.participantCategory === 'College' ? 'College Name *' : 'Institution Name *'}</label><input id={`member-${index}-institution`} name={`${prefix}.institution`} type="text" required value={member.institution} onChange={(event) => updateMember(index, 'institution', event.target.value)} aria-invalid={Boolean(fieldErrors[`${prefix}.institution`])} /><FieldError id={`member-${index}-institution-error`} message={fieldErrors[`${prefix}.institution`]} /></div>
+                {!isSchool && <div className="form-field"><label htmlFor={`member-${index}-course`}>Department / Course *</label><input id={`member-${index}-course`} name={`${prefix}.departmentOrCourse`} type="text" required value={member.departmentOrCourse} onChange={(event) => updateMember(index, 'departmentOrCourse', event.target.value)} aria-invalid={Boolean(fieldErrors[`${prefix}.departmentOrCourse`])} /><FieldError id={`member-${index}-course-error`} message={fieldErrors[`${prefix}.departmentOrCourse`]} /></div>}
+                <div className="form-field"><label htmlFor={`member-${index}-year`}>{isSchool ? 'Class / Grade *' : 'Year of Study *'}</label><input id={`member-${index}-year`} name={`${prefix}.yearOrGrade`} type="text" required value={member.yearOrGrade} onChange={(event) => updateMember(index, 'yearOrGrade', event.target.value)} aria-invalid={Boolean(fieldErrors[`${prefix}.yearOrGrade`])} /><FieldError id={`member-${index}-year-error`} message={fieldErrors[`${prefix}.yearOrGrade`]} /></div>
+              </div>
+            </section>
+          })}</div>
         </fieldset>
 
-        <fieldset className="form-section"><legend><span>04</span> Confirmation</legend><label className={`confirmation-check${fieldErrors.informationConfirmed ? ' has-error' : ''}`}><input type="checkbox" name="informationConfirmed" checked={form.informationConfirmed} onChange={updateField} required aria-invalid={Boolean(fieldErrors.informationConfirmed)} aria-describedby={fieldErrors.informationConfirmed ? 'hackathon-confirmation-error' : undefined} /><span>I confirm that the information provided above is accurate. *</span></label><FieldError id="hackathon-confirmation-error" message={fieldErrors.informationConfirmed} /></fieldset>
-        <div className="form-submit-row"><button type="submit" className="btn btn-primary" disabled={submitting} aria-busy={submitting}>{submitting ? 'Submitting…' : <>Submit Hackathon Registration <span aria-hidden="true">→</span></>}</button><p className={`form-error${error ? ' is-visible' : ''}`} role="alert" aria-live="polite">{error}</p></div>
+        <fieldset className="form-section"><legend><span>03</span> Hackathon Entry</legend>
+          <div className="form-field"><span className="form-legend">Choose one sector *</span><div className={`challenge-area-options${form.sectorTrack ? ' has-selection' : ''}`} role="radiogroup" aria-invalid={Boolean(fieldErrors.sectorTrack)}>{['Agriculture', 'Healthcare', 'Education'].map((area, index) => <label className={`challenge-area-card challenge-area-${area.toLowerCase()}${form.sectorTrack === area ? ' is-selected' : form.sectorTrack ? ' is-muted' : ''}`} key={area}><input type="radio" name="sectorTrack" value={area} checked={form.sectorTrack === area} onChange={updateField} /><span className="challenge-area-index" aria-hidden="true">0{index + 1}</span><strong>{area}</strong><small>Hackathon sector</small></label>)}</div><FieldError id="hackathon-sector-error" message={fieldErrors.sectorTrack} /></div>
+          <div className="form-field"><span className="form-legend">Solution Type *</span><RadioOptions name="solutionType" options={['Technical', 'Non-Technical']} value={form.solutionType} onChange={updateField} required invalid={Boolean(fieldErrors.solutionType)} errorId="hackathon-solution-error" /><FieldError id="hackathon-solution-error" message={fieldErrors.solutionType} /><p className="field-hint">There is no preliminary idea-selection or shortlisting process.</p></div>
+        </fieldset>
+
+        <fieldset className="form-section"><legend><span>04</span> Confirmation</legend>
+          <label className={`confirmation-check${fieldErrors.informationConfirmed ? ' has-error' : ''}`}><input type="checkbox" name="informationConfirmed" checked={form.informationConfirmed} onChange={updateField} required /><span>I confirm that all team and contact information is accurate. *</span></label><FieldError id="hackathon-confirmation-error" message={fieldErrors.informationConfirmed} />
+          <label className={`confirmation-check${fieldErrors.rulesAccepted ? ' has-error' : ''}`}><input type="checkbox" name="rulesAccepted" checked={form.rulesAccepted} onChange={updateField} required /><span>Every listed student has agreed to participate and meets the hackathon criteria. *</span></label><FieldError id="hackathon-rules-error" message={fieldErrors.rulesAccepted} />
+          <label className="confirmation-check"><input type="checkbox" name="updatesOptIn" checked={form.updatesOptIn} onChange={updateField} /><span>I agree to receive official hackathon updates.</span></label>
+        </fieldset>
+        <div className="form-submit-row"><button type="submit" className="btn btn-primary" disabled={submitting} aria-busy={submitting}>{submitting ? 'Creating team…' : <>Submit Team Registration <span aria-hidden="true">→</span></>}</button><p className={`form-error${error ? ' is-visible' : ''}`} role="alert" aria-live="polite">{error}</p></div>
       </form>
-      <div className={`confirmation-panel hackathon-confirmation-panel${submitted ? ' is-visible' : ''}`} role="status" aria-live="polite" tabIndex={submitted ? -1 : undefined}><span className="stamp">Hackathon Registration Received</span><h2>Your entry is recorded.</h2><p>Thanks for registering for the AI Conclave 2026 Hackathon.</p>{confirmation && <dl className="confirmation-summary"><dt>Name</dt><dd>{confirmation.name}</dd><dt>Email</dt><dd>{confirmation.email}</dd><dt>Participant</dt><dd>{confirmation.participantType}</dd><dt>Track</dt><dd>{confirmation.tracks.join(', ')}</dd><dt>Challenge</dt><dd>{confirmation.challengeArea} · {confirmation.subcategory}</dd><dt>Problem area</dt><dd>{confirmation.problemArea}</dd></dl>}<div className="confirmation-actions"><button type="button" className="btn btn-primary" onClick={reset}>Register Another Entry <span aria-hidden="true">→</span></button><a className="btn btn-outline" href={PATHS.register}>Back to Registrations</a></div></div>
+      <div className={`confirmation-panel hackathon-confirmation-panel${submitted ? ' is-visible' : ''}`} role="status" aria-live="polite" tabIndex={submitted ? -1 : undefined}><span className="stamp">Team Registration Received</span><h2>Your team is registered.</h2><p>Keep the team code for future reference. The complete registration is available in My registrations.</p>{confirmation && <dl className="confirmation-summary"><dt>Team</dt><dd>{confirmation.teamName}</dd><dt>Team code</dt><dd>{confirmation.teamCode}</dd><dt>Category</dt><dd>{confirmation.participantCategory}</dd><dt>Team size</dt><dd>{confirmation.members.length} students</dd><dt>Entry</dt><dd>{confirmation.sectorTrack} · {confirmation.solutionType}</dd></dl>}<div className="confirmation-actions"><a className="btn btn-primary" href={PATHS.myRegistration}>View My Registration <span aria-hidden="true">→</span></a><a className="btn btn-outline" href={PATHS.register}>Back to Registrations</a></div></div>
     </div></section>
   </main>
 }
@@ -1121,7 +1251,8 @@ function RegistrationTicket({ registration }) {
 
 function RegistrationDetail({ registration }) {
   const [expanded, setExpanded] = useState(false)
-  const isHackathon = registration.type === 'Hackathon'
+  const isHackathon = registration.type.startsWith('Hackathon')
+  const isHackathonTeam = registration.type === 'Hackathon Team'
   const panelDetails = [
     ['Name', registration.name],
     ['Verified email', registration.email],
@@ -1146,15 +1277,22 @@ function RegistrationDetail({ registration }) {
     ['Problem area', registration.problemArea],
     ['Problem statement / idea', registration.ideaSummary],
   ].filter(([, value]) => value)
-  const details = isHackathon ? hackathonDetails : panelDetails
-  const title = isHackathon ? `${registration.challengeArea} · ${registration.subcategory}` : registration.panelSelection
+  const teamDetails = [
+    ['Team code', registration.teamCode],
+    ['Category', registration.participantCategory],
+    ['Team size', `${registration.teamSize} students`],
+    ['Sector', registration.sectorTrack],
+    ['Solution type', registration.solutionType],
+  ].filter(([, value]) => value)
+  const details = isHackathonTeam ? teamDetails : isHackathon ? hackathonDetails : panelDetails
+  const title = isHackathonTeam ? registration.teamName : isHackathon ? `${registration.challengeArea} · ${registration.subcategory}` : registration.panelSelection
   const submitted = registration.createdAt ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(registration.createdAt)) : ''
   return <article className={`registration-record${expanded ? ' is-open' : ''}`}>
     <header className="registration-record-summary">
       <button type="button" className="registration-summary-main" onClick={() => setExpanded((current) => !current)} aria-expanded={expanded}><span className="stamp">{registration.type}</span><h2>{title}</h2><p>Submitted {submitted}</p></button>
       <div className="registration-record-action"><span className="registration-status"><i aria-hidden="true"></i>{registration.status}</span><div className="registration-summary-controls">{!isHackathon && <TicketDownloadButton registration={registration} compact />}<button type="button" className="registration-toggle" onClick={() => setExpanded((current) => !current)} aria-expanded={expanded}>{expanded ? 'Hide details' : 'View details'}<i aria-hidden="true"></i></button></div></div>
     </header>
-    {expanded && <div className="registration-record-body">{!isHackathon && <RegistrationTicket registration={registration} />}<dl className="registration-record-grid">{details.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl></div>}
+    {expanded && <div className="registration-record-body">{!isHackathon && <RegistrationTicket registration={registration} />}<dl className="registration-record-grid">{details.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>{isHackathonTeam && <section className="registered-team-members"><div className="registered-team-members-heading"><span className="eyebrow">Team roster</span><h3>Registered students</h3></div><div className="registered-team-member-list">{registration.members.map((member) => <article key={`${registration.id}-${member.memberOrder}`}><header><span>0{member.memberOrder}</span><div><strong>{member.fullName}</strong><small>{member.role}</small></div></header><dl><div><dt>Email</dt><dd><a href={`mailto:${member.email}`}>{member.email}</a></dd></div><div><dt>Phone</dt><dd><a href={`tel:${member.phone}`}>{member.phone}</a></dd></div><div><dt>Institution</dt><dd>{member.institution}</dd></div>{member.departmentOrCourse && <div><dt>Department / course</dt><dd>{member.departmentOrCourse}</dd></div>}<div><dt>{registration.participantCategory === 'School' ? 'Class / grade' : 'Year of study'}</dt><dd>{member.yearOrGrade}</dd></div></dl></article>)}</div></section>}</div>}
   </article>
 }
 

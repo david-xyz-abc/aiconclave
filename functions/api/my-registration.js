@@ -7,11 +7,12 @@ export async function onRequestGet(context) {
   try {
     const session = await getParticipantSession(context.request, db)
     if (!session) return json({ ok: false, error: 'Sign in to view your registrations.' }, 401)
-    const [, panelResult, , hackathonResult] = await db.batch([
+    const [, panelResult, , legacyHackathonResult, teamResult] = await db.batch([
       db.prepare('UPDATE panel_registrations SET participant_account_id = ? WHERE participant_account_id IS NULL AND email = ? COLLATE NOCASE').bind(session.id, session.email),
       db.prepare(`SELECT id, name, email, phone, participant_type, organisation, department, panel_selection, industry_sector, industry_sector_other, organisation_type, organisation_type_other, updates_opt_in, created_at FROM panel_registrations WHERE participant_account_id = ? ORDER BY created_at DESC`).bind(session.id),
       db.prepare('UPDATE hackathon_registrations SET participant_account_id = ? WHERE participant_account_id IS NULL AND email = ? COLLATE NOCASE').bind(session.id, session.email),
       db.prepare(`SELECT id, name, email, phone, participant_type, organisation, tracks, challenge_area, subcategory, problem_area, idea_summary, created_at FROM hackathon_registrations WHERE participant_account_id = ? ORDER BY created_at DESC`).bind(session.id),
+      db.prepare(`SELECT DISTINCT t.id, t.team_code, t.team_name, t.participant_category, t.team_size, t.sector_track, t.solution_type, t.submitted_at, t.created_at FROM hackathon_teams t LEFT JOIN hackathon_member_claims c ON c.team_id = t.id WHERE t.captain_account_id = ? OR c.email_key = ? COLLATE NOCASE ORDER BY COALESCE(t.submitted_at, t.created_at) DESC`).bind(session.id, session.email.toLowerCase()),
     ])
     const panelRegistrations = (panelResult.results || []).map((row) => ({
       id: row.id,
@@ -31,7 +32,7 @@ export async function onRequestGet(context) {
       updatesOptIn: row.updates_opt_in === 1,
       createdAt: row.created_at,
     }))
-    const hackathonRegistrations = (hackathonResult.results || []).map((row) => ({
+    const legacyHackathonRegistrations = (legacyHackathonResult.results || []).map((row) => ({
       id: row.id,
       type: 'Hackathon',
       status: 'Received',
@@ -47,7 +48,42 @@ export async function onRequestGet(context) {
       ideaSummary: row.idea_summary,
       createdAt: row.created_at,
     }))
-    const registrations = [...panelRegistrations, ...hackathonRegistrations].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+
+    const teamRows = teamResult.results || []
+    let memberRows = []
+    if (teamRows.length) {
+      const placeholders = teamRows.map(() => '?').join(', ')
+      const memberResult = await db.prepare(`SELECT team_id, member_order, role, full_name, email, phone, institution, department_or_course, year_or_grade FROM hackathon_team_members WHERE team_id IN (${placeholders}) ORDER BY team_id, member_order`).bind(...teamRows.map((row) => row.id)).all()
+      memberRows = memberResult.results || []
+    }
+    const membersByTeam = new Map()
+    for (const row of memberRows) {
+      if (!membersByTeam.has(row.team_id)) membersByTeam.set(row.team_id, [])
+      membersByTeam.get(row.team_id).push({
+        memberOrder: row.member_order,
+        role: row.role,
+        fullName: row.full_name,
+        email: row.email,
+        phone: row.phone,
+        institution: row.institution,
+        departmentOrCourse: row.department_or_course,
+        yearOrGrade: row.year_or_grade,
+      })
+    }
+    const teamRegistrations = teamRows.map((row) => ({
+      id: row.id,
+      type: 'Hackathon Team',
+      status: row.submitted_at ? 'Received' : 'Draft',
+      teamCode: row.team_code,
+      teamName: row.team_name,
+      participantCategory: row.participant_category,
+      teamSize: row.team_size,
+      sectorTrack: row.sector_track,
+      solutionType: row.solution_type,
+      members: membersByTeam.get(row.id) || [],
+      createdAt: row.submitted_at || row.created_at,
+    }))
+    const registrations = [...panelRegistrations, ...teamRegistrations, ...legacyHackathonRegistrations].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     return json({ ok: true, participant: { email: session.email, displayName: session.display_name || '' }, registrations })
   } catch (error) {
     console.error(JSON.stringify({ event: 'participant_registrations_failed', reason: error instanceof Error ? error.message : 'unknown' }))
