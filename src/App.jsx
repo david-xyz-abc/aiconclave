@@ -770,11 +770,11 @@ function GoogleSignInButton({ onSignedIn }) {
       return
     }
     setError('')
-    google.accounts.id.prompt((notification) => {
-      if (notification.isNotDisplayed?.() || notification.isSkippedMoment?.()) {
-        setError('Google Sign-In was blocked by the browser. Allow Google pop-ups for this site and try again.')
-      }
-    })
+    try {
+      google.accounts.id.prompt()
+    } catch {
+      setError('Google Sign-In could not be opened. Please try again.')
+    }
   }
 
   return <div className="google-sign-in-control">
