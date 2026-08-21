@@ -636,35 +636,12 @@ function getGoogleConfig(force = false) {
   return googleConfigPromise
 }
 
-function waitForGoogleIdentityStyles(timeout = 5000) {
-  return new Promise((resolve, reject) => {
-    const startedAt = performance.now()
-    let frame = 0
-    const check = () => {
-      const stylesheet = document.querySelector('link#googleidentityservice[href*="accounts.google.com/gsi/style"]')
-      if (stylesheet?.sheet) {
-        resolve()
-        return
-      }
-      if (performance.now() - startedAt >= timeout) {
-        reject(new Error('Your browser blocked Google Sign-In. Allow accounts.google.com for this site, then reload the page.'))
-        return
-      }
-      frame = window.requestAnimationFrame(check)
-    }
-    check()
-    return () => window.cancelAnimationFrame(frame)
-  })
-}
-
 function GoogleSignInButton({ onSignedIn }) {
-  const hostRef = useRef(null)
   const googleRef = useRef(null)
   const onSignedInRef = useRef(onSignedIn)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(true)
-  const [buttonReady, setButtonReady] = useState(false)
-  const [fallbackReady, setFallbackReady] = useState(false)
+  const [ready, setReady] = useState(false)
   const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
@@ -673,14 +650,11 @@ function GoogleSignInButton({ onSignedIn }) {
 
   useEffect(() => {
     let active = true
-    let readinessFrame = 0
-    let readinessTimer = 0
     setBusy(true)
-    setButtonReady(false)
-    setFallbackReady(false)
+    setReady(false)
     setError('')
     Promise.all([loadGoogleIdentity(), getGoogleConfig(attempt > 0)]).then(([google, config]) => {
-      if (!active || !hostRef.current) return
+      if (!active) return
       googleRef.current = google
       google.accounts.id.initialize({
         client_id: config.clientId,
@@ -711,56 +685,15 @@ function GoogleSignInButton({ onSignedIn }) {
           }
         },
       })
-      waitForGoogleIdentityStyles().then(() => {
-        if (!active || !hostRef.current) return
-        const host = hostRef.current
-        const availableWidth = Math.floor(host.getBoundingClientRect().width)
-        host.replaceChildren()
-        google.accounts.id.renderButton(host, {
-          type: 'standard', theme: 'outline', size: 'large', shape: 'rectangular', text: 'continue_with', logo_alignment: 'left',
-          width: String(Math.min(400, Math.max(200, availableWidth))),
-        })
-
-        const renderedAt = performance.now()
-        const confirmButtonReady = () => {
-          if (!active || !hostRef.current) return
-          const frame = host.querySelector('iframe')
-          const frameRect = frame?.getBoundingClientRect()
-          if (frame && frameRect.width >= 200 && frameRect.height >= 30) {
-            setButtonReady(true)
-            setBusy(false)
-            return
-          }
-          if (performance.now() - renderedAt < 5000) {
-            readinessFrame = window.requestAnimationFrame(confirmButtonReady)
-            return
-          }
-          host.replaceChildren()
-          setButtonReady(false)
-          setFallbackReady(true)
-          setBusy(false)
-        }
-        readinessFrame = window.requestAnimationFrame(confirmButtonReady)
-        readinessTimer = window.setTimeout(confirmButtonReady, 5000)
-      }).catch(() => {
-        if (!active || !hostRef.current) return
-        hostRef.current.replaceChildren()
-        setButtonReady(false)
-        setFallbackReady(true)
-        setBusy(false)
-      })
+      setReady(true)
+      setBusy(false)
     }).catch((loadError) => {
       if (!active) return
       setBusy(false)
-      setButtonReady(false)
+      setReady(false)
       setError(loadError.message || 'Google Sign-In is unavailable right now.')
     })
-    return () => {
-      active = false
-      window.cancelAnimationFrame(readinessFrame)
-      window.clearTimeout(readinessTimer)
-      hostRef.current?.replaceChildren()
-    }
+    return () => { active = false }
   }, [attempt])
 
   const openGooglePrompt = () => {
@@ -778,9 +711,7 @@ function GoogleSignInButton({ onSignedIn }) {
   }
 
   return <div className="google-sign-in-control">
-    <div ref={hostRef} className={`google-button-host${buttonReady ? ' is-ready' : ''}${fallbackReady ? ' is-fallback' : ''}`} aria-busy={busy}></div>
-    {fallbackReady && <button type="button" className="google-fallback-button" onClick={openGooglePrompt}><span aria-hidden="true">G</span><strong>Continue with Google</strong><i aria-hidden="true">→</i></button>}
-    {busy && <p className="account-state"><span className="account-spinner" aria-hidden="true"></span> Preparing secure sign-in…</p>}
+    <button type="button" className="google-fallback-button" onClick={openGooglePrompt} disabled={!ready || busy} aria-busy={busy}><span aria-hidden="true">G</span><strong>{!ready ? 'Preparing Google Sign-In…' : busy ? 'Signing in…' : 'Continue with Google'}</strong><i aria-hidden="true">→</i></button>
     {error && <div className="account-error" role="alert"><p>{error}</p><button type="button" className="text-button" onClick={() => setAttempt((value) => value + 1)}>Try again</button></div>}
   </div>
 }
@@ -842,17 +773,63 @@ function ParticipantBar({ participant, onSignOut, signingOut = false }) {
   return <div className="participant-bar"><span className="participant-status-dot" aria-hidden="true"></span><div><small>Signed in as</small><strong>{participant.displayName || participant.email}</strong><span>{participant.email}</span></div><div className="participant-bar-actions"><a href={PATHS.myRegistration}>My registrations <span aria-hidden="true">→</span></a>{onSignOut && <button type="button" className="participant-sign-out" onClick={onSignOut} disabled={signingOut}>{signingOut ? 'Signing out…' : 'Sign out'}</button>}</div></div>
 }
 
+function useExistingRegistrations(participant) {
+  const [refresh, setRefresh] = useState(0)
+  const [state, setState] = useState(() => participant.isPreview
+    ? { status: 'ready', registrations: [], error: '' }
+    : { status: 'loading', registrations: [], error: '' })
+
+  useEffect(() => {
+    if (participant.isPreview) return undefined
+    let active = true
+    setState((current) => ({ ...current, status: 'loading', error: '' }))
+    fetch('/api/my-registration', { headers: { accept: 'application/json' } }).then(async (response) => {
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok || !data.ok) throw new Error(data.error || 'We could not check your existing registrations.')
+      if (active) setState({ status: 'ready', registrations: data.registrations || [], error: '' })
+    }).catch((error) => {
+      if (active) setState({ status: 'error', registrations: [], error: error.message || 'We could not check your existing registrations.' })
+    })
+    return () => { active = false }
+  }, [participant.isPreview, participant.email, refresh])
+
+  return [state, () => setRefresh((value) => value + 1)]
+}
+
+function hasEventRegistration(registrations, eventType) {
+  if (eventType === 'hackathon') return registrations.some((registration) => registration.type === 'Hackathon' || registration.type === 'Hackathon Team')
+  return registrations.some((registration) => registration.type === 'Panel Discussion')
+}
+
+function RegistrationEligibilityError({ message, onRetry }) {
+  return <main id="main"><section className="section"><div className="container register-layout"><div className="account-error account-error-page" role="alert"><h1>Registration status could not be checked.</h1><p>{message}</p><button type="button" className="btn btn-outline" onClick={onRetry}>Try again</button></div></div></section></main>
+}
+
+function AlreadyRegisteredPage({ eventName }) {
+  return <main id="main">
+    <section className="page-header"><div className="container"><a className="back-link" href={PATHS.register}>← All registrations</a><p className="eyebrow">Registration complete</p><h1 className="section-heading">You are already registered.</h1><p className="section-lede">Only one {eventName.toLowerCase()} registration is allowed for each participant.</p></div></section>
+    <section className="section"><div className="container register-layout"><div className="registration-closed-notice registration-complete-notice"><span className="stamp">Entry already received</span><h2>Your {eventName} registration is saved.</h2><p>You do not need to submit the form again. Open My registrations to view the complete details.</p><div className="confirmation-actions"><a className="btn btn-primary" href={PATHS.myRegistration}>View My Registration <span aria-hidden="true">→</span></a><a className="btn btn-outline" href={PATHS.register}>Choose another event</a></div></div></div></section>
+  </main>
+}
+
 function RegistrationChoicePage({ participant, onSignOut, signingOut }) {
+  const [registrationState, retryRegistrationCheck] = useExistingRegistrations(participant)
+  const panelRegistered = hasEventRegistration(registrationState.registrations, 'panel')
+  const hackathonRegistered = hasEventRegistration(registrationState.registrations, 'hackathon')
+
+  if (registrationState.status === 'error') return <RegistrationEligibilityError message={registrationState.error} onRetry={retryRegistrationCheck} />
+
   return <main id="main">
     <section className="page-header"><div className="container"><p className="eyebrow">Registration</p><h1 className="section-heading">Choose your experience</h1><p className="section-lede">Start with Day 1 panel discussions or register for the Day 2 hackathon.</p></div></section>
     <section className="section"><div className="container"><ParticipantBar participant={participant} onSignOut={onSignOut} signingOut={signingOut} /><div className="registration-choice-grid">
-      <a className="registration-choice registration-choice-panel" href={PATHS.registerPanel} data-reveal><span className="choice-number" aria-hidden="true">01</span><span className="stamp">Day 1 · Industry Panels</span><h2>Panel Discussion Registration</h2><p>For students, educators, researchers, professionals and delegates attending the Agriculture, Education or Healthcare panels.</p><span className="choice-action">Register for Panel Discussion <span aria-hidden="true">→</span></span></a>
-      {HACKATHON_REGISTRATION_OPEN ? <a className="registration-choice registration-choice-hackathon" href={PATHS.registerHackathon} data-reveal><span className="choice-number" aria-hidden="true">02</span><span className="stamp">Day 2 · Hackathon</span><h2>Hackathon Registration</h2><p>For school and college students joining either the Technical or Non-Technical track.</p><div className="hackathon-instruction-preview"><strong>Before you apply</strong><p>Read the hackathon instructions carefully before applying. Make sure you understand and meet every eligibility criterion and participation requirement.</p></div><span className="choice-action">Register for Hackathon <span aria-hidden="true">→</span></span></a> : <div className="registration-choice registration-choice-hackathon is-registration-closed" aria-disabled="true" data-reveal><span className="choice-number" aria-hidden="true">02</span><span className="stamp">Day 2 · Hackathon</span><h2>Hackathon Registration</h2><p>For school and college students joining the Technical or Non-Technical hackathon.</p><span className="choice-action choice-action-disabled">Registration Not Started</span><div className="registration-closed-layer"><span className="closed-status"><i aria-hidden="true"></i> Registration update</span><strong>Opening Soon</strong><small>Hackathon registration has not started yet.</small></div></div>}
+      <a className={`registration-choice registration-choice-panel${panelRegistered ? ' is-already-registered' : ''}`} href={panelRegistered ? PATHS.myRegistration : PATHS.registerPanel} data-reveal><span className="choice-number" aria-hidden="true">01</span><span className="stamp">Day 1 · Industry Panels</span><h2>Panel Discussion Registration</h2><p>For students, educators, researchers, professionals and delegates attending the Agriculture, Education or Healthcare panels.</p><span className="choice-action">{registrationState.status === 'loading' ? 'Checking registration…' : panelRegistered ? 'Already registered · View details' : 'Register for Panel Discussion'} <span aria-hidden="true">→</span></span></a>
+      {HACKATHON_REGISTRATION_OPEN ? <a className={`registration-choice registration-choice-hackathon${hackathonRegistered ? ' is-already-registered' : ''}`} href={hackathonRegistered ? PATHS.myRegistration : PATHS.registerHackathon} data-reveal><span className="choice-number" aria-hidden="true">02</span><span className="stamp">Day 2 · Hackathon</span><h2>Hackathon Registration</h2><p>For school and college students joining either the Technical or Non-Technical track.</p><div className="hackathon-instruction-preview"><strong>Before you apply</strong><p>Read the hackathon instructions carefully before applying. Make sure you understand and meet every eligibility criterion and participation requirement.</p></div><span className="choice-action">{registrationState.status === 'loading' ? 'Checking registration…' : hackathonRegistered ? 'Already registered · View team' : 'Register for Hackathon'} <span aria-hidden="true">→</span></span></a> : <div className="registration-choice registration-choice-hackathon is-registration-closed" aria-disabled="true" data-reveal><span className="choice-number" aria-hidden="true">02</span><span className="stamp">Day 2 · Hackathon</span><h2>Hackathon Registration</h2><p>For school and college students joining the Technical or Non-Technical hackathon.</p><span className="choice-action choice-action-disabled">Registration Not Started</span><div className="registration-closed-layer"><span className="closed-status"><i aria-hidden="true"></i> Registration update</span><strong>Opening Soon</strong><small>Hackathon registration has not started yet.</small></div></div>}
     </div></div></section>
   </main>
 }
 
 function HackathonRegisterPage({ participant }) {
+  const [registrationState, retryRegistrationCheck] = useExistingRegistrations(participant)
   const freshHackathonForm = () => ({
     ...initialHackathonForm,
     members: [
@@ -867,6 +844,10 @@ function HackathonRegisterPage({ participant }) {
   const [submitting, setSubmitting] = useState(false)
   const [fieldErrors, setFieldErrors] = useState({})
   const teamNameRef = useRef(null)
+
+  if (registrationState.status === 'loading') return <main id="main"><section className="account-loading"><span className="account-spinner" aria-hidden="true"></span><p>Checking hackathon registration…</p></section></main>
+  if (registrationState.status === 'error') return <RegistrationEligibilityError message={registrationState.error} onRetry={retryRegistrationCheck} />
+  if (hasEventRegistration(registrationState.registrations, 'hackathon')) return <AlreadyRegisteredPage eventName="Hackathon" />
 
   const updateField = (event) => {
     const { name, value, type, checked } = event.target
@@ -1005,6 +986,7 @@ function RadioOptions({ name, options, value, onChange, required = false, errorI
 }
 
 function PanelRegisterPage({ participant }) {
+  const [registrationState, retryRegistrationCheck] = useExistingRegistrations(participant)
   const freshPanelForm = () => ({ ...initialPanelForm, name: participant.displayName || '', email: participant.email })
   const [form, setForm] = useState(freshPanelForm)
   const [error, setError] = useState('')
@@ -1012,7 +994,10 @@ function PanelRegisterPage({ participant }) {
   const [confirmation, setConfirmation] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [fieldErrors, setFieldErrors] = useState({})
-  const nameRef = useRef(null)
+
+  if (registrationState.status === 'loading') return <main id="main"><section className="account-loading"><span className="account-spinner" aria-hidden="true"></span><p>Checking panel registration…</p></section></main>
+  if (registrationState.status === 'error') return <RegistrationEligibilityError message={registrationState.error} onRetry={retryRegistrationCheck} />
+  if (hasEventRegistration(registrationState.registrations, 'panel')) return <AlreadyRegisteredPage eventName="Panel Discussion" />
   const updateField = (event) => {
     const { name, value, type, checked } = event.target
     setForm((current) => ({ ...current, [name]: type === 'checkbox' ? checked : value }))
@@ -1055,21 +1040,13 @@ function PanelRegisterPage({ participant }) {
       setSubmitting(false)
     }
   }
-  const reset = () => {
-    setForm(freshPanelForm())
-    setConfirmation(null)
-    setSubmitted(false)
-    setError('')
-    setFieldErrors({})
-    window.setTimeout(() => nameRef.current?.focus(), 0)
-  }
   return <main id="main">
     <section className="page-header panel-register-header"><div className="container"><a className="back-link" href={PATHS.register}>← All registrations</a><p className="eyebrow">Industry Panel Discussions</p><h1 className="section-heading">Panel Discussion Registration</h1><p className="panel-theme-line">Agriculture <span>•</span> Education <span>•</span> Healthcare</p><p className="section-lede">Join experts, professionals, educators, researchers and students to discuss the role and future of AI across key sectors.</p></div></section>
     <section className="section"><div className="container register-layout">
       <form id="panel-register-form" className="sectioned-form" noValidate hidden={submitted} onSubmit={submit}>
         <fieldset className="form-section" data-reveal><legend><span>01</span> Participant Details</legend>
           <div className="panel-participant-details-grid">
-            <div className="form-field participant-name"><label htmlFor="panel-name">Full Name *</label><input ref={nameRef} id="panel-name" name="name" type="text" autoComplete="name" required value={form.name} onChange={updateField} aria-invalid={Boolean(fieldErrors.name)} aria-describedby={fieldErrors.name ? 'panel-name-error' : undefined} /><FieldError id="panel-name-error" message={fieldErrors.name} /></div>
+            <div className="form-field participant-name"><label htmlFor="panel-name">Full Name *</label><input id="panel-name" name="name" type="text" autoComplete="name" required value={form.name} onChange={updateField} aria-invalid={Boolean(fieldErrors.name)} aria-describedby={fieldErrors.name ? 'panel-name-error' : undefined} /><FieldError id="panel-name-error" message={fieldErrors.name} /></div>
             <div className="form-field participant-email"><label htmlFor="panel-email">{participant.isPreview ? 'Email Address *' : 'Verified Google Email'}</label><input className={participant.isPreview ? undefined : 'verified-email-input'} id="panel-email" name="email" type="email" autoComplete="email" readOnly={!participant.isPreview} required value={form.email} onChange={participant.isPreview ? updateField : undefined} aria-invalid={Boolean(fieldErrors.email)} aria-describedby={fieldErrors.email ? 'panel-email-error' : participant.isPreview ? undefined : 'panel-email-hint'} />{!participant.isPreview && <p className="field-hint" id="panel-email-hint">Connected securely through Google Sign-In.</p>}<FieldError id="panel-email-error" message={fieldErrors.email} /></div>
             <div className="form-field participant-phone"><label htmlFor="panel-phone">Phone Number *</label><input id="panel-phone" name="phone" type="tel" inputMode="tel" autoComplete="tel" maxLength={24} placeholder="+91 98765 43210" required value={form.phone} onChange={updateField} aria-invalid={Boolean(fieldErrors.phone)} aria-describedby={fieldErrors.phone ? 'panel-phone-error' : 'panel-phone-hint'} /><p className="field-hint" id="panel-phone-hint">Use 7 to 15 digits.</p><FieldError id="panel-phone-error" message={fieldErrors.phone} /></div>
             <div className="form-field participant-type"><label htmlFor="panel-participant-type">Participant Type *</label><select id="panel-participant-type" name="participantType" required value={form.participantType} onChange={updateField} aria-invalid={Boolean(fieldErrors.participantType)} aria-describedby={fieldErrors.participantType ? 'participant-type-error' : undefined}><option value="" disabled>Select participant type</option>{participantTypes.map((type) => <option value={type} key={type}>{type}</option>)}</select><FieldError id="participant-type-error" message={fieldErrors.participantType} /></div>
@@ -1085,7 +1062,7 @@ function PanelRegisterPage({ participant }) {
         <fieldset className="form-section" data-reveal><legend><span>04</span> Confirmation</legend><label className={`confirmation-check${fieldErrors.informationConfirmed ? ' has-error' : ''}`}><input type="checkbox" name="informationConfirmed" checked={form.informationConfirmed} onChange={updateField} required aria-invalid={Boolean(fieldErrors.informationConfirmed)} aria-describedby={fieldErrors.informationConfirmed ? 'confirmation-error' : undefined} /><span>I confirm that the information provided above is accurate. *</span></label><FieldError id="confirmation-error" message={fieldErrors.informationConfirmed} /><label className="confirmation-check"><input type="checkbox" name="updatesOptIn" checked={form.updatesOptIn} onChange={updateField} /><span>I agree to receive official AI Conclave updates regarding the panel discussion.</span></label></fieldset>
         <div className="form-submit-row"><button type="submit" className="btn btn-primary" disabled={submitting} aria-busy={submitting}>{submitting ? 'Submitting…' : <>Submit Panel Registration <span aria-hidden="true">→</span></>}</button><p className={`form-error${error ? ' is-visible' : ''}`} role="alert" aria-live="polite">{error}</p></div>
       </form>
-      <div className={`confirmation-panel${submitted ? ' is-visible' : ''}`} role="status" aria-live="polite" tabIndex={submitted ? -1 : undefined}><span className="stamp">Panel Registration Received</span><h2>Your seat request is recorded.</h2><p>Thanks for registering for the AI Conclave 2026 Industry Panel Discussions.</p>{confirmation && <><RegistrationTicket registration={confirmation} /><dl className="confirmation-summary"><dt>Name</dt><dd>{confirmation.name}</dd><dt>Email</dt><dd>{confirmation.email}</dd><dt>Participant</dt><dd>{confirmation.participantType}</dd><dt>Panel</dt><dd>{confirmation.panelSelection}</dd></dl></>}<div className="confirmation-actions">{confirmation && <TicketDownloadButton registration={confirmation} />}<a className="btn btn-primary" href={PATHS.myRegistration}>View My Registrations <span className="btn-arrow" aria-hidden="true">→</span></a><button type="button" className="btn btn-outline" onClick={reset}>Register for Another Panel</button></div></div>
+      <div className={`confirmation-panel${submitted ? ' is-visible' : ''}`} role="status" aria-live="polite" tabIndex={submitted ? -1 : undefined}><span className="stamp">Panel Registration Received</span><h2>Your seat request is recorded.</h2><p>Thanks for registering for the AI Conclave 2026 Industry Panel Discussions.</p>{confirmation && <><RegistrationTicket registration={confirmation} /><dl className="confirmation-summary"><dt>Name</dt><dd>{confirmation.name}</dd><dt>Email</dt><dd>{confirmation.email}</dd><dt>Participant</dt><dd>{confirmation.participantType}</dd><dt>Panel</dt><dd>{confirmation.panelSelection}</dd></dl></>}<div className="confirmation-actions">{confirmation && <TicketDownloadButton registration={confirmation} />}<a className="btn btn-primary" href={PATHS.myRegistration}>View My Registration <span className="btn-arrow" aria-hidden="true">→</span></a><a className="btn btn-outline" href={PATHS.register}>Back to Registrations</a></div></div>
     </div></section>
   </main>
 }

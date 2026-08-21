@@ -62,8 +62,10 @@ export async function onRequestPost(context) {
   if (!body || typeof body !== 'object') return json({ ok: false, error: 'Invalid request body.' }, 400)
 
   if (body.registrationType === 'panel') {
+    if (!participant) return json({ ok: false, error: 'Sign in with Google before registering for a panel discussion.' }, 401)
+
     const name = trimStr(body.name, MAX_LEN.name)
-    const email = participant?.email || trimStr(body.email, MAX_LEN.email)
+    const email = participant.email
     const phone = trimStr(body.phone, MAX_LEN.phone)
     const participantType = trimStr(body.participantType, 80)
     const organisation = trimStr(body.organisation, MAX_LEN.organisation)
@@ -92,10 +94,14 @@ export async function onRequestPost(context) {
     if (Object.keys(fields).length) return json({ ok: false, error: 'Please review the highlighted fields.', fields }, 400)
 
     try {
+      const existingRegistration = await db.prepare('SELECT id FROM panel_registrations WHERE participant_account_id = ? OR email = ? COLLATE NOCASE LIMIT 1').bind(participant.id, email).first()
+      if (existingRegistration) return json({ ok: false, error: 'You have already registered for the panel discussion. Open My registrations to view it.' }, 409)
+
       const result = await db.prepare(`INSERT INTO panel_registrations (name, email, phone, participant_type, organisation, department, panel_selection, industry_sector, industry_sector_other, organisation_type, organisation_type_other, information_confirmed, updates_opt_in, participant_account_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(name, email, phone, participantType, organisation, department, panelSelection, industrySector, industrySectorOther, organisationType, organisationTypeOther, 1, updatesOptIn ? 1 : 0, participant?.id ?? null).run()
       return json({ ok: true, id: result?.meta?.last_row_id ?? null, registration: { name, email, phone, participantType, organisation, department, panelSelection, industrySector, industrySectorOther, organisationType, organisationTypeOther, updatesOptIn } }, 201)
     } catch (error) {
       console.error(JSON.stringify({ event: 'panel_registration_insert_failed', reason: error instanceof Error ? error.message : 'unknown' }))
+      if (error instanceof Error && error.message.includes('one_panel_registration_per_participant')) return json({ ok: false, error: 'You have already registered for the panel discussion. Open My registrations to view it.' }, 409)
       return json({ ok: false, error: 'Could not save panel registration. Try again.' }, 500)
     }
   }

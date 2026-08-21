@@ -1604,28 +1604,8 @@ a {
   font-size: 0.76rem;
 }
 
-.google-sign-in-control,
-.google-button-host {
+.google-sign-in-control {
   width: 100%;
-}
-
-.google-button-host {
-  display: flex;
-  align-items: center;
-  min-height: 44px;
-  visibility: hidden;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.google-button-host.is-ready {
-  visibility: visible;
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.google-button-host.is-fallback {
-  display: none;
 }
 
 .google-fallback-button {
@@ -1645,11 +1625,16 @@ a {
   transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
-.google-fallback-button:hover,
-.google-fallback-button:focus-visible {
+.google-fallback-button:not(:disabled):hover,
+.google-fallback-button:not(:disabled):focus-visible {
   border-color: var(--color-text);
   box-shadow: 4px 4px 0 var(--color-signal);
   transform: translate(-2px, -2px);
+}
+
+.google-fallback-button:disabled {
+  cursor: wait;
+  opacity: 0.72;
 }
 
 .google-fallback-button > span {
@@ -2362,6 +2347,23 @@ a {
 
 .registration-choice-hackathon::before {
   background: linear-gradient(135deg, rgba(255, 30, 30, 0.1), transparent 58%);
+}
+
+.registration-choice.is-already-registered {
+  border-color: #1a6b3c;
+  background: linear-gradient(135deg, rgba(26, 107, 60, 0.08), #fff 56%);
+}
+
+.registration-choice.is-already-registered .choice-action {
+  border-color: #1a6b3c;
+  background: #1a6b3c;
+  color: #fff;
+}
+
+.registration-complete-notice {
+  border-top-color: #1a6b3c;
+  background: linear-gradient(135deg, rgba(26, 107, 60, 0.09), #fff 52%);
+  box-shadow: 8px 8px 0 rgba(26, 107, 60, 0.1);
 }
 
 .hackathon-instruction-preview {
