@@ -1,4 +1,5 @@
 import { PATHS } from '../../config/routes.js'
+import { PromoterMarquee } from './PromoterMarquee.jsx'
 
 export function HomePage() {
   return (
@@ -33,6 +34,7 @@ export function HomePage() {
             </div>
           </div>
         </div>
+        <PromoterMarquee />
       </section>
 
       <section id="hackathon" className="section">
@@ -63,4 +65,3 @@ export function HomePage() {
     </main>
   )
 }
-

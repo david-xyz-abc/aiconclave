@@ -79,6 +79,64 @@
   color: #fff;
 }
 
+.registration-choice.is-registration-status:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.registration-choice-registered-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: auto;
+}
+
+.registration-state-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid #1a6b3c;
+  background: #edf6f0;
+  color: #164d30;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.registration-state-badge i {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: #1a6b3c;
+  box-shadow: 0 0 0 4px rgba(26, 107, 60, 0.12);
+}
+
+.registration-choice-registered-row > a {
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.25rem;
+}
+
+.registration-choice-registered-row > a:hover,
+.registration-choice-registered-row > a:focus-visible {
+  color: #1a6b3c;
+}
+
+@media (max-width: 560px) {
+  .registration-choice-registered-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
 .registration-complete-notice {
   border-top-color: #1a6b3c;
   background: linear-gradient(135deg, rgba(26, 107, 60, 0.09), #fff 52%);
@@ -91,6 +149,31 @@
   padding: 0.9rem 1rem;
   border-left: 4px solid var(--color-signal);
   background: #fff3f1;
+}
+
+.registered-event-preview {
+  width: 100%;
+  margin: -0.55rem 0 1.5rem;
+  padding: 0.9rem 1rem;
+  border-left: 4px solid #1a6b3c;
+  background: #edf6f0;
+}
+
+.registered-event-preview strong {
+  display: block;
+  margin-bottom: 0.45rem;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.registration-choice .registered-event-preview p {
+  max-width: none;
+  margin: 0;
+  color: var(--color-text-soft);
+  font-size: 0.82rem;
+  line-height: 1.4;
 }
 
 .hackathon-instruction-preview strong {
@@ -292,4 +375,3 @@
 .back-link:hover {
   color: var(--color-text);
 }
-

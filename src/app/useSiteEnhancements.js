@@ -49,6 +49,7 @@ export function useSiteEnhancements(pageKey) {
         entries.forEach((entry) => {
           if (!entry.isIntersecting) return
           entry.target.classList.add('is-revealed')
+          entry.target.dataset.revealComplete = 'true'
           revealObserver.unobserve(entry.target)
         })
       }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' })
@@ -70,7 +71,10 @@ export function useSiteEnhancements(pageKey) {
       if (!(node instanceof Element)) return
       const revealNodes = node.matches('[data-reveal]') ? [node] : node.querySelectorAll('[data-reveal]')
       revealNodes.forEach((revealNode) => {
-        if (reduceMotion || !revealObserver) revealNode.classList.add('is-revealed')
+        if (reduceMotion || !revealObserver) {
+          revealNode.classList.add('is-revealed')
+          revealNode.dataset.revealComplete = 'true'
+        }
         else revealObserver.observe(revealNode)
       })
       const countNodes = node.matches('[data-count-to]') ? [node] : node.querySelectorAll('[data-count-to]')

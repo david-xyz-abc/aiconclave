@@ -193,7 +193,8 @@
   transition: opacity 0.55s ease, transform 0.55s ease;
 }
 
-[data-reveal].is-revealed {
+[data-reveal].is-revealed,
+[data-reveal][data-reveal-complete='true'] {
   opacity: 1;
   transform: none;
 }
@@ -226,4 +227,3 @@
 .page-header .section-heading {
   margin-bottom: 0.75rem;
 }
-
