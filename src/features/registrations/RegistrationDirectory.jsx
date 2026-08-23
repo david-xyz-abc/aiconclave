@@ -1,9 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  downloadHackathonParticipantsWorkbook,
-  downloadRegistrationsWorkbook,
-} from "../../services/registrationExport.js";
-import {
   parseTracks,
   searchableRegistrationText,
 } from "../../utils/registration.js";
@@ -17,21 +13,21 @@ export function RegistrationDirectory({
   loading,
   error,
   onOpen,
+  exporting,
+  exportError,
+  onDownloadExcel,
 }) {
   const [query, setQuery] = useState("");
   const [participantType, setParticipantType] = useState("all");
   const [focus, setFocus] = useState("all");
   const [sector, setSector] = useState("all");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [exporting, setExporting] = useState("");
-  const [exportError, setExportError] = useState("");
   useEffect(() => {
     setQuery("");
     setParticipantType("all");
     setFocus("all");
     setSector("all");
     setFiltersOpen(false);
-    setExportError("");
   }, [route.id]);
   const participantOptions = useMemo(
     () =>
@@ -123,23 +119,6 @@ export function RegistrationDirectory({
     setSector("all");
     setFiltersOpen(false);
   };
-  const downloadExcel = async (type = "workbook") => {
-    setExporting(type);
-    setExportError("");
-    try {
-      if (type === "students")
-        await downloadHackathonParticipantsWorkbook(registrations);
-      else await downloadRegistrationsWorkbook(route.id, registrations);
-    } catch (downloadError) {
-      setExportError(
-        downloadError instanceof Error
-          ? downloadError.message
-          : "The Excel file could not be created.",
-      );
-    } finally {
-      setExporting("");
-    }
-  };
   const Table = route.id === "hackathon" ? HackathonTable : PanelTable;
   return (
     <section
@@ -151,7 +130,7 @@ export function RegistrationDirectory({
           registrations={registrations}
           downloadingStudents={exporting === "students"}
           downloadDisabled={loading || Boolean(exporting)}
-          onDownloadStudents={() => downloadExcel("students")}
+          onDownloadStudents={() => onDownloadExcel("students")}
         />
       )}
       <div className="data-heading">
@@ -173,10 +152,10 @@ export function RegistrationDirectory({
         </div>
         <div className="directory-actions">
           <button
-            className="export-button"
+            className={`export-button${route.id === "panel" ? " panel-directory-export" : ""}`}
             type="button"
             disabled={loading || exporting || !registrations.length}
-            onClick={() => downloadExcel("workbook")}
+            onClick={() => onDownloadExcel("workbook")}
             title={`Download all ${registrations.length} ${
               route.id === "hackathon" ? "teams" : "registrations"
             } as an Excel workbook`}

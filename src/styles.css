@@ -58,8 +58,10 @@ input:focus, select:focus, button:focus-visible { outline: 2px solid var(--signa
 .dashboard-intro h1 { font-size: clamp(1.65rem, 3vw, 2.35rem); }
 
 .section-switcher { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--line-strong); }
-.section-card { position: relative; display: grid; min-height: 7rem; align-content: end; gap: .35rem; padding: 1rem; overflow: hidden; border: 0; border-right: 1px solid var(--line-strong); background: #fff; color: inherit; text-align: left; text-decoration: none; transition: background .2s ease, color .2s ease; }
-.section-card:last-child { border-right: 0; }
+.section-card-shell { position: relative; min-width: 0; border-right: 1px solid var(--line-strong); }
+.section-card-shell:last-child { border-right: 0; }
+.section-card { position: relative; display: grid; width: 100%; min-height: 7rem; height: 100%; align-content: end; gap: .35rem; padding: 1rem; overflow: hidden; border: 0; background: #fff; color: inherit; text-align: left; text-decoration: none; transition: background .2s ease, color .2s ease; }
+.section-card.has-action { padding-right: 7rem; }
 .section-card::after { content: ""; position: absolute; right: 0; bottom: 0; left: 0; height: 4px; background: var(--signal); transform: scaleX(0); transform-origin: left; transition: transform .25s ease; }
 .section-card:hover { background: var(--surface); }
 .section-card:focus-visible { position: relative; z-index: 2; outline: 2px solid var(--signal); outline-offset: -3px; }
@@ -70,6 +72,9 @@ input:focus, select:focus, button:focus-visible { outline: 2px solid var(--signa
 .section-card.is-active small { color: #bdbdb6; }
 .section-number { position: absolute; top: .65rem; right: .85rem; color: var(--surface-alt); font: 600 2.8rem/1 var(--mono); letter-spacing: -.08em; }
 .section-card.is-active .section-number { color: #292929; }
+.section-card-download { position: absolute; right: 1rem; bottom: 1rem; z-index: 2; display: inline-flex; align-items: center; gap: .45rem; padding: .25rem 0; border: 0; border-bottom: 1px solid currentColor; background: transparent; color: var(--base); font: 700 .6rem/1.2 var(--mono); letter-spacing: .05em; text-transform: uppercase; }
+.section-card-download:hover:not(:disabled) { color: var(--signal); }
+.section-card-download:disabled { cursor: not-allowed; opacity: .45; }
 .mobile-section-picker { display: none; }
 
 .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line-strong); background: #fff; }
@@ -109,6 +114,7 @@ input:focus, select:focus, button:focus-visible { outline: 2px solid var(--signa
 .export-button:hover:not(:disabled) { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--accent); }
 .export-button:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--accent); }
 .export-button:disabled { cursor: not-allowed; opacity: .45; box-shadow: none; }
+@media (min-width: 901px) { .panel-directory-export { display: none; } }
 .export-error { margin: -.5rem 0 1rem; padding: .8rem 1rem; border-left: 3px solid var(--accent); background: var(--accent-soft); color: #8c1111; font-size: .85rem; }
 .filters { display: grid; grid-template-columns: minmax(240px, 1.5fr) minmax(0, 3fr); gap: .65rem; margin-bottom: 1rem; padding: 1rem; background: var(--surface); border: 1px solid var(--line); }
 .filters label { display: grid; gap: .4rem; min-width: 0; }

@@ -4,6 +4,10 @@ import { DashboardNavigation } from "../../components/layout/DashboardNavigation
 import { DIRECTORY_ROUTES } from "../../config/dashboard.js";
 import { useDashboardData } from "../../hooks/useDashboardData.js";
 import { authApi, isUnauthorized } from "../../services/dashboardApi.js";
+import {
+  downloadHackathonParticipantsWorkbook,
+  downloadRegistrationsWorkbook,
+} from "../../services/registrationExport.js";
 import { OverviewPage } from "../overview/OverviewPage.jsx";
 import { EmptyRegistrationSection } from "../registrations/EmptyRegistrationSection.jsx";
 import { RegistrationDetails } from "../registrations/RegistrationDetails.jsx";
@@ -21,7 +25,12 @@ export function Dashboard({ route, onNavigate, onLogout }) {
   } = useDashboardData(route.id, onLogout);
   const [selectedRegistration, setSelectedRegistration] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
-  useEffect(() => setSelectedRegistration(null), [route.id]);
+  const [exporting, setExporting] = useState("");
+  const [exportError, setExportError] = useState("");
+  useEffect(() => {
+    setSelectedRegistration(null);
+    setExportError("");
+  }, [route.id]);
   const closeDetails = useCallback(() => setSelectedRegistration(null), []);
   async function deleteRegistration(registration) {
     const registrationName = registration.team_name || registration.name;
@@ -46,6 +55,23 @@ export function Dashboard({ route, onNavigate, onLogout }) {
   async function logout() {
     await authApi.logout().catch(() => {});
     onLogout();
+  }
+  async function downloadExcel(type = "workbook") {
+    setExporting(type);
+    setExportError("");
+    try {
+      if (type === "students")
+        await downloadHackathonParticipantsWorkbook(registrations);
+      else await downloadRegistrationsWorkbook(route.id, registrations);
+    } catch (downloadError) {
+      setExportError(
+        downloadError instanceof Error
+          ? downloadError.message
+          : "The Excel file could not be created.",
+      );
+    } finally {
+      setExporting("");
+    }
   }
   return (
     <div className="dashboard-shell">
@@ -74,6 +100,11 @@ export function Dashboard({ route, onNavigate, onLogout }) {
                 : summary.hackathonTotal,
           }}
           onNavigate={onNavigate}
+          onDownloadPanel={() => downloadExcel("workbook")}
+          panelDownloadDisabled={
+            route.id !== "panel" || loading || Boolean(exporting) || !registrations.length
+          }
+          panelDownloading={route.id === "panel" && exporting === "workbook"}
         />
         {route.id === "overview" ? (
           <OverviewPage
@@ -90,6 +121,9 @@ export function Dashboard({ route, onNavigate, onLogout }) {
             loading={loading}
             error={error}
             onOpen={setSelectedRegistration}
+            exporting={exporting}
+            exportError={exportError}
+            onDownloadExcel={downloadExcel}
           />
         ) : (
           <EmptyRegistrationSection section={route} />

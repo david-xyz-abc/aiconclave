@@ -1,6 +1,13 @@
 import { DASHBOARD_NAVIGATION } from "../../config/dashboard.js";
 
-export function DashboardNavigation({ route, counts, onNavigate }) {
+export function DashboardNavigation({
+  route,
+  counts,
+  onNavigate,
+  onDownloadPanel,
+  panelDownloadDisabled,
+  panelDownloading,
+}) {
   const itemStatus = (item) =>
     counts[item.id] === undefined
       ? item.status
@@ -14,19 +21,35 @@ export function DashboardNavigation({ route, counts, onNavigate }) {
   return (
     <>
       <nav className="section-switcher" aria-label="Dashboard pages">
-        {DASHBOARD_NAVIGATION.map((item) => (
-          <a
-            key={item.id}
-            href={item.path}
-            className={`section-card${route.id === item.id ? " is-active" : ""}`}
-            onClick={(event) => navigate(event, item.path)}
-            aria-current={route.id === item.id ? "page" : undefined}
-          >
-            <span className="section-number">{item.number}</span>
-            <strong>{item.label}</strong>
-            <small>{itemStatus(item)}</small>
-          </a>
-        ))}
+        {DASHBOARD_NAVIGATION.map((item) => {
+          const showPanelDownload = item.id === "panel" && route.id === "panel";
+          return (
+            <div className="section-card-shell" key={item.id}>
+              <a
+                href={item.path}
+                className={`section-card${route.id === item.id ? " is-active" : ""}${showPanelDownload ? " has-action" : ""}`}
+                onClick={(event) => navigate(event, item.path)}
+                aria-current={route.id === item.id ? "page" : undefined}
+              >
+                <span className="section-number">{item.number}</span>
+                <strong>{item.label}</strong>
+                <small>{itemStatus(item)}</small>
+              </a>
+              {showPanelDownload && (
+                <button
+                  className="section-card-download"
+                  type="button"
+                  disabled={panelDownloadDisabled}
+                  onClick={onDownloadPanel}
+                  title="Download every panel discussion registration as Excel"
+                >
+                  {panelDownloading ? "Preparing…" : "Download"}
+                  <span aria-hidden="true">↓</span>
+                </button>
+              )}
+            </div>
+          );
+        })}
       </nav>
       <label className="mobile-section-picker">
         <span>Dashboard page</span>
