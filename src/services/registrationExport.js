@@ -41,6 +41,20 @@ function createSheet(name, title, subtitle, columns, rows) {
   return { name, title, subtitle, columns, rows };
 }
 
+function findTeamLeader(team) {
+  const members = team.members || [];
+  return (
+    members.find((member) =>
+      ["captain", "team leader", "leader"].includes(
+        text(member.role).toLowerCase(),
+      ),
+    ) ||
+    members.find((member) => Number(member.member_order) === 1) ||
+    members[0] ||
+    {}
+  );
+}
+
 function createPanelSheet(registrations, generatedAt) {
   const columns = [
     { key: "id", header: "Registration ID", width: 16 },
@@ -97,31 +111,28 @@ function createHackathonSheets(registrations, generatedAt) {
   const teams = registrations.filter((item) => item.record_type === "team");
   const legacy = registrations.filter((item) => item.record_type !== "team");
   const teamColumns = [
-    { key: "id", header: "Team ID", width: 12 },
-    { key: "code", header: "Team Code", width: 20 },
     { key: "name", header: "Team Name", width: 28 },
     { key: "category", header: "Category", width: 16 },
     { key: "size", header: "Team Size", width: 14 },
     { key: "sector", header: "Sector", width: 18 },
     { key: "solution", header: "Solution Type", width: 18 },
-    { key: "confirmed", header: "Information Confirmed", width: 22 },
-    { key: "rules", header: "Rules Accepted", width: 18 },
-    { key: "updates", header: "Updates Opt-In", width: 18 },
-    { key: "submitted", header: "Submitted At", width: 23 },
+    { key: "code", header: "Team Code", width: 20 },
+    { key: "leader", header: "Team Leader", width: 24 },
+    { key: "leaderPhone", header: "Leader Phone", width: 18 },
   ];
-  const teamRows = teams.map((team) => ({
-    id: team.id,
-    code: text(team.team_code),
-    name: text(team.team_name),
-    category: text(team.participant_category),
-    size: Number(team.members?.length || team.team_size || 0),
-    sector: text(team.sector_track),
-    solution: text(team.solution_type),
-    confirmed: yesNo(team.information_confirmed),
-    rules: yesNo(team.rules_accepted),
-    updates: yesNo(team.updates_opt_in),
-    submitted: excelDate(team.submitted_at || team.created_at),
-  }));
+  const teamRows = teams.map((team) => {
+    const leader = findTeamLeader(team);
+    return {
+      name: text(team.team_name),
+      category: text(team.participant_category),
+      size: Number(team.members?.length || team.team_size || 0),
+      sector: text(team.sector_track),
+      solution: text(team.solution_type),
+      code: text(team.team_code),
+      leader: text(leader.full_name),
+      leaderPhone: text(leader.phone),
+    };
+  });
   const sheets = [
     createSheet(
       "Hackathon Teams",
