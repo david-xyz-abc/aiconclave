@@ -113,6 +113,11 @@ function createHackathonSheets(registrations, generatedAt) {
   const teamColumns = [
     { key: "name", header: "Team Name", width: 28 },
     { key: "category", header: "Category", width: 16 },
+    {
+      key: "institution",
+      header: "College / School Name",
+      width: 36,
+    },
     { key: "size", header: "Team Size", width: 14 },
     { key: "sector", header: "Sector", width: 18 },
     { key: "solution", header: "Solution Type", width: 18 },
@@ -125,6 +130,7 @@ function createHackathonSheets(registrations, generatedAt) {
     return {
       name: text(team.team_name),
       category: text(team.participant_category),
+      institution: text(leader.institution),
       size: Number(team.members?.length || team.team_size || 0),
       sector: text(team.sector_track),
       solution: text(team.solution_type),
