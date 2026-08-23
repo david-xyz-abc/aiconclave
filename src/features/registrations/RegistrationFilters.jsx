@@ -23,7 +23,11 @@ export function RegistrationFilters({
         <input
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
-          placeholder="Name, email, phone or organisation"
+          placeholder={
+            isHackathon
+              ? "Team, student, email, phone or institution"
+              : "Name, email, phone or organisation"
+          }
         />
       </label>
       <button
@@ -41,25 +45,29 @@ export function RegistrationFilters({
         id="advanced-filters"
       >
         <label>
-          <span>Participant type</span>
+          <span>
+            {isHackathon ? "Participant category" : "Participant type"}
+          </span>
           <select
             value={participantType}
             onChange={(event) => onParticipantTypeChange(event.target.value)}
           >
-            <option value="all">All participant types</option>
+            <option value="all">
+              All {isHackathon ? "categories" : "participant types"}
+            </option>
             {participantOptions.map((option) => (
               <option key={option}>{option}</option>
             ))}
           </select>
         </label>
         <label>
-          <span>{isHackathon ? "Challenge sector" : "Panel selection"}</span>
+          <span>{isHackathon ? "Hackathon sector" : "Panel selection"}</span>
           <select
             value={focus}
             onChange={(event) => onFocusChange(event.target.value)}
           >
             <option value="all">
-              All {isHackathon ? "challenge sectors" : "panel selections"}
+              All {isHackathon ? "sectors" : "panel selections"}
             </option>
             {focusOptions.map((option) => (
               <option key={option}>{option}</option>
@@ -67,13 +75,13 @@ export function RegistrationFilters({
           </select>
         </label>
         <label>
-          <span>{isHackathon ? "Hackathon track" : "Industry sector"}</span>
+          <span>{isHackathon ? "Solution type" : "Industry sector"}</span>
           <select
             value={sector}
             onChange={(event) => onSectorChange(event.target.value)}
           >
             <option value="all">
-              All {isHackathon ? "tracks" : "sectors"}
+              All {isHackathon ? "solution types" : "sectors"}
             </option>
             {sectorOptions.map((option) => (
               <option key={option}>{option}</option>

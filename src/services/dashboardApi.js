@@ -41,9 +41,9 @@ export const registrationsApi = {
     requestJson(
       `/api/registrations?type=${encodeURIComponent(registrationType)}`,
     ),
-  remove: (registrationType, id) =>
+  remove: (registrationType, id, recordType) =>
     requestJson(
-      `/api/registrations/${encodeURIComponent(id)}?type=${encodeURIComponent(registrationType)}`,
+      `/api/registrations/${encodeURIComponent(id)}?type=${encodeURIComponent(registrationType)}&record_type=${encodeURIComponent(recordType || registrationType)}`,
       { method: "DELETE" },
     ),
 };

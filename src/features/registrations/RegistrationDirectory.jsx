@@ -4,6 +4,7 @@ import {
   searchableRegistrationText,
 } from "../../utils/registration.js";
 import { RegistrationFilters } from "./RegistrationFilters.jsx";
+import { HackathonMetrics } from "./HackathonMetrics.jsx";
 import { HackathonTable, PanelTable } from "./RegistrationTables.jsx";
 
 export function RegistrationDirectory({
@@ -29,7 +30,13 @@ export function RegistrationDirectory({
     () =>
       [
         ...new Set(
-          registrations.map((item) => item.participant_type).filter(Boolean),
+          registrations
+            .map((item) =>
+              route.id === "hackathon"
+                ? item.participant_category || item.participant_type
+                : item.participant_type,
+            )
+            .filter(Boolean),
         ),
       ].sort(),
     [registrations],
@@ -41,7 +48,7 @@ export function RegistrationDirectory({
           registrations
             .map((item) =>
               route.id === "hackathon"
-                ? item.challenge_area
+                ? item.sector_track || item.challenge_area
                 : item.panel_selection,
             )
             .filter(Boolean),
@@ -56,7 +63,7 @@ export function RegistrationDirectory({
           registrations
             .flatMap((item) =>
               route.id === "hackathon"
-                ? parseTracks(item.tracks)
+                ? [item.solution_type, ...parseTracks(item.tracks)]
                 : [item.industry_sector],
             )
             .filter(Boolean),
@@ -69,20 +76,25 @@ export function RegistrationDirectory({
     return registrations.filter((registration) => {
       if (
         participantType !== "all" &&
-        registration.participant_type !== participantType
+        (route.id === "hackathon"
+          ? registration.participant_category || registration.participant_type
+          : registration.participant_type) !== participantType
       )
         return false;
       if (
         focus !== "all" &&
         (route.id === "hackathon"
-          ? registration.challenge_area
+          ? registration.sector_track || registration.challenge_area
           : registration.panel_selection) !== focus
       )
         return false;
       if (
         sector !== "all" &&
         (route.id === "hackathon"
-          ? !parseTracks(registration.tracks).includes(sector)
+          ? ![
+              registration.solution_type,
+              ...parseTracks(registration.tracks),
+            ].includes(sector)
           : registration.industry_sector !== sector)
       )
         return false;
@@ -110,6 +122,9 @@ export function RegistrationDirectory({
       className="data-section panel-directory"
       aria-labelledby="table-heading"
     >
+      {route.id === "hackathon" && (
+        <HackathonMetrics registrations={registrations} />
+      )}
       <div className="data-heading">
         <div>
           <p className="eyebrow">
@@ -117,7 +132,11 @@ export function RegistrationDirectory({
               ? "Day 2 · Hackathon"
               : "Panel discussion"}
           </p>
-          <h2 id="table-heading">Registered participants</h2>
+          <h2 id="table-heading">
+            {route.id === "hackathon"
+              ? "Registered teams"
+              : "Registered participants"}
+          </h2>
           <p>
             {filteredRegistrations.length} of {registrations.length} entries
             shown

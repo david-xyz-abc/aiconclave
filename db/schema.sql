@@ -59,6 +59,75 @@ CREATE INDEX IF NOT EXISTS idx_hackathon_registrations_email ON hackathon_regist
 CREATE INDEX IF NOT EXISTS idx_hackathon_registrations_challenge ON hackathon_registrations (challenge_area, subcategory);
 CREATE INDEX IF NOT EXISTS idx_hackathon_registrations_created_at ON hackathon_registrations (created_at);
 
+-- Participant identities are owned by the public registration site. They are
+-- declared here so a fresh local dashboard database can mirror production.
+CREATE TABLE IF NOT EXISTS participant_accounts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  google_sub TEXT NOT NULL UNIQUE,
+  email TEXT NOT NULL COLLATE NOCASE UNIQUE,
+  display_name TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  last_login_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
+-- Current team-based hackathon registrations. The individual table above is
+-- retained only for compatibility with records created before team signup.
+CREATE TABLE IF NOT EXISTS hackathon_teams (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  team_code TEXT COLLATE NOCASE UNIQUE,
+  team_name TEXT NOT NULL,
+  team_name_key TEXT NOT NULL COLLATE NOCASE UNIQUE,
+  captain_account_id INTEGER NOT NULL UNIQUE,
+  participant_category TEXT NOT NULL CHECK (participant_category IN ('School', 'College')),
+  team_size INTEGER NOT NULL CHECK (team_size BETWEEN 2 AND 4),
+  sector_track TEXT NOT NULL CHECK (sector_track IN ('Education', 'Agriculture', 'Healthcare')),
+  solution_type TEXT NOT NULL CHECK (solution_type IN ('Technical', 'Non-Technical')),
+  information_confirmed INTEGER NOT NULL DEFAULT 0 CHECK (information_confirmed IN (0, 1)),
+  rules_accepted INTEGER NOT NULL DEFAULT 0 CHECK (rules_accepted IN (0, 1)),
+  updates_opt_in INTEGER NOT NULL DEFAULT 0 CHECK (updates_opt_in IN (0, 1)),
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  submitted_at TEXT,
+  FOREIGN KEY (captain_account_id) REFERENCES participant_accounts(id)
+);
+
+CREATE TABLE IF NOT EXISTS hackathon_team_members (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  team_id INTEGER NOT NULL,
+  member_order INTEGER NOT NULL CHECK (member_order BETWEEN 1 AND 4),
+  role TEXT NOT NULL CHECK (role IN ('Captain', 'Member')),
+  account_id INTEGER,
+  full_name TEXT NOT NULL,
+  email TEXT NOT NULL COLLATE NOCASE,
+  email_key TEXT NOT NULL COLLATE NOCASE,
+  phone TEXT NOT NULL,
+  institution TEXT NOT NULL,
+  department_or_course TEXT NOT NULL DEFAULT '',
+  year_or_grade TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  FOREIGN KEY (team_id) REFERENCES hackathon_teams(id) ON DELETE CASCADE,
+  FOREIGN KEY (account_id) REFERENCES participant_accounts(id) ON DELETE SET NULL,
+  UNIQUE (team_id, member_order),
+  UNIQUE (team_id, email_key),
+  UNIQUE (team_id, id)
+);
+
+CREATE TABLE IF NOT EXISTS hackathon_member_claims (
+  email_key TEXT PRIMARY KEY COLLATE NOCASE,
+  email TEXT NOT NULL COLLATE NOCASE,
+  team_id INTEGER NOT NULL,
+  member_id INTEGER NOT NULL UNIQUE,
+  claimed_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  FOREIGN KEY (team_id, member_id) REFERENCES hackathon_team_members(team_id, id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_hackathon_teams_category_track ON hackathon_teams (participant_category, sector_track, solution_type);
+CREATE INDEX IF NOT EXISTS idx_hackathon_teams_submitted_at ON hackathon_teams (submitted_at);
+CREATE INDEX IF NOT EXISTS idx_hackathon_team_members_team ON hackathon_team_members (team_id, member_order);
+CREATE INDEX IF NOT EXISTS idx_hackathon_team_members_email ON hackathon_team_members (email_key);
+CREATE INDEX IF NOT EXISTS idx_hackathon_member_claims_team ON hackathon_member_claims (team_id);
+
 CREATE TABLE IF NOT EXISTS admin_users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   username TEXT NOT NULL UNIQUE,

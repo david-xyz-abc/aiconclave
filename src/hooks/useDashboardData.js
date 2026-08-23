@@ -71,7 +71,11 @@ export function useDashboardData(routeId, onUnauthorized) {
 
   const removeRegistration = useCallback(
     async (registrationType, registration) => {
-      await registrationsApi.remove(registrationType, registration.id);
+      await registrationsApi.remove(
+        registrationType,
+        registration.id,
+        registration.record_type,
+      );
       setDirectories((current) => ({
         ...current,
         [registrationType]: (current[registrationType] || []).filter(

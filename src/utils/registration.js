@@ -32,6 +32,11 @@ export function parseTracks(value) {
 
 export function searchableRegistrationText(registration) {
   return [
+    registration.team_code,
+    registration.team_name,
+    registration.participant_category,
+    registration.sector_track,
+    registration.solution_type,
     registration.name,
     registration.email,
     registration.phone,
@@ -48,6 +53,14 @@ export function searchableRegistrationText(registration) {
     registration.subcategory,
     registration.problem_area,
     registration.idea_summary,
+    ...(registration.members || []).flatMap((member) => [
+      member.full_name,
+      member.email,
+      member.phone,
+      member.institution,
+      member.department_or_course,
+      member.year_or_grade,
+    ]),
   ]
     .filter(Boolean)
     .join(" ")

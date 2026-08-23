@@ -78,6 +78,8 @@ input:focus, select:focus, button:focus-visible { outline: 2px solid var(--signa
 .metric-card span, .metric-card small { display: block; color: var(--muted); font: .65rem/1.35 var(--mono); letter-spacing: .06em; text-transform: uppercase; }
 .metric-card strong { display: block; margin: .7rem 0 .55rem; overflow: hidden; font: 600 clamp(1.75rem, 4vw, 3.2rem)/1 var(--mono); letter-spacing: -.07em; text-overflow: ellipsis; white-space: nowrap; }
 .metric-card:first-child strong { color: var(--signal); }
+.hackathon-metrics { grid-template-columns: repeat(4, 1fr); margin-bottom: clamp(1.5rem, 4vw, 2.5rem); }
+.hackathon-metrics .metric-card:nth-child(2) strong { color: var(--green); }
 
 .overview-page { display: grid; gap: clamp(1.5rem, 4vw, 3rem); margin-top: 1.5rem; }
 .overview-recent .data-heading { margin-bottom: .8rem; }
@@ -113,6 +115,7 @@ tbody tr { transition: background .16s ease; }
 tbody tr:hover { background: rgba(240, 240, 236, .62); }
 .cell-name { display: block; color: var(--text); font: 600 1.08rem/1.25 var(--mono); letter-spacing: -.025em; }
 .cell-secondary { display: block; width: fit-content; margin-top: .38rem; color: var(--muted); font-size: .78rem; }
+.team-code { font-family: var(--mono); letter-spacing: .05em; text-transform: uppercase; }
 td a { text-decoration-thickness: 1px; text-underline-offset: .2em; }
 .category-mark, .panel-mark, .track-mark { display: inline-block; padding: .28rem .48rem; border: 1px solid var(--line-strong); font: .65rem/1.25 var(--mono); }
 .panel-mark { border-color: rgba(255, 30, 30, .45); background: var(--signal-soft); }
@@ -150,6 +153,22 @@ td a { text-decoration-thickness: 1px; text-underline-offset: .2em; }
 .detail-item-important dd a { text-decoration-thickness: 1.5px; text-underline-offset: .22em; }
 .detail-item-important .panel-mark { padding: .42rem .6rem; font-size: .88rem; font-weight: 600; }
 .detail-actions { display: flex; justify-content: space-between; gap: 1rem; margin-top: 2rem; }
+.team-members { margin-top: 2rem; }
+.team-members-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; padding-bottom: .85rem; border-bottom: 3px solid var(--text); }
+.team-members-head .eyebrow { grid-column: 1 / -1; }
+.team-members-head h3 { margin: 0; font: 600 clamp(1.4rem, 4vw, 2rem)/1 var(--mono); letter-spacing: -.04em; }
+.team-members-head > span { color: var(--signal); font: 600 2rem/1 var(--mono); }
+.team-member-list { display: grid; }
+.team-member-card { padding: 1rem 0; border-bottom: 1px solid var(--line); }
+.team-member-card > header { display: grid; grid-template-columns: 2.3rem minmax(0, 1fr); gap: .75rem; align-items: start; }
+.team-member-card > header > span { color: var(--signal); font: 600 .72rem/1.5 var(--mono); }
+.team-member-card > header div { display: grid; gap: .2rem; }
+.team-member-card > header strong { font: 600 1.05rem/1.25 var(--mono); }
+.team-member-card > header small { color: var(--green); font: 600 .62rem/1.2 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.team-member-card dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .7rem 1rem; margin: .9rem 0 0 3.05rem; }
+.team-member-card dl > div:nth-child(3) { grid-column: 1 / -1; }
+.team-member-card dt { color: var(--muted); font: 600 .58rem/1.2 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.team-member-card dd { margin: .22rem 0 0; overflow-wrap: anywhere; font-size: .82rem; }
 @keyframes backdrop-in { from { opacity: 0; } }
 @keyframes drawer-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
 
@@ -180,6 +199,9 @@ td a { text-decoration-thickness: 1px; text-underline-offset: .2em; }
   .mobile-section-control select:focus { outline: 2px solid var(--signal); outline-offset: -2px; }
   .mobile-section-control i { position: absolute; right: 1rem; width: .55rem; height: .55rem; border-right: 2px solid var(--text); border-bottom: 2px solid var(--text); pointer-events: none; transform: rotate(45deg) translateY(-25%); }
   .data-heading { align-items: flex-start; flex-direction: column; gap: 1rem; }
+  .hackathon-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hackathon-metrics .metric-card:nth-child(2) { border-right: 0; }
+  .hackathon-metrics .metric-card:nth-child(-n + 2) { border-bottom: 1px solid var(--line); }
   .table-scroll { overflow: visible; border-top: 0; }
   table, tbody, tr, td { display: block; width: 100%; }
   table { min-width: 0; }
@@ -196,11 +218,17 @@ td a { text-decoration-thickness: 1px; text-underline-offset: .2em; }
   td[data-label="Organisation"],
   td[data-label="Registered"] { display: none; }
   td[data-label="Panel"],
-  td[data-label="Challenge"] { display: block; padding: 0; border: 0; }
+  td[data-label="Challenge"],
+  td[data-label="Sector"] { display: block; padding: 0; border: 0; }
   td[data-label="Panel"]::before,
   td[data-label="Challenge"]::before { display: none; }
+  td[data-label="Sector"]::before { display: none; }
   td[data-label="Panel"] .panel-mark,
   td[data-label="Challenge"] .panel-mark { max-width: 11.5rem; overflow: hidden; font-size: .6rem; text-overflow: ellipsis; white-space: nowrap; }
+  td[data-label="Sector"] .panel-mark { max-width: 11.5rem; overflow: hidden; font-size: .6rem; text-overflow: ellipsis; white-space: nowrap; }
+  .hackathon-table td[data-label="Category"],
+  .hackathon-table td[data-label="Solution"],
+  .hackathon-table td[data-label="Registered"] { display: none; }
   td[data-label="Actions"] { display: block; grid-column: 1 / -1; padding: .5rem 0 0; border-top: 1px solid var(--line); border-bottom: 0; text-align: right; }
   td[data-label="Actions"]::before { display: none; }
   td:last-child { border-bottom: 0; }
@@ -215,6 +243,8 @@ td a { text-decoration-thickness: 1px; text-underline-offset: .2em; }
   .metric-card { min-height: 5.25rem; padding: .7rem .6rem; border-right: 1px solid var(--line); border-bottom: 0; }
   .metric-card:nth-child(even) { border-right: 1px solid var(--line); }
   .metric-card:last-child { grid-column: auto; border-right: 0; }
+  .hackathon-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hackathon-metrics .metric-card { min-height: 5.5rem; }
   .metric-card span { min-height: 2.2em; font-size: .53rem; line-height: 1.15; }
   .metric-card strong { margin: .38rem 0 0; font-size: clamp(1.4rem, 7vw, 1.9rem); }
   .metric-card small { display: none; }
@@ -232,6 +262,8 @@ td a { text-decoration-thickness: 1px; text-underline-offset: .2em; }
   .detail-item-important dd { font-size: .96rem; }
   .detail-actions { flex-direction: column-reverse; }
   .detail-actions .button { width: 100%; }
+  .team-member-card dl { grid-template-columns: 1fr; margin-left: 0; }
+  .team-member-card dl > div:nth-child(3) { grid-column: auto; }
 }
 
 @media (prefers-reduced-motion: reduce) {

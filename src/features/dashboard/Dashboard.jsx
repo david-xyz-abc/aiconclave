@@ -24,9 +24,10 @@ export function Dashboard({ route, onNavigate, onLogout }) {
   useEffect(() => setSelectedRegistration(null), [route.id]);
   const closeDetails = useCallback(() => setSelectedRegistration(null), []);
   async function deleteRegistration(registration) {
+    const registrationName = registration.team_name || registration.name;
     if (
       !window.confirm(
-        `Delete the ${route.id} registration for ${registration.name}? This cannot be undone.`,
+        `Delete the ${route.id} registration for ${registrationName}? This cannot be undone.`,
       )
     )
       return;

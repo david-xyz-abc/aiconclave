@@ -4,11 +4,16 @@ const SESSION_TTL_SECONDS = 60 * 60 * 12;
 function base64Url(bytes) {
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  return btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
 }
 
 function bytesToHex(bytes) {
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join(
+    "",
+  );
 }
 
 async function sha256(value) {
@@ -25,9 +30,11 @@ export async function constantTimeEqual(left, right) {
   ]);
   const leftBytes = new Uint8Array(leftHash);
   const rightBytes = new Uint8Array(rightHash);
-  if (typeof crypto.subtle.timingSafeEqual === "function") return crypto.subtle.timingSafeEqual(leftBytes, rightBytes);
+  if (typeof crypto.subtle.timingSafeEqual === "function")
+    return crypto.subtle.timingSafeEqual(leftBytes, rightBytes);
   let difference = 0;
-  for (let index = 0; index < leftBytes.length; index += 1) difference |= leftBytes[index] ^ rightBytes[index];
+  for (let index = 0; index < leftBytes.length; index += 1)
+    difference |= leftBytes[index] ^ rightBytes[index];
   return difference === 0;
 }
 
@@ -37,9 +44,15 @@ export function isSameOrigin(request) {
 }
 
 export async function readJsonBody(request, maximumBytes = 8_192) {
-  if (!(request.headers.get("content-type") || "").toLowerCase().startsWith("application/json")) throw new Error("unsupported-content-type");
+  if (
+    !(request.headers.get("content-type") || "")
+      .toLowerCase()
+      .startsWith("application/json")
+  )
+    throw new Error("unsupported-content-type");
   const declaredLength = Number(request.headers.get("content-length"));
-  if (Number.isFinite(declaredLength) && declaredLength > maximumBytes) throw new Error("body-too-large");
+  if (Number.isFinite(declaredLength) && declaredLength > maximumBytes)
+    throw new Error("body-too-large");
   if (!request.body) return {};
   const reader = request.body.getReader();
   const chunks = [];
@@ -64,8 +77,23 @@ export async function readJsonBody(request, maximumBytes = 8_192) {
 }
 
 export async function hashPassword(password, salt, iterations) {
-  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
-  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt: new TextEncoder().encode(salt), iterations, hash: "SHA-256" }, key, 256);
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(password),
+    "PBKDF2",
+    false,
+    ["deriveBits"],
+  );
+  const bits = await crypto.subtle.deriveBits(
+    {
+      name: "PBKDF2",
+      salt: new TextEncoder().encode(salt),
+      iterations,
+      hash: "SHA-256",
+    },
+    key,
+    256,
+  );
   return bytesToHex(new Uint8Array(bits));
 }
 
@@ -87,8 +115,12 @@ export async function getSession(context) {
      FROM admin_sessions s
      JOIN admin_users u ON u.id = s.admin_user_id
      WHERE s.token_hash = ? AND s.expires_at > datetime('now')`,
-  ).bind(tokenHash).first();
-  return row ? { id: row.id, userId: row.user_id, username: row.username } : null;
+  )
+    .bind(tokenHash)
+    .first();
+  return row
+    ? { id: row.id, userId: row.user_id, username: row.username }
+    : null;
 }
 
 export function sessionCookie(token, maxAge = SESSION_TTL_SECONDS) {
