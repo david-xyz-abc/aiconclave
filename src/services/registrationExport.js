@@ -123,8 +123,8 @@ function createHackathonSheets(registrations, generatedAt) {
     { key: "sector", header: "Sector", width: 18 },
     { key: "solution", header: "Solution Type", width: 18 },
     { key: "code", header: "Team Code", width: 20 },
-    { key: "leaderEmail", header: "Captain Email", width: 30 },
-    { key: "leaderPhone", header: "Captain Phone", width: 18 },
+    { key: "leaderEmail", header: "Captain Email", width: 34 },
+    { key: "leaderPhone", header: "Captain Phone", width: 24 },
   ];
   const teamRows = teams.map((team) => {
     const leader = findTeamLeader(team);
@@ -320,7 +320,7 @@ function worksheetXml(sheet) {
     <row r="1" ht="34" customHeight="1">${cellXml("A1", sheet.title, 1)}</row>
     <row r="2" ht="24" customHeight="1">${cellXml("A2", sheet.subtitle, 2)}</row>
     <row r="3" ht="8" customHeight="1">${bandRow}</row>
-    <row r="4" ht="32" customHeight="1">${headerRow}</row>
+    <row r="4" ht="42" customHeight="1">${headerRow}</row>
     ${dataRows}
   </sheetData>
   ${autoFilter}
