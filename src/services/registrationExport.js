@@ -113,17 +113,18 @@ function createHackathonSheets(registrations, generatedAt) {
   const teamColumns = [
     { key: "name", header: "Team Name", width: 28 },
     { key: "category", header: "Category", width: 16 },
+    { key: "leader", header: "Captain", width: 24 },
     {
       key: "institution",
-      header: "College / School Name",
+      header: "College / School",
       width: 36,
     },
     { key: "size", header: "Team Size", width: 14 },
     { key: "sector", header: "Sector", width: 18 },
     { key: "solution", header: "Solution Type", width: 18 },
     { key: "code", header: "Team Code", width: 20 },
-    { key: "leader", header: "Team Leader", width: 24 },
-    { key: "leaderPhone", header: "Leader Phone", width: 18 },
+    { key: "leaderEmail", header: "Captain Email", width: 30 },
+    { key: "leaderPhone", header: "Captain Phone", width: 18 },
   ];
   const teamRows = teams.map((team) => {
     const leader = findTeamLeader(team);
@@ -136,6 +137,7 @@ function createHackathonSheets(registrations, generatedAt) {
       solution: text(team.solution_type),
       code: text(team.team_code),
       leader: text(leader.full_name),
+      leaderEmail: text(leader.email),
       leaderPhone: text(leader.phone),
     };
   });
