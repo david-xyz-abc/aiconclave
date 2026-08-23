@@ -1,7 +1,12 @@
 import { useMemo } from "react";
 import { MetricCard } from "../../components/common/MetricCard.jsx";
 
-export function HackathonMetrics({ registrations }) {
+export function HackathonMetrics({
+  registrations,
+  downloadingStudents,
+  downloadDisabled,
+  onDownloadStudents,
+}) {
   const metrics = useMemo(
     () =>
       registrations.reduce(
@@ -38,6 +43,18 @@ export function HackathonMetrics({ registrations }) {
         label="Students"
         value={metrics.students}
         detail="Across all teams"
+        action={
+          <button
+            className="metric-download"
+            type="button"
+            disabled={downloadDisabled || !metrics.students}
+            onClick={onDownloadStudents}
+            title="Download one Excel row for every registered hackathon student"
+          >
+            {downloadingStudents ? "Preparing…" : "Download list"}
+            <span aria-hidden="true">↓</span>
+          </button>
+        }
       />
       <MetricCard
         label="School teams"

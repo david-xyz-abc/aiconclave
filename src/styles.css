@@ -73,13 +73,17 @@ input:focus, select:focus, button:focus-visible { outline: 2px solid var(--signa
 .mobile-section-picker { display: none; }
 
 .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line-strong); background: #fff; }
-.metric-card { min-width: 0; padding: 1.4rem 1.25rem; border-right: 1px solid var(--line); }
+.metric-card { position: relative; min-width: 0; padding: 1.4rem 1.25rem; border-right: 1px solid var(--line); }
 .metric-card:last-child { border-right: 0; }
 .metric-card span, .metric-card small { display: block; color: var(--muted); font: .65rem/1.35 var(--mono); letter-spacing: .06em; text-transform: uppercase; }
 .metric-card strong { display: block; margin: .7rem 0 .55rem; overflow: hidden; font: 600 clamp(1.75rem, 4vw, 3.2rem)/1 var(--mono); letter-spacing: -.07em; text-overflow: ellipsis; white-space: nowrap; }
 .metric-card:first-child strong { color: var(--signal); }
 .hackathon-metrics { grid-template-columns: repeat(4, 1fr); margin-bottom: clamp(1.5rem, 4vw, 2.5rem); }
 .hackathon-metrics .metric-card:nth-child(2) strong { color: var(--green); }
+.metric-download { display: inline-flex; align-items: center; gap: .5rem; margin-top: .8rem; padding: .25rem 0; border: 0; border-bottom: 1px solid currentColor; background: transparent; color: var(--text); font: 700 .62rem/1.2 var(--mono); letter-spacing: .05em; text-transform: uppercase; transition: color .16s ease, opacity .16s ease; }
+.metric-download span { display: inline; color: inherit; font: inherit; }
+.metric-download:hover:not(:disabled) { color: var(--green); }
+.metric-download:disabled { cursor: not-allowed; opacity: .4; }
 
 .overview-page { display: grid; gap: clamp(1.5rem, 4vw, 3rem); margin-top: 1.5rem; }
 .overview-recent .data-heading { margin-bottom: .8rem; }
@@ -102,7 +106,6 @@ input:focus, select:focus, button:focus-visible { outline: 2px solid var(--signa
 .reset-button { padding: .25rem 0; border-bottom: 1px solid var(--text); font: 500 .7rem/1.2 var(--mono); letter-spacing: .05em; text-transform: uppercase; }
 .directory-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 1rem; }
 .export-button { display: inline-flex; align-items: center; justify-content: center; gap: .75rem; min-height: 2.9rem; padding: .75rem 1rem; border: 1px solid var(--text); background: var(--text); color: #fff; font: 700 .7rem/1 var(--mono); letter-spacing: .05em; text-transform: uppercase; box-shadow: 4px 4px 0 var(--accent); transition: transform .16s ease, box-shadow .16s ease, opacity .16s ease; }
-.export-button-secondary { background: #fff; color: var(--text); box-shadow: 4px 4px 0 var(--signal); }
 .export-button:hover:not(:disabled) { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--accent); }
 .export-button:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--accent); }
 .export-button:disabled { cursor: not-allowed; opacity: .45; box-shadow: none; }
@@ -257,6 +260,7 @@ td a { text-decoration-thickness: 1px; text-underline-offset: .2em; }
   .metric-card span { min-height: 2.2em; font-size: .53rem; line-height: 1.15; }
   .metric-card strong { margin: .38rem 0 0; font-size: clamp(1.4rem, 7vw, 1.9rem); }
   .metric-card small { display: none; }
+  .metric-download { margin-top: .35rem; font-size: .5rem; }
   .data-section { margin-top: 1.5rem; }
   .advanced-filters { grid-template-columns: 1fr; }
   td { grid-template-columns: 7rem minmax(0, 1fr); }

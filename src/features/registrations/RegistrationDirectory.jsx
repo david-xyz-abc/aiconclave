@@ -147,7 +147,12 @@ export function RegistrationDirectory({
       aria-labelledby="table-heading"
     >
       {route.id === "hackathon" && (
-        <HackathonMetrics registrations={registrations} />
+        <HackathonMetrics
+          registrations={registrations}
+          downloadingStudents={exporting === "students"}
+          downloadDisabled={loading || Boolean(exporting)}
+          onDownloadStudents={() => downloadExcel("students")}
+        />
       )}
       <div className="data-heading">
         <div>
@@ -179,20 +184,6 @@ export function RegistrationDirectory({
             {exporting === "workbook" ? "Preparing Excel…" : "Download Excel"}
             <span aria-hidden="true">↓</span>
           </button>
-          {route.id === "hackathon" && (
-            <button
-              className="export-button export-button-secondary"
-              type="button"
-              disabled={loading || Boolean(exporting) || !registrations.length}
-              onClick={() => downloadExcel("students")}
-              title="Download one Excel row for every registered hackathon student"
-            >
-              {exporting === "students"
-                ? "Preparing students…"
-                : "Download all students"}
-              <span aria-hidden="true">↓</span>
-            </button>
-          )}
           <button className="reset-button" type="button" onClick={resetFilters}>
             Clear filters
           </button>
