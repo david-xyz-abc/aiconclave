@@ -55,6 +55,52 @@ function findTeamLeader(team) {
   );
 }
 
+function createHackathonParticipantRows(teams) {
+  return teams.flatMap((team) =>
+    (team.members || []).map((member) => ({
+      name: text(member.full_name),
+      teamName: text(team.team_name),
+      email: text(member.email),
+      phone: text(member.phone),
+      institution: text(member.institution),
+      sector: text(team.sector_track),
+      solution: text(team.solution_type),
+      role: text(member.role),
+      category: text(team.participant_category),
+      teamCode: text(team.team_code),
+      order: Number(member.member_order || 0),
+      course: text(member.department_or_course),
+      year: text(member.year_or_grade),
+    })),
+  );
+}
+
+function createHackathonParticipantsSheet(teams, generatedAt) {
+  const columns = [
+    { key: "name", header: "Full Name", width: 24 },
+    { key: "teamName", header: "Team Name", width: 28 },
+    { key: "email", header: "Email", width: 32 },
+    { key: "phone", header: "Phone", width: 24 },
+    { key: "institution", header: "College / School", width: 36 },
+    { key: "sector", header: "Sector", width: 18 },
+    { key: "solution", header: "Solution Type", width: 18 },
+    { key: "role", header: "Team Role", width: 15 },
+    { key: "category", header: "Category", width: 16 },
+    { key: "teamCode", header: "Team Code", width: 20 },
+    { key: "order", header: "Member No.", width: 14 },
+    { key: "course", header: "Course / Department", width: 25 },
+    { key: "year", header: "Year / Grade", width: 16 },
+  ];
+  const rows = createHackathonParticipantRows(teams);
+  return createSheet(
+    "All Students",
+    "AI CONCLAVE 2026 · ALL HACKATHON STUDENTS",
+    `${rows.length} students across ${teams.length} teams · Exported ${generatedAt.toLocaleString("en-IN")}`,
+    columns,
+    rows,
+  );
+}
+
 function createPanelSheet(registrations, generatedAt) {
   const columns = [
     { key: "id", header: "Registration ID", width: 16 },
@@ -151,47 +197,11 @@ function createHackathonSheets(registrations, generatedAt) {
     ),
   ];
 
-  const memberColumns = [
-    { key: "teamCode", header: "Team Code", width: 20 },
-    { key: "teamName", header: "Team Name", width: 28 },
-    { key: "category", header: "Category", width: 16 },
-    { key: "sector", header: "Sector", width: 18 },
-    { key: "solution", header: "Solution Type", width: 18 },
-    { key: "order", header: "Member No.", width: 14 },
-    { key: "role", header: "Role", width: 15 },
-    { key: "name", header: "Full Name", width: 24 },
-    { key: "email", header: "Email", width: 30 },
-    { key: "phone", header: "Phone", width: 18 },
-    { key: "institution", header: "Institution", width: 34 },
-    { key: "course", header: "Course / Department", width: 25 },
-    { key: "year", header: "Year / Grade", width: 16 },
-  ];
-  const memberRows = teams.flatMap((team) =>
-    (team.members || []).map((member) => ({
-      teamCode: text(team.team_code),
-      teamName: text(team.team_name),
-      category: text(team.participant_category),
-      sector: text(team.sector_track),
-      solution: text(team.solution_type),
-      order: Number(member.member_order || 0),
-      role: text(member.role),
-      name: text(member.full_name),
-      email: text(member.email),
-      phone: text(member.phone),
-      institution: text(member.institution),
-      course: text(member.department_or_course),
-      year: text(member.year_or_grade),
-    })),
+  const participantsSheet = createHackathonParticipantsSheet(
+    teams,
+    generatedAt,
   );
-  sheets.push(
-    createSheet(
-      "Team Members",
-      "AI CONCLAVE 2026 · HACKATHON STUDENTS",
-      `${memberRows.length} students across ${teamRows.length} teams · Exported ${generatedAt.toLocaleString("en-IN")}`,
-      memberColumns,
-      memberRows,
-    ),
-  );
+  sheets.push({ ...participantsSheet, name: "Team Members" });
 
   if (legacy.length) {
     const legacyColumns = [
@@ -441,6 +451,19 @@ export async function createRegistrationsWorkbook(routeId, registrations) {
   };
 }
 
+export async function createHackathonParticipantsWorkbook(registrations) {
+  const teams = registrations.filter((item) => item.record_type === "team");
+  const generatedAt = new Date();
+  const sheet = createHackathonParticipantsSheet(teams, generatedAt);
+  if (!sheet.rows.length)
+    throw new Error("There are no hackathon students to export.");
+  const { strToU8, zipSync } = await import("fflate");
+  return {
+    bytes: packageWorkbook([sheet], zipSync, strToU8),
+    filename: `ai-conclave-2026-all-hackathon-students-${localDatePart(generatedAt)}.xlsx`,
+  };
+}
+
 function downloadBytes(bytes, filename) {
   const blob = new Blob([bytes], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -461,5 +484,11 @@ export async function downloadRegistrationsWorkbook(routeId, registrations) {
     routeId,
     registrations,
   );
+  downloadBytes(bytes, filename);
+}
+
+export async function downloadHackathonParticipantsWorkbook(registrations) {
+  const { bytes, filename } =
+    await createHackathonParticipantsWorkbook(registrations);
   downloadBytes(bytes, filename);
 }

@@ -100,8 +100,9 @@ input:focus, select:focus, button:focus-visible { outline: 2px solid var(--signa
 .data-heading p:last-child { margin: .65rem 0 0; color: var(--muted); font-size: .9rem; }
 .reset-button, .view-button, .close-button { border: 0; background: transparent; color: var(--text); }
 .reset-button { padding: .25rem 0; border-bottom: 1px solid var(--text); font: 500 .7rem/1.2 var(--mono); letter-spacing: .05em; text-transform: uppercase; }
-.directory-actions { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; }
+.directory-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 1rem; }
 .export-button { display: inline-flex; align-items: center; justify-content: center; gap: .75rem; min-height: 2.9rem; padding: .75rem 1rem; border: 1px solid var(--text); background: var(--text); color: #fff; font: 700 .7rem/1 var(--mono); letter-spacing: .05em; text-transform: uppercase; box-shadow: 4px 4px 0 var(--accent); transition: transform .16s ease, box-shadow .16s ease, opacity .16s ease; }
+.export-button-secondary { background: #fff; color: var(--text); box-shadow: 4px 4px 0 var(--signal); }
 .export-button:hover:not(:disabled) { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--accent); }
 .export-button:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--accent); }
 .export-button:disabled { cursor: not-allowed; opacity: .45; box-shadow: none; }
