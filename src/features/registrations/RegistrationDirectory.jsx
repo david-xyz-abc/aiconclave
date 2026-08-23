@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { downloadRegistrationsWorkbook } from "../../services/registrationExport.js";
 import {
   parseTracks,
   searchableRegistrationText,
@@ -19,12 +20,15 @@ export function RegistrationDirectory({
   const [focus, setFocus] = useState("all");
   const [sector, setSector] = useState("all");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState("");
   useEffect(() => {
     setQuery("");
     setParticipantType("all");
     setFocus("all");
     setSector("all");
     setFiltersOpen(false);
+    setExportError("");
   }, [route.id]);
   const participantOptions = useMemo(
     () =>
@@ -116,6 +120,21 @@ export function RegistrationDirectory({
     setSector("all");
     setFiltersOpen(false);
   };
+  const downloadExcel = async () => {
+    setExporting(true);
+    setExportError("");
+    try {
+      await downloadRegistrationsWorkbook(route.id, registrations);
+    } catch (downloadError) {
+      setExportError(
+        downloadError instanceof Error
+          ? downloadError.message
+          : "The Excel file could not be created.",
+      );
+    } finally {
+      setExporting(false);
+    }
+  };
   const Table = route.id === "hackathon" ? HackathonTable : PanelTable;
   return (
     <section
@@ -142,10 +161,29 @@ export function RegistrationDirectory({
             shown
           </p>
         </div>
-        <button className="reset-button" type="button" onClick={resetFilters}>
-          Clear filters
-        </button>
+        <div className="directory-actions">
+          <button
+            className="export-button"
+            type="button"
+            disabled={loading || exporting || !registrations.length}
+            onClick={downloadExcel}
+            title={`Download all ${registrations.length} ${
+              route.id === "hackathon" ? "teams" : "registrations"
+            } as an Excel workbook`}
+          >
+            {exporting ? "Preparing Excel…" : "Download Excel"}
+            <span aria-hidden="true">↓</span>
+          </button>
+          <button className="reset-button" type="button" onClick={resetFilters}>
+            Clear filters
+          </button>
+        </div>
       </div>
+      {exportError && (
+        <p className="export-error" role="alert">
+          {exportError}
+        </p>
+      )}
       <RegistrationFilters
         routeId={route.id}
         query={query}
