@@ -27,7 +27,11 @@ CREATE TABLE IF NOT EXISTS panel_registrations (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
   email TEXT NOT NULL COLLATE NOCASE,
-  phone TEXT NOT NULL,
+  phone TEXT NOT NULL CHECK (
+    length(phone) = 13
+    AND substr(phone, 1, 3) = '+91'
+    AND substr(phone, 4) NOT GLOB '*[^0-9]*'
+  ),
   participant_type TEXT NOT NULL CHECK (
     participant_type IN (
       'Student',

@@ -19,12 +19,16 @@ test('confirmation HTML escapes participant-controlled fields', () => {
   assert.doesNotMatch(bodies.html, /Test <Participant>/)
 })
 
-test('ticket generator creates a compact valid PDF document', () => {
+test('ticket generator creates the full downloadable-ticket layout as a valid PDF', () => {
   const bytes = _test.createTicketPdf(panelTicket)
   const text = new TextDecoder().decode(bytes)
   assert.ok(bytes.byteLength < 100_000)
   assert.ok(text.startsWith('%PDF-1.4'))
   assert.ok(text.endsWith('%%EOF'))
+  assert.match(text, /MediaBox \[0 0 1600 570\]/)
+  assert.match(text, /AI CONCLAVE 2026/)
+  assert.match(text, /AMAL JYOTHI/)
+  assert.match(text, /COLLEGE OF ENGINEERING/)
   assert.match(text, /AIC26-P-00001/)
 })
 

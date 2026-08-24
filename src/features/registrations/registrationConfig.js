@@ -139,13 +139,12 @@ export const initialPanelForm = {
 
 export function validatePanelForm(form) {
   const errors = {}
-  const phoneDigits = form.phone.replace(/\D/g, '')
 
   if (!form.name.trim()) errors.name = 'Enter your full name.'
   if (!form.email.trim()) errors.email = 'Enter your email address.'
   else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) errors.email = 'Enter a valid email address, for example name@example.com.'
   if (!form.phone.trim()) errors.phone = 'Enter your phone number.'
-  else if (!/^[+\d\s().-]+$/.test(form.phone) || phoneDigits.length < 7 || phoneDigits.length > 15) errors.phone = 'Enter a valid phone number containing 7 to 15 digits.'
+  else if (!/^\d{10}$/.test(form.phone)) errors.phone = 'Enter exactly 10 digits after +91.'
   if (!form.participantType) errors.participantType = 'Choose your participant type.'
   if (!form.organisation.trim()) errors.organisation = 'Enter your college, institution or organization name.'
   if (!form.panelSelection) errors.panelSelection = 'Choose the panel discussion you want to attend.'

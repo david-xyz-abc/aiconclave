@@ -29,10 +29,15 @@ function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 }
 
-function isValidPhone(phone) {
+function normalizeIndianPhone(phone) {
+  if (!/^[+\d\s().-]+$/.test(phone)) return null
   const digits = phone.replace(/\D/g, '')
-  return /^[+\d\s().-]+$/.test(phone) && digits.length >= 7 && digits.length <= 15
+  if (/^\d{10}$/.test(digits)) return `+91${digits}`
+  if (/^91\d{10}$/.test(digits)) return `+${digits}`
+  return null
 }
+
+export const _test = { normalizeIndianPhone }
 
 function normalizedKey(value) {
   return value.trim().replace(/\s+/g, ' ').toLowerCase()
@@ -70,7 +75,8 @@ export async function onRequestPost(context) {
 
     const name = trimStr(body.name, MAX_LEN.name)
     const email = participant.email
-    const phone = trimStr(body.phone, MAX_LEN.phone)
+    const phoneInput = trimStr(body.phone, MAX_LEN.phone)
+    const phone = normalizeIndianPhone(phoneInput)
     const participantType = trimStr(body.participantType, 80)
     const organisation = trimStr(body.organisation, MAX_LEN.organisation)
     const department = trimStr(body.department, 160)
@@ -85,8 +91,8 @@ export async function onRequestPost(context) {
     if (!name) fields.name = 'Enter your full name.'
     if (!email) fields.email = 'Enter your email address.'
     else if (!isValidEmail(email)) fields.email = 'Enter a valid email address, for example name@example.com.'
-    if (!phone) fields.phone = 'Enter your phone number.'
-    else if (!isValidPhone(phone)) fields.phone = 'Enter a valid phone number containing 7 to 15 digits.'
+    if (!phoneInput) fields.phone = 'Enter your phone number.'
+    else if (!phone) fields.phone = 'Enter exactly 10 digits after +91.'
     if (!ALLOWED_PARTICIPANT_TYPES.has(participantType)) fields.participantType = 'Choose your participant type.'
     if (!organisation) fields.organisation = 'Enter your college, institution or organization name.'
     if (!ALLOWED_PANELS.has(panelSelection)) fields.panelSelection = 'Choose the panel discussion you want to attend.'

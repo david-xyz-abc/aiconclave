@@ -64,48 +64,122 @@ function makePdfObject(objectNumber, contents) {
   return `${objectNumber} 0 obj\n${contents}\nendobj\n`
 }
 
-function createTicketPdf(ticket) {
-  const lines = [
-    ['NAME', ticket.name],
-    [ticket.teamName ? 'TEAM' : 'PARTICIPANT TYPE', ticket.teamName || ticket.participantType],
-    ['ORGANISATION', ticket.organisation],
-    [ticket.teamName ? 'CATEGORY / SIZE' : 'PANEL SELECTION', ticket.teamName ? `${ticket.category} / ${ticket.teamSize} students` : ticket.panelSelection],
-    [ticket.teamName ? 'SECTOR / SOLUTION' : 'EVENT DATE', ticket.teamName ? `${ticket.sector} / ${ticket.solutionType}` : ticket.eventDate],
-  ]
-  if (ticket.teamName) lines.push(['EVENT DATE', ticket.eventDate])
+const TICKET_WIDTH = 1600
+const TICKET_HEIGHT = 570
 
-  const content = [
-    'q',
-    '1 1 1 rg 0 0 760 360 re f',
-    '1 0.13 0.15 rg 0 344 760 16 re f',
-    '0.06 0.06 0.06 rg 0 0 14 360 re f',
-    '0.04 0.42 0.22 rg 520 0 8 360 re f',
-    '0.07 0.07 0.07 rg BT /F2 22 Tf 42 306 Td (AI CONCLAVE 2026) Tj ET',
-    `0.36 0.36 0.36 rg BT /F1 10 Tf 42 284 Td (${pdfEscape(ticket.eventLabel)}) Tj ET`,
-    `0.04 0.42 0.22 rg BT /F2 15 Tf 554 304 Td (${pdfEscape(ticket.dateShort)}) Tj ET`,
-    `0.07 0.07 0.07 rg BT /F2 12 Tf 554 282 Td (${pdfEscape(ticket.ticketCode)}) Tj ET`,
-    '0.86 0.86 0.84 RG 1 w 42 260 m 718 260 l S',
-  ]
+function pdfNumber(value) {
+  return Number(value.toFixed(2)).toString()
+}
 
-  let y = 226
-  for (const [label, value] of lines) {
-    content.push(`0.42 0.42 0.40 rg BT /F1 8 Tf 42 ${y} Td (${pdfEscape(label)}) Tj ET`)
-    content.push(`0.05 0.05 0.05 rg BT /F2 12 Tf 42 ${y - 18} Td (${pdfEscape(String(value).slice(0, 78))}) Tj ET`)
-    y -= 45
+function pdfColour(hex) {
+  const value = hex.replace('#', '')
+  return [0, 2, 4]
+    .map((offset) => pdfNumber(Number.parseInt(value.slice(offset, offset + 2), 16) / 255))
+    .join(' ')
+}
+
+function fitPdfText(value, fontSize, maximumWidth, minimumFontSize = 12) {
+  const normalized = asciiText(value || '-').replace(/\s+/g, ' ').trim()
+  let fittedSize = fontSize
+  while (fittedSize > minimumFontSize && normalized.length * fittedSize * 0.59 > maximumWidth) fittedSize -= 1
+  if (normalized.length * fittedSize * 0.59 <= maximumWidth) return { value: normalized, fontSize: fittedSize }
+
+  const maximumCharacters = Math.max(1, Math.floor(maximumWidth / (fittedSize * 0.59)) - 3)
+  return { value: `${normalized.slice(0, maximumCharacters).trimEnd()}...`, fontSize: fittedSize }
+}
+
+function ticketPdfCanvas() {
+  const commands = []
+  const rect = (x, y, width, height, colour, stroke = null, lineWidth = 1) => {
+    if (colour) commands.push(`${pdfColour(colour)} rg ${x} ${TICKET_HEIGHT - y - height} ${width} ${height} re f`)
+    if (stroke) commands.push(`${pdfColour(stroke)} RG ${lineWidth} w ${x} ${TICKET_HEIGHT - y - height} ${width} ${height} re S`)
   }
-  content.push(`0.04 0.42 0.22 rg BT /F2 8 Tf 554 58 Td (VENUE) Tj ET`)
-  content.push(`0.20 0.20 0.20 rg BT /F1 8 Tf 554 42 Td (AJCE, KOOVAPPALLY) Tj ET`)
-  content.push(`0.20 0.20 0.20 rg BT /F1 8 Tf 554 28 Td (KANJIRAPPALLY) Tj ET`)
-  content.push('Q')
+  const text = (value, x, y, size, font = 'F1', colour = '#0a0a0a', maximumWidth = null, minimumSize = 12) => {
+    const fitted = maximumWidth == null
+      ? { value: asciiText(value || '-'), fontSize: size }
+      : fitPdfText(value, size, maximumWidth, minimumSize)
+    commands.push(`${pdfColour(colour)} rg BT /${font} ${fitted.fontSize} Tf ${x} ${TICKET_HEIGHT - y} Td (${pdfEscape(fitted.value)}) Tj ET`)
+  }
+  const line = (x1, y1, x2, y2, colour, lineWidth = 1, dash = null) => {
+    commands.push(`${pdfColour(colour)} RG ${lineWidth} w ${dash ? `[${dash.join(' ')}] 0 d` : '[] 0 d'} ${x1} ${TICKET_HEIGHT - y1} m ${x2} ${TICKET_HEIGHT - y2} l S`)
+  }
+  const circle = (centreX, centreY, radius, colour) => {
+    const control = radius * 0.5522847498
+    const y = TICKET_HEIGHT - centreY
+    commands.push([
+      `${pdfColour(colour)} rg`,
+      `${pdfNumber(centreX + radius)} ${pdfNumber(y)} m`,
+      `${pdfNumber(centreX + radius)} ${pdfNumber(y + control)} ${pdfNumber(centreX + control)} ${pdfNumber(y + radius)} ${pdfNumber(centreX)} ${pdfNumber(y + radius)} c`,
+      `${pdfNumber(centreX - control)} ${pdfNumber(y + radius)} ${pdfNumber(centreX - radius)} ${pdfNumber(y + control)} ${pdfNumber(centreX - radius)} ${pdfNumber(y)} c`,
+      `${pdfNumber(centreX - radius)} ${pdfNumber(y - control)} ${pdfNumber(centreX - control)} ${pdfNumber(y - radius)} ${pdfNumber(centreX)} ${pdfNumber(y - radius)} c`,
+      `${pdfNumber(centreX + control)} ${pdfNumber(y - radius)} ${pdfNumber(centreX + radius)} ${pdfNumber(y - control)} ${pdfNumber(centreX + radius)} ${pdfNumber(y)} c f`,
+    ].join(' '))
+  }
+  return { commands, rect, text, line, circle }
+}
 
-  const stream = content.join('\n')
+function drawTicketValue(canvas, label, value, x, y, width) {
+  canvas.text(label.toUpperCase(), x, y, 17, 'F3', '#6b6b65', width, 12)
+  canvas.text(value, x, y + 36, 27, 'F2', '#0a0a0a', width, 17)
+}
+
+function createTicketPdf(ticket) {
+  const canvas = ticketPdfCanvas()
+  const isTeamTicket = Boolean(ticket.teamName)
+  const eventTitle = isTeamTicket ? ticket.teamName : ticket.panelSelection
+
+  canvas.rect(0, 0, TICKET_WIDTH, TICKET_HEIGHT, '#f1f1ed')
+  canvas.rect(40, 40, 1520, 490, '#ffffff', '#0a0a0a', 3)
+  canvas.rect(40, 40, 1520, 16, '#ff1e1e')
+
+  canvas.rect(88, 86, 68, 68, '#ff1e1e')
+  canvas.text('AC', 105, 129, 23, 'F4')
+  canvas.text('AI CONCLAVE 2026', 184, 112, 28, 'F4')
+  canvas.text('AJCE - KANJIRAPPALLY', 184, 143, 17, 'F3', '#6b6b65')
+
+  canvas.text(ticket.eventLabel.toUpperCase().replaceAll('·', '-'), 88, 205, 18, 'F3', '#6b6b65', 1020, 14)
+  canvas.text(eventTitle, 88, 270, 57, 'F4', '#0a0a0a', 1020, 34)
+  canvas.rect(88, 295, 1020, 5, '#1a6b3c')
+
+  if (isTeamTicket) {
+    drawTicketValue(canvas, 'Captain', ticket.name, 88, 342, 410)
+    drawTicketValue(canvas, 'Category / team size', `${ticket.category} / ${ticket.teamSize} students`, 540, 342, 250)
+    drawTicketValue(canvas, 'Event date', ticket.eventDate, 825, 342, 300)
+    drawTicketValue(canvas, 'Institution', ticket.organisation, 88, 435, 530)
+    drawTicketValue(canvas, 'Sector / solution', `${ticket.sector} / ${ticket.solutionType}`, 660, 435, 448)
+  } else {
+    drawTicketValue(canvas, 'Name', ticket.name, 88, 342, 410)
+    drawTicketValue(canvas, 'Participant type', ticket.participantType, 540, 342, 250)
+    drawTicketValue(canvas, 'Event date', ticket.eventDate, 825, 342, 300)
+    drawTicketValue(canvas, 'Organisation', ticket.organisation, 88, 435, 1020)
+  }
+
+  canvas.rect(1200, 56, 360, 474, '#f5f6f3')
+  canvas.line(1200, 56, 1200, 530, '#0a0a0a', 2, [10, 10])
+  canvas.circle(1200, 78, 18, '#ffffff')
+  canvas.circle(1200, 508, 18, '#ffffff')
+  canvas.text('ADMIT ONE', 1260, 110, 18, 'F4', '#1a6b3c')
+  canvas.text(ticket.dateShort, 1255, 185, 58, 'F4', '#0a0a0a', 250, 42)
+  canvas.rect(1245, 220, 250, 5, '#1a6b3c')
+  canvas.text('VENUE', 1245, 252, 14, 'F4', '#1a6b3c')
+  canvas.text('AMAL JYOTHI', 1245, 286, 25, 'F4')
+  canvas.text('COLLEGE OF ENGINEERING', 1245, 309, 13, 'F4')
+  canvas.text('AUTONOMOUS', 1245, 330, 11, 'F4', '#6b6b65')
+  canvas.text('KOOVAPPALLY - KANJIRAPPALLY', 1245, 359, 11, 'F3', '#6b6b65', 275, 9)
+  canvas.text('KOTTAYAM DISTRICT', 1245, 379, 11, 'F3', '#6b6b65')
+  canvas.text(ticket.ticketCode, 1260, 425, 17, 'F3', '#6b6b65', 250, 12)
+  canvas.rect(1260, 452, 230, 8, '#ff1e1e')
+
+  const stream = ['q', ...canvas.commands, 'Q'].join('\n')
   const objects = [
     makePdfObject(1, '<< /Type /Catalog /Pages 2 0 R >>'),
     makePdfObject(2, '<< /Type /Pages /Kids [3 0 R] /Count 1 >>'),
-    makePdfObject(3, '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 760 360] /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> /Contents 4 0 R >>'),
+    makePdfObject(3, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${TICKET_WIDTH} ${TICKET_HEIGHT}] /Resources << /Font << /F1 5 0 R /F2 6 0 R /F3 7 0 R /F4 8 0 R >> >> /Contents 4 0 R >>`),
     makePdfObject(4, `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`),
     makePdfObject(5, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'),
     makePdfObject(6, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>'),
+    makePdfObject(7, '<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>'),
+    makePdfObject(8, '<< /Type /Font /Subtype /Type1 /BaseFont /Courier-Bold >>'),
   ]
   let pdf = '%PDF-1.4\n%AI-Conclave\n'
   const offsets = [0]
