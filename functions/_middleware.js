@@ -23,10 +23,10 @@ function withSecurityHeaders(response, rateLimitHeaders) {
   headers.set('Content-Security-Policy', [
     "default-src 'self'",
     "script-src 'self' https://accounts.google.com/gsi/client",
-    "style-src 'self' https://accounts.google.com/gsi/style",
+    "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style",
     "img-src 'self' data:",
-    "connect-src 'self' https://accounts.google.com/gsi/",
-    "frame-src https://accounts.google.com/gsi/ https://accounts.google.com/",
+    "connect-src 'self' https://accounts.google.com/gsi/ https://accounts.google.com/o/fedcm/",
+    "frame-src https://accounts.google.com/gsi/ https://accounts.google.com/ https://accounts.google.com/o/fedcm/",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
