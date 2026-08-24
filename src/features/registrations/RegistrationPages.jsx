@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { PATHS } from '../../config/routes.js'
 import { ApiError, registrationApi } from '../../services/api.js'
 import { ParticipantBar } from '../auth/AuthComponents.jsx'
+import { RegistrationTicket, TicketDownloadButton } from './ParticipantPortal.jsx'
 import { hasEventRegistration, useExistingRegistrations } from './useExistingRegistrations.js'
 import { HACKATHON_REGISTRATION_OPEN, blankTeamMember, hackathonChallengeAreas, hackathonTrackOptions, industrySectors, initialHackathonForm, initialPanelForm, organisationTypes, panelOptions, participantTypes, validateHackathonForm, validatePanelForm } from './registrationConfig.js'
 

@@ -151,7 +151,7 @@ function downloadRegistrationTicket(registration) {
   })
 }
 
-function TicketDownloadButton({ registration, compact = false }) {
+export function TicketDownloadButton({ registration, compact = false }) {
   const [state, setState] = useState('idle')
   const download = async () => {
     if (state === 'working') return
@@ -166,7 +166,7 @@ function TicketDownloadButton({ registration, compact = false }) {
   return <div className={`ticket-download-control${compact ? ' is-compact' : ''}`}><button type="button" className={compact ? 'registration-download-button' : 'btn btn-primary ticket-download-button'} onClick={download} disabled={state === 'working'}>{state === 'working' ? 'Preparing...' : <>Download ticket <span aria-hidden="true">↓</span></>}</button>{state === 'error' && <small role="alert">Ticket download failed. Please try again.</small>}</div>
 }
 
-function RegistrationTicket({ registration }) {
+export function RegistrationTicket({ registration }) {
   return <section className="event-ticket" aria-label={`Ticket for ${registration.panelSelection}`}>
     <div className="event-ticket-main">
       <header className="event-ticket-header"><div className="event-ticket-brand"><span>AC</span><div><strong>AI CONCLAVE 2026</strong><small>AJCE · Kanjirappally</small></div></div><span className="event-ticket-status"><i aria-hidden="true"></i> Registered</span></header>
