@@ -1,6 +1,15 @@
 import { json } from '../_lib/http.js'
 import { getParticipantSession } from '../_lib/session.js'
 
+function safeJsonArray(value) {
+  try {
+    const parsed = JSON.parse(value || '[]')
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
 export async function onRequestGet(context) {
   const db = context.env?.DB
   if (!db) return json({ ok: false, error: 'Registration service is unavailable.' }, 503)
@@ -57,7 +66,7 @@ export async function onRequestGet(context) {
       phone: row.phone,
       participantType: row.participant_type,
       organisation: row.organisation,
-      tracks: JSON.parse(row.tracks || '[]'),
+      tracks: safeJsonArray(row.tracks),
       challengeArea: row.challenge_area,
       subcategory: row.subcategory,
       problemArea: row.problem_area,

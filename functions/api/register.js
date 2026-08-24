@@ -1,4 +1,6 @@
 import { isSameOrigin, json, readJsonBody } from '../_lib/http.js'
+import { enforceParticipantRegistrationLimit } from '../_lib/rateLimit.js'
+import { queueRegistrationEmail } from '../_lib/registrationEmail.js'
 import { getParticipantSession } from '../_lib/session.js'
 
 const ALLOWED_PARTICIPANT_TYPES = new Set(['Student', 'Faculty / Academic', 'Professional / Industry Delegate', 'Researcher', 'Other'])
@@ -63,6 +65,8 @@ export async function onRequestPost(context) {
 
   if (body.registrationType === 'panel') {
     if (!participant) return json({ ok: false, error: 'Sign in with Google before registering for a panel discussion.' }, 401)
+    const participantRateLimit = await enforceParticipantRegistrationLimit(context, participant.id)
+    if (participantRateLimit) return participantRateLimit
 
     const name = trimStr(body.name, MAX_LEN.name)
     const email = participant.email
@@ -97,8 +101,27 @@ export async function onRequestPost(context) {
       const existingRegistration = await db.prepare('SELECT id FROM panel_registrations WHERE participant_account_id = ? OR email = ? COLLATE NOCASE LIMIT 1').bind(participant.id, email).first()
       if (existingRegistration) return json({ ok: false, error: 'You have already registered for the panel discussion. Open My registrations to view it.' }, 409)
 
-      const result = await db.prepare(`INSERT INTO panel_registrations (name, email, phone, participant_type, organisation, department, panel_selection, industry_sector, industry_sector_other, organisation_type, organisation_type_other, information_confirmed, updates_opt_in, participant_account_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(name, email, phone, participantType, organisation, department, panelSelection, industrySector, industrySectorOther, organisationType, organisationTypeOther, 1, updatesOptIn ? 1 : 0, participant?.id ?? null).run()
-      return json({ ok: true, id: result?.meta?.last_row_id ?? null, registration: { name, email, phone, participantType, organisation, department, panelSelection, industrySector, industrySectorOther, organisationType, organisationTypeOther, updatesOptIn } }, 201)
+      const siteOrigin = new URL(context.request.url).origin
+      await db.batch([
+        db.prepare(`INSERT INTO panel_registrations (name, email, phone, participant_type, organisation, department, panel_selection, industry_sector, industry_sector_other, organisation_type, organisation_type_other, information_confirmed, updates_opt_in, participant_account_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(name, email, phone, participantType, organisation, department, panelSelection, industrySector, industrySectorOther, organisationType, organisationTypeOther, 1, updatesOptIn ? 1 : 0, participant.id),
+        db.prepare(`
+          INSERT INTO registration_email_deliveries (
+            dedupe_key, registration_type, registration_id, site_origin
+          )
+          SELECT 'panel:' || id || ':confirmation', 'panel', id, ?
+          FROM panel_registrations
+          WHERE participant_account_id = ?
+        `).bind(siteOrigin, participant.id),
+      ])
+      const saved = await db.prepare(`
+        SELECT p.id, d.id AS delivery_id
+        FROM panel_registrations p
+        JOIN registration_email_deliveries d
+          ON d.registration_type = 'panel' AND d.registration_id = p.id
+        WHERE p.participant_account_id = ? LIMIT 1
+      `).bind(participant.id).first()
+      queueRegistrationEmail(context, saved?.delivery_id)
+      return json({ ok: true, id: saved?.id ?? null, confirmationEmail: 'queued', registration: { name, email, phone, participantType, organisation, department, panelSelection, industrySector, industrySectorOther, organisationType, organisationTypeOther, updatesOptIn } }, 201)
     } catch (error) {
       console.error(JSON.stringify({ event: 'panel_registration_insert_failed', reason: error instanceof Error ? error.message : 'unknown' }))
       if (error instanceof Error && error.message.includes('one_panel_registration_per_participant')) return json({ ok: false, error: 'You have already registered for the panel discussion. Open My registrations to view it.' }, 409)
@@ -108,6 +131,8 @@ export async function onRequestPost(context) {
 
   if (body.registrationType === 'hackathon') {
     if (!participant) return json({ ok: false, error: 'Sign in with Google before registering a hackathon team.' }, 401)
+    const participantRateLimit = await enforceParticipantRegistrationLimit(context, participant.id)
+    if (participantRateLimit) return participantRateLimit
 
     const name = trimStr(body.teamName, MAX_LEN.teamName).replace(/\s+/g, ' ')
     const nameKey = normalizedKey(name)
@@ -168,14 +193,29 @@ export async function onRequestPost(context) {
 
       const code = teamCode()
       const submittedAt = new Date().toISOString()
+      const siteOrigin = new URL(context.request.url).origin
       const statements = [
         db.prepare(`INSERT INTO hackathon_teams (team_code, team_name, team_name_key, captain_account_id, participant_category, team_size, sector_track, solution_type, information_confirmed, rules_accepted, updates_opt_in, submitted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 1, ?, ?)`).bind(code, name, nameKey, participant.id, participantCategory, members.length, sectorTrack, solutionType, updatesOptIn ? 1 : 0, submittedAt),
         ...members.map((member, index) => db.prepare(`INSERT INTO hackathon_team_members (team_id, member_order, role, account_id, full_name, email, email_key, phone, institution, department_or_course, year_or_grade) SELECT id, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FROM hackathon_teams WHERE team_code = ?`).bind(index + 1, index === 0 ? 'Captain' : 'Member', index === 0 ? participant.id : null, member.fullName, member.email, member.emailKey, member.phone, member.institution, member.departmentOrCourse, member.yearOrGrade, code)),
         ...members.map((member, index) => db.prepare(`INSERT INTO hackathon_member_claims (email_key, email, team_id, member_id) SELECT ?, ?, t.id, m.id FROM hackathon_teams t JOIN hackathon_team_members m ON m.team_id = t.id AND m.member_order = ? WHERE t.team_code = ?`).bind(member.emailKey, member.email, index + 1, code)),
+        db.prepare(`
+          INSERT INTO registration_email_deliveries (
+            dedupe_key, registration_type, registration_id, site_origin
+          )
+          SELECT 'hackathon:' || id || ':confirmation', 'hackathon', id, ?
+          FROM hackathon_teams WHERE team_code = ?
+        `).bind(siteOrigin, code),
       ]
       await db.batch(statements)
-      const savedTeam = await db.prepare('SELECT id FROM hackathon_teams WHERE team_code = ?').bind(code).first()
-      return json({ ok: true, id: savedTeam?.id ?? null, registration: { teamCode: code, teamName: name, participantCategory, sectorTrack, solutionType, members: members.map(({ phoneInput, emailKey, ...member }) => member), createdAt: submittedAt } }, 201)
+      const savedTeam = await db.prepare(`
+        SELECT t.id, d.id AS delivery_id
+        FROM hackathon_teams t
+        JOIN registration_email_deliveries d
+          ON d.registration_type = 'hackathon' AND d.registration_id = t.id
+        WHERE t.team_code = ? LIMIT 1
+      `).bind(code).first()
+      queueRegistrationEmail(context, savedTeam?.delivery_id)
+      return json({ ok: true, id: savedTeam?.id ?? null, confirmationEmail: 'queued', registration: { teamCode: code, teamName: name, participantCategory, sectorTrack, solutionType, members: members.map(({ phoneInput, emailKey, ...member }) => member), createdAt: submittedAt } }, 201)
     } catch (error) {
       console.error(JSON.stringify({ event: 'hackathon_registration_insert_failed', reason: error instanceof Error ? error.message : 'unknown' }))
       const reason = error instanceof Error ? error.message : ''
