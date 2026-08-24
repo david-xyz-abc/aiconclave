@@ -1,7 +1,9 @@
 const promoterLogos = Object.freeze([
   { name: 'Kerala Vision', src: '/partners/kerala-vision.jpg', width: 250, height: 250 },
+  { name: 'Tata Consultancy Services', src: '/partners/tcs-horizontal.png', width: 708, height: 237 },
+  { name: 'Cloud Innovations', src: '/partners/cloud-innovations.jpg', width: 531, height: 376 },
+  { name: 'Maker Village', src: '/partners/maker-village.png', width: 1022, height: 449 },
   { name: 'UST', src: '/partners/ust.jpg', width: 600, height: 450 },
-  { name: 'Tata Consultancy Services', src: '/partners/tcs.jpg', width: 1034, height: 406 },
   { name: 'ICFOSS', src: '/partners/icfoss.jpg', width: 474, height: 249 },
 ])
 
