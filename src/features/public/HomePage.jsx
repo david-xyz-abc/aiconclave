@@ -10,7 +10,6 @@ export function HomePage() {
             <div className="hero-inner">
               <div className="hero-top">
                 <span className="hero-eyebrow">Two-Day AI Event · Kerala</span>
-                <span className="hero-badge-no">DELEGATE PASS<br />NO. AIC26</span>
               </div>
               <h1 className="hero-title">AI Conclave<br />2026</h1>
               <p className="hero-tagline">A two-day celebration of Artificial Intelligence — talks, workshops, industry panel discussions and a ₹1,00,000 hackathon at AJCE.</p>
@@ -45,7 +44,7 @@ export function HomePage() {
           </div>
           <div className="hackathon-grid">
             <div className="hackathon-track"><span className="hackathon-track-label">Track 01</span><h3>Technical</h3><p>For students building AI-driven solutions with code — open to school &amp; college participants.</p></div>
-            <div className="hackathon-track"><span className="hackathon-track-label">Track 02</span><h3>Non-Technical</h3><p>For students tackling AI problem statements through ideation, strategy and design — open to school &amp; college participants.</p></div>
+            <div className="hackathon-track"><span className="hackathon-track-label">Track 02</span><h3>Non-Technical</h3><p>For teams proposing practical AI-related solutions without building a coded product. Entries may include process improvements, service models, implementation strategies, policy proposals or awareness solutions. Explain the problem, proposed solution, feasibility and expected impact using slides, diagrams or mock-ups. Coding is not required.</p></div>
             <div className="hackathon-prize"><span className="hackathon-prize-label">Prize Pool</span><span className="hackathon-prize-figure mono-figure" data-count-to="100000" data-prefix="₹" data-format="indian">₹1,00,000</span></div>
           </div>
         </div>
