@@ -12,10 +12,6 @@ function text(value) {
   return value == null ? "" : String(value).trim();
 }
 
-function yesNo(value) {
-  return value ? "Yes" : "No";
-}
-
 function excelDate(value) {
   if (!value) return "";
   const date = new Date(value);
@@ -123,9 +119,6 @@ function createPanelSheet(registrations, generatedAt) {
       header: "Organisation Details",
       width: 28,
     },
-    { key: "confirmed", header: "Information Confirmed", width: 22 },
-    { key: "updates", header: "Updates Opt-In", width: 18 },
-    { key: "registered", header: "Registered At", width: 23 },
   ];
   const rows = registrations.map((item) => ({
     id: item.id,
@@ -140,9 +133,6 @@ function createPanelSheet(registrations, generatedAt) {
     industrySectorOther: text(item.industry_sector_other),
     organisationType: text(item.organisation_type),
     organisationTypeOther: text(item.organisation_type_other),
-    confirmed: yesNo(item.information_confirmed),
-    updates: yesNo(item.updates_opt_in),
-    registered: excelDate(item.created_at),
   }));
   return createSheet(
     "Panel Registrations",
