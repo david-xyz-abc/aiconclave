@@ -2,6 +2,7 @@ import { constantTimeEqual } from './session.js'
 
 const GOOGLE_JWKS_URL = 'https://www.googleapis.com/oauth2/v3/certs'
 const GOOGLE_ISSUERS = new Set(['accounts.google.com', 'https://accounts.google.com'])
+const MAX_JWKS_BYTES = 131_072
 
 function decodeBase64Url(value) {
   if (!/^[A-Za-z0-9_-]+$/.test(value)) throw new Error('invalid-token-encoding')
@@ -22,15 +23,39 @@ async function fetchGoogleKeys(bypassCache = false) {
   const cache = typeof caches === 'undefined' ? null : caches.default
   if (cache && !bypassCache) {
     const cached = await cache.match(request)
-    if (cached) return cached.json()
+    if (cached) return readBoundedJson(cached)
   }
 
   const response = await fetch(request)
   if (!response.ok) throw new Error('google-keys-unavailable')
   const contentLength = Number(response.headers.get('content-length'))
-  if (Number.isFinite(contentLength) && contentLength > 131_072) throw new Error('google-keys-too-large')
+  if (Number.isFinite(contentLength) && contentLength > MAX_JWKS_BYTES) throw new Error('google-keys-too-large')
   if (cache) await cache.put(request, response.clone())
-  return response.json()
+  return readBoundedJson(response)
+}
+
+async function readBoundedJson(response) {
+  const reader = response.body?.getReader()
+  if (!reader) throw new Error('google-keys-unavailable')
+  const chunks = []
+  let total = 0
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    total += value.byteLength
+    if (total > MAX_JWKS_BYTES) {
+      await reader.cancel()
+      throw new Error('google-keys-too-large')
+    }
+    chunks.push(value)
+  }
+  const bytes = new Uint8Array(total)
+  let offset = 0
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  return JSON.parse(new TextDecoder().decode(bytes))
 }
 
 async function findSigningKey(keyId) {

@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AI Conclave 2026 - Event Concept Note</title>
+<style>
+  @page { size: Letter; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #e9e9e7; color: #171717; font-family: Arial, Helvetica, sans-serif; }
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .page { width: 8.5in; height: 11in; margin: 18px auto; padding: .70in .78in .64in; background: #fff; position: relative; overflow: hidden; page-break-after: always; }
+  .page:last-child { page-break-after: auto; }
+  .running { position: absolute; top: .29in; left: .78in; right: .78in; display: flex; justify-content: space-between; color: #666; font-size: 7.5pt; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+  .footer { position: absolute; left: .78in; right: .78in; bottom: .25in; border-top: 1px solid #d7d9d6; padding-top: 7px; display: flex; justify-content: space-between; color: #777; font-size: 7.2pt; letter-spacing: .04em; }
+  .cover .running, .cover .footer { display: none; }
+  .cover { padding-top: 1.18in; }
+  .cover-rule { width: .62in; height: 5px; background: #d9232e; margin: 0 auto .38in; }
+  .eyebrow { color: #d9232e; font-size: 8.5pt; font-weight: 700; letter-spacing: .17em; text-transform: uppercase; margin: 0 0 8px; }
+  .cover .eyebrow { text-align: center; }
+  h1 { margin: 0 0 10px; color: #142c45; font-size: 22pt; line-height: 1.08; }
+  h2 { margin: 18px 0 8px; color: #142c45; font-size: 14pt; line-height: 1.15; }
+  h3 { margin: 13px 0 5px; color: #1d6d45; font-size: 11.2pt; line-height: 1.18; }
+  p { margin: 0 0 8px; font-size: 9.7pt; line-height: 1.43; }
+  ul, ol { margin: 5px 0 10px 20px; padding: 0; }
+  li { margin: 0 0 5px; padding-left: 3px; font-size: 9.5pt; line-height: 1.34; }
+  .cover h1 { font-size: 30pt; text-align: center; letter-spacing: .01em; margin-bottom: 8px; }
+  .cover .subtitle { text-align: center; font-size: 13pt; line-height: 1.35; margin: 0 auto 12px; max-width: 6.2in; }
+  .cover .domains { text-align: center; color: #1d6d45; font-size: 10.5pt; font-weight: 700; margin-bottom: .46in; }
+  .cover .institution { position: absolute; left: .78in; right: .78in; bottom: .84in; text-align: center; }
+  .cover .institution strong { display: block; color: #142c45; font-size: 10.5pt; margin-bottom: 5px; }
+  .cover .institution span { color: #666; font-size: 9pt; }
+  .fact-strip { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid #d7d9d6; }
+  .fact { padding: 16px 11px; text-align: center; background: #f3f4f2; border-right: 1px solid #d7d9d6; min-height: .78in; }
+  .fact:last-child { border-right: 0; }
+  .fact b { display: block; color: #142c45; font-size: 10.5pt; margin-bottom: 5px; }
+  .fact span { display: block; color: #666; font-size: 7.8pt; line-height: 1.28; }
+  .callout { margin: 14px 0; padding: 12px 14px; border-left: 4px solid #d9232e; background: #f3f4f2; }
+  .callout.green { border-left-color: #1d6d45; }
+  .callout b { display: block; color: #142c45; font-size: 8.4pt; letter-spacing: .09em; text-transform: uppercase; margin-bottom: 5px; }
+  .callout p { margin: 0; font-size: 9.4pt; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0 13px; table-layout: fixed; }
+  th { background: #142c45; color: #fff; font-size: 8.2pt; letter-spacing: .07em; text-transform: uppercase; text-align: left; padding: 8px 10px; }
+  td { border: 1px solid #d7d9d6; padding: 8px 10px; vertical-align: middle; font-size: 9.1pt; line-height: 1.3; }
+  tr:nth-child(even) td { background: #f7f7f6; }
+  .schedule th:first-child, .schedule td:first-child { width: 1.40in; font-weight: 700; color: #142c45; }
+  .schedule th:first-child { color: #fff; }
+  .speaker-group { border-top: 3px solid #205d9d; padding-top: 7px; margin-top: 12px; }
+  .speaker-group.agri { border-top-color: #1d6d45; }
+  .speaker-group.health { border-top-color: #d9232e; }
+  .speaker-group h3 { color: #205d9d; margin-top: 0; }
+  .speaker-group.agri h3 { color: #1d6d45; }
+  .speaker-group.health h3 { color: #d9232e; }
+  .speaker { display: grid; grid-template-columns: .36in 1fr; gap: 2px 8px; margin: 7px 0; }
+  .speaker .num { grid-row: 1 / span 2; color: #205d9d; font-size: 8pt; font-weight: 700; padding-top: 2px; }
+  .agri .speaker .num { color: #1d6d45; }
+  .health .speaker .num { color: #d9232e; }
+  .speaker strong { font-size: 9.7pt; line-height: 1.25; }
+  .speaker span { color: #666; font-size: 8.6pt; line-height: 1.3; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .track { border-top: 3px solid #205d9d; padding: 9px 0 1px; }
+  .track.agri { border-top-color: #1d6d45; }
+  .track.health { border-top-color: #d9232e; }
+  .track h3 { margin-top: 0; color: #205d9d; }
+  .track.agri h3 { color: #1d6d45; }
+  .track.health h3 { color: #d9232e; }
+  .track p { font-size: 8.9pt; }
+  .criteria th:last-child, .criteria td:last-child { width: 1.05in; text-align: center; font-weight: 700; }
+  .note { color: #666; font-size: 8.4pt; line-height: 1.35; }
+  .status { display: inline-block; color: #d9232e; border: 1px solid #d9232e; padding: 4px 7px; font-size: 7.5pt; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+  @media print { html, body { background: #fff; } .page { margin: 0; box-shadow: none; } }
+</style>
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    const page = new URLSearchParams(location.search).get('page');
+    if (page) {
+      document.querySelectorAll('.page').forEach((el, i) => el.style.display = (i + 1 === Number(page)) ? 'block' : 'none');
+      document.body.style.background = '#fff';
+    }
+  });
+</script>
+</head>
+<body>
+
+<section class="page cover">
+  <div class="cover-rule"></div>
+  <div class="eyebrow">Event Concept Note</div>
+  <h1>AI CONCLAVE 2026</h1>
+  <p class="subtitle">Panel Discussions, Industry Workshops and Student Hackathon</p>
+  <p class="domains">Education &nbsp;|&nbsp; Agriculture &nbsp;|&nbsp; Healthcare</p>
+  <div class="fact-strip">
+    <div class="fact"><b>15-16 SEP 2026</b><span>Two-day programme</span></div>
+    <div class="fact"><b>THREE SECTORS</b><span>Education, Agriculture and Healthcare</span></div>
+    <div class="fact"><b>AJCE</b><span>Koovappally, Kanjirappally</span></div>
+  </div>
+  <div class="institution">
+    <strong>AMAL JYOTHI COLLEGE OF ENGINEERING (AUTONOMOUS)</strong>
+    <span>Koovappally, Kanjirappally, Kottayam District</span>
+  </div>
+</section>
+
+<section class="page">
+  <div class="running"><span>AI Conclave 2026</span><span>Event Concept Note</span></div>
+  <div class="eyebrow">Programme Overview</div>
+  <h1>About the Event</h1>
+  <p>AI Conclave 2026 is a two-day academic, industry and innovation programme focused on the practical use and future potential of Artificial Intelligence in Education, Agriculture and Healthcare.</p>
+  <p>The programme brings together domain experts, industry professionals, educators, researchers and students through three connected formats: expert panel discussions, hands-on industry workshops and an open student hackathon.</p>
+  <div class="callout">
+    <b>At a glance</b>
+    <p>Day 1 combines morning panel discussions with afternoon industry workshops. Day 2 is a five-hour student hackathon followed by external evaluation and a closing ceremony.</p>
+  </div>
+  <h2>Purpose</h2>
+  <ul>
+    <li>Create a common platform for academia, industry and students to examine the role of AI in priority sectors.</li>
+    <li>Expose participants to current industry practice through focused technical workshops.</li>
+    <li>Encourage school and college students to develop practical, socially relevant solutions.</li>
+    <li>Support both technical and non-technical approaches to innovation.</li>
+    <li>Build opportunities for future mentorship, research and institutional collaboration.</li>
+  </ul>
+  <h2>Programme Structure</h2>
+  <table class="schedule">
+    <thead><tr><th>Date</th><th>Programme</th></tr></thead>
+    <tbody>
+      <tr><td>15 September</td><td>Day 1 - Panel Discussions and Industry Workshops</td></tr>
+      <tr><td>16 September</td><td>Day 2 - Student Hackathon, Evaluation and Closing Ceremony</td></tr>
+    </tbody>
+  </table>
+  <h2>Participation</h2>
+  <p>The panel discussions are intended for experts, professionals, educators, researchers and students. The workshops and hackathon will also be open to eligible students from external institutions.</p>
+  <div class="footer"><span>Amal Jyothi College of Engineering (Autonomous)</span><span>02</span></div>
+</section>
+
+<section class="page">
+  <div class="running"><span>Day 1 | 15 September 2026</span><span>Panel Discussions</span></div>
+  <div class="eyebrow">Day 1 | Morning Session</div>
+  <h1>AI Panel Discussions</h1>
+  <p>The morning session will examine the opportunities, challenges and responsible adoption of AI in Education, Agriculture and Healthcare.</p>
+  <h2>Schedule</h2>
+  <table class="schedule">
+    <thead><tr><th>Time</th><th>Programme</th></tr></thead>
+    <tbody>
+      <tr><td>9:00 AM</td><td>Participant registration and reception</td></tr>
+      <tr><td>9:30 AM</td><td>Inaugural ceremony by Shri Dean Kuriakose</td></tr>
+      <tr><td>10:00 AM</td><td>Commencement of panel discussions</td></tr>
+      <tr><td>12:30 PM</td><td>Conclusion of panel discussions and lunch break</td></tr>
+    </tbody>
+  </table>
+  <div class="speaker-group">
+    <h3>Education and Academic Panel</h3>
+    <p>The session will cover AI-assisted learning, educational accessibility, digital transformation, intelligent learning systems, research innovation and the future of teaching and academic administration.</p>
+    <div class="speaker"><div class="num">01</div><strong>Dr. M. V. Rajesh</strong><span>Director, IHRD</span></div>
+    <div class="speaker"><div class="num">02</div><strong>Dr. Shailesh S.</strong><span>Principal AI Architect, Laennec AI India Pvt. Ltd.</span></div>
+    <div class="speaker"><div class="num">03</div><strong>Dr. Ajith Kumar R.</strong><span>Director, Centre for Digital Innovation and Product Development</span></div>
+    <div class="speaker"><div class="num">04</div><strong>Dr. Sunil T. T.</strong><span>Director, ICFOSS</span></div>
+  </div>
+  <div class="footer"><span>Amal Jyothi College of Engineering (Autonomous)</span><span>03</span></div>
+</section>
+
+<section class="page">
+  <div class="running"><span>Day 1 | 15 September 2026</span><span>Panel Discussions</span></div>
+  <div class="eyebrow">Panel Discussion Themes</div>
+  <h1>Domain Panels</h1>
+  <div class="speaker-group agri">
+    <h3>Agriculture Panel</h3>
+    <p>The session will focus on precision farming, crop monitoring, agricultural planning, automation, sustainability and technology-enabled rural development.</p>
+    <div class="speaker"><div class="num">01</div><strong>Mr. Alexy Binu</strong><span>CEO, AetherSphere</span></div>
+    <div class="speaker"><div class="num">02</div><strong>Dr. Berin Pathrose</strong><span>Director of Planning, Kerala Agricultural University</span></div>
+    <div class="speaker"><div class="num">03</div><strong>Dr. Leena Mary</strong><span>Professor, IIIT Kottayam; Former Principal, Government Engineering College, Kozhikode</span></div>
+  </div>
+  <div class="speaker-group health">
+    <h3>Healthcare Panel</h3>
+    <p>The session will address AI-supported diagnosis, medical innovation, patient care, healthcare accessibility, clinical decision-making and technology-driven social impact.</p>
+    <div class="speaker"><div class="num">01</div><strong>Mr. Viviek V. George</strong><span>CEO, Trivia Innovations</span></div>
+    <div class="speaker"><div class="num">02</div><strong>Dr. Thomas Paul</strong><span>Chief Orthodontist and Cosmetic Dental Surgeon</span></div>
+    <div class="speaker"><div class="num">03</div><strong>Mr. Robin Tomy</strong><span>Technology Innovator and Social Innovation Leader, TCS and K-DISC</span></div>
+  </div>
+  <h2>Expected Outcomes</h2>
+  <ul>
+    <li>Expert perspectives on emerging AI applications in the three sectors.</li>
+    <li>A clearer understanding of implementation challenges and opportunities.</li>
+    <li>Stronger interaction among academia, industry, government and student communities.</li>
+    <li>Directions for future research, training and institutional collaboration.</li>
+  </ul>
+  <p class="note"><span class="status">For confirmation</span>&nbsp;&nbsp; Speaker participation and session moderators should be confirmed before public release.</p>
+  <div class="footer"><span>Amal Jyothi College of Engineering (Autonomous)</span><span>04</span></div>
+</section>
+
+<section class="page">
+  <div class="running"><span>Day 1 | Afternoon Session</span><span>Industry Workshops</span></div>
+  <div class="eyebrow">Day 1 | Afternoon Session</div>
+  <h1>Industry and Technology Workshops</h1>
+  <p>The afternoon session will offer practical exposure to contemporary technologies through workshops delivered with the participation of industry organisations and technical groups.</p>
+  <h2>Schedule</h2>
+  <table class="schedule">
+    <thead><tr><th>Time</th><th>Programme</th></tr></thead>
+    <tbody>
+      <tr><td>1:30 PM</td><td>Workshop participant registration</td></tr>
+      <tr><td>2:00 PM</td><td>Commencement of workshops</td></tr>
+      <tr><td>4:40 PM</td><td>Conclusion of workshops</td></tr>
+    </tbody>
+  </table>
+  <h2>Proposed Contributors</h2>
+  <ul>
+    <li>UST</li>
+    <li>Tata Consultancy Services (TCS)</li>
+    <li>Cloud Innovation</li>
+    <li>Nexa Lab, AJCE - Robotics Workshop</li>
+    <li>Other invited industry and technology partners</li>
+  </ul>
+  <p>Indicative workshop areas include Artificial Intelligence, cloud technologies, software development, automation, robotics and emerging industry practices.</p>
+  <h2>Participation</h2>
+  <p>Workshops will be open to AJCE students and students from external institutions. School-student participation may be permitted where the topic and delivery format are appropriate.</p>
+  <p>A separate workshop registration will allow participants to select a session. Capacity and eligibility may vary according to the requirements of the organisation conducting each workshop.</p>
+  <div class="callout green">
+    <b>Expected outcome</b>
+    <p>Participants will gain practical exposure to current tools and technologies, interact directly with industry professionals and explore project, career and collaboration opportunities.</p>
+  </div>
+  <div class="footer"><span>Amal Jyothi College of Engineering (Autonomous)</span><span>05</span></div>
+</section>
+
+<section class="page">
+  <div class="running"><span>Day 2 | 16 September 2026</span><span>Student Hackathon</span></div>
+  <div class="eyebrow">Day 2 | Student Innovation</div>
+  <h1>Open Student Hackathon</h1>
+  <p>Day 2 will feature an open student hackathon centred on practical solutions for Education, Agriculture and Healthcare. External participants from schools, colleges and other eligible institutions may take part.</p>
+  <h2>Schedule</h2>
+  <table class="schedule">
+    <thead><tr><th>Time</th><th>Programme</th></tr></thead>
+    <tbody>
+      <tr><td>8:30 AM</td><td>Team registration, verification and check-in</td></tr>
+      <tr><td>9:30 AM</td><td>Official commencement of the hackathon</td></tr>
+      <tr><td>9:30 AM-2:30 PM</td><td>Five-hour hackathon session</td></tr>
+      <tr><td>2:30 PM</td><td>Final submission deadline</td></tr>
+      <tr><td>2:30 PM-4:30 PM</td><td>Project demonstration and external evaluation</td></tr>
+      <tr><td>5:00 PM</td><td>Closing ceremony and result announcement</td></tr>
+    </tbody>
+  </table>
+  <h2>Participation Categories</h2>
+  <div class="two-col">
+    <div class="callout green"><b>Category 01</b><p><strong>School Students</strong><br>Open to eligible teams from schools, including external institutions.</p></div>
+    <div class="callout green"><b>Category 02</b><p><strong>College Students</strong><br>Open to eligible teams from colleges, including external institutions.</p></div>
+  </div>
+  <p>Teams will consist of a minimum of two and a maximum of four students. Each team will nominate one member as captain.</p>
+  <h2>Sector Tracks</h2>
+  <div class="two-col">
+    <div class="track"><h3>Education</h3><p>Teaching, learning, accessibility, assessment, academic administration and student support.</p></div>
+    <div class="track agri"><h3>Agriculture</h3><p>Farming, crop management, sustainability, automation, supply chains and farmer support.</p></div>
+  </div>
+  <div class="track health"><h3>Healthcare</h3><p>Patient care, diagnosis, accessibility, public health, hospital operations and medical awareness.</p></div>
+  <div class="footer"><span>Amal Jyothi College of Engineering (Autonomous)</span><span>06</span></div>
+</section>
+
+<section class="page">
+  <div class="running"><span>Day 2 | Hackathon Format</span><span>Entry and Evaluation</span></div>
+  <div class="eyebrow">Hackathon Format</div>
+  <h1>Entry, Preparation and Evaluation</h1>
+  <div class="callout">
+    <b>Open-entry format</b>
+    <p>There will be no preliminary idea-selection or shortlisting process. All eligible teams that complete registration within the available capacity and comply with the participation rules may enter directly.</p>
+  </div>
+  <h2>Nature of Solutions</h2>
+  <ul>
+    <li><strong>Technical solutions:</strong> software applications, AI models, hardware prototypes, robotics systems, digital platforms or other functional technologies.</li>
+    <li><strong>Non-technical solutions:</strong> strategic frameworks, process innovations, policy concepts, service models, awareness systems or other well-researched and feasible proposals.</li>
+  </ul>
+  <p>Innovation is not limited to coding. Any practical and meaningful solution relevant to the selected sector may be presented.</p>
+  <h2>Project Preparation</h2>
+  <p>Participants can also develop or prepare their projects from home before attending the hackathon. During the five-hour on-campus session, teams may present, demonstrate, refine or extend their work.</p>
+  <p>Each team should clearly explain the problem being addressed, the work completed before the event, the work completed or improved during the event, the originality of the team's contribution and the practical value of the proposed solution.</p>
+  <h2>Evaluation</h2>
+  <p>External evaluators with relevant academic, technical or industry expertise will assess the projects. School and college teams will be evaluated separately.</p>
+  <table class="criteria">
+    <thead><tr><th>Suggested Criterion</th><th>Weight</th></tr></thead>
+    <tbody>
+      <tr><td>Problem relevance</td><td>20%</td></tr>
+      <tr><td>Innovation and originality</td><td>20%</td></tr>
+      <tr><td>Quality and effectiveness of the solution</td><td>20%</td></tr>
+      <tr><td>Practical feasibility and scalability</td><td>15%</td></tr>
+      <tr><td>Social or sectoral impact</td><td>15%</td></tr>
+      <tr><td>Presentation, demonstration and teamwork</td><td>10%</td></tr>
+    </tbody>
+  </table>
+  <p class="note">Technical entries may also be assessed for functionality and implementation quality. Non-technical entries may also be assessed for research quality, strategic clarity and implementation planning.</p>
+  <div class="footer"><span>Amal Jyothi College of Engineering (Autonomous)</span><span>07</span></div>
+</section>
+
+<section class="page">
+  <div class="running"><span>AI Conclave 2026</span><span>Evaluation and Follow-up</span></div>
+  <div class="eyebrow">Programme Completion</div>
+  <h1>Evaluation Process and Expected Outcomes</h1>
+  <h2>Evaluation Process</h2>
+  <ol>
+    <li>Teams complete their final submission by 2:30 PM.</li>
+    <li>Each team presents or demonstrates its solution before the evaluators.</li>
+    <li>Evaluators interact with the team and record scores using a common evaluation sheet.</li>
+    <li>Results are consolidated separately for school and college categories.</li>
+    <li>The evaluation committee approves the final results.</li>
+    <li>Winners are announced during the closing ceremony at 5:00 PM.</li>
+  </ol>
+  <h2>Expected Event Outcomes</h2>
+  <ul>
+    <li>Greater awareness of responsible and practical AI adoption.</li>
+    <li>Stronger engagement among academia, industry, government and students.</li>
+    <li>Hands-on exposure to industry technologies and methods.</li>
+    <li>Student-led ideas and prototypes in Education, Agriculture and Healthcare.</li>
+    <li>Opportunities for mentorship, project development and future collaboration.</li>
+  </ul>
+  <h2>Points for Final Confirmation</h2>
+  <p>Before public release, the organising committee should confirm:</p>
+  <div class="two-col">
+    <ul>
+      <li>Final panellists and moderators</li>
+      <li>Workshop topics and capacity</li>
+      <li>Hackathon registration deadline</li>
+      <li>Maximum number of teams</li>
+      <li>Presentation format</li>
+    </ul>
+    <ul>
+      <li>Evaluation panels</li>
+      <li>Prize categories</li>
+      <li>Technical facilities</li>
+      <li>Certificate rules</li>
+      <li>Official contact details</li>
+    </ul>
+  </div>
+  <div class="callout green">
+    <b>Faculty review</b>
+    <p>This concept note is intended to establish a common understanding of the programme structure. Operational details can be incorporated once the respective committees and participating organisations provide final confirmation.</p>
+  </div>
+  <div class="footer"><span>Amal Jyothi College of Engineering (Autonomous)</span><span>08</span></div>
+</section>
+
+</body>
+</html>

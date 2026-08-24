@@ -1,1 +1,6 @@
 GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GMAIL_OAUTH_CLIENT_ID=your-mailer-client-id.apps.googleusercontent.com
+GMAIL_OAUTH_CLIENT_SECRET=replace-with-a-local-development-secret
+GMAIL_OAUTH_REFRESH_TOKEN=replace-with-a-local-development-refresh-token
+GMAIL_SENDER_EMAIL=aiconclave@amaljyothi.ac.in
+GMAIL_SENDER_NAME=AI Conclave AJCE

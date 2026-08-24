@@ -4,12 +4,13 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "npm run db:migrate:local && npm run build && npx --yes wrangler@4.38.0 pages dev dist --port=5174",
+    "dev": "npm run db:migrate:local && npm run build && wrangler pages dev dist --port=5174",
     "dev:vite": "vite",
-    "dev:pages": "npm run db:migrate:local && npm run build && npx --yes wrangler@4.38.0 pages dev dist --port=5174",
-    "db:migrate:local": "npx --yes wrangler@4.38.0 d1 migrations apply aiconclave-registrations --local",
+    "dev:pages": "npm run db:migrate:local && npm run build && wrangler pages dev dist --port=5174",
+    "db:migrate:local": "wrangler d1 migrations apply aiconclave-registrations --local",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test"
   },
   "dependencies": {
     "react": "^19.2.8",
@@ -17,6 +18,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^6.0.5",
-    "vite": "^8.2.1"
+    "vite": "^8.2.1",
+    "wrangler": "^4.125.0"
   }
 }
