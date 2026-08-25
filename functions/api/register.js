@@ -3,7 +3,7 @@ import { enforceParticipantRegistrationLimit } from '../_lib/rateLimit.js'
 import { queueRegistrationEmail } from '../_lib/registrationEmail.js'
 import { getParticipantSession } from '../_lib/session.js'
 
-const ALLOWED_PARTICIPANT_TYPES = new Set(['Student', 'Faculty / Academic', 'Professional / Industry Delegate', 'Researcher', 'Other'])
+const ALLOWED_PARTICIPANT_TYPES = new Set(['Faculty / Academic', 'Professional / Industry Delegate', 'Researcher', 'Other'])
 const ALLOWED_PANELS = new Set(['AI in Agriculture', 'AI in Education', 'AI in Healthcare'])
 const ALLOWED_SECTORS = new Set(['', 'Agriculture', 'Education', 'Healthcare', 'IT / Technology', 'Government', 'Other'])
 const ALLOWED_ORGANISATION_TYPES = new Set(['', 'Startup', 'MSME', 'Corporate', 'Government', 'Academic Institution', 'Research Organization', 'NGO', 'Other'])
@@ -37,7 +37,10 @@ function normalizeIndianPhone(phone) {
   return null
 }
 
-export const _test = { normalizeIndianPhone }
+export const _test = {
+  normalizeIndianPhone,
+  isAllowedPanelParticipantType: (participantType) => ALLOWED_PARTICIPANT_TYPES.has(participantType),
+}
 
 function normalizedKey(value) {
   return value.trim().replace(/\s+/g, ' ').toLowerCase()

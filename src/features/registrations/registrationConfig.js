@@ -74,7 +74,7 @@ export const hackathonChallengeAreas = Object.freeze({
   },
 })
 
-export const participantTypes = ['Student', 'Faculty / Academic', 'Professional / Industry Delegate', 'Researcher', 'Other']
+export const participantTypes = ['Faculty / Academic', 'Professional / Industry Delegate', 'Researcher', 'Other']
 export const panelOptions = ['AI in Agriculture', 'AI in Education', 'AI in Healthcare']
 export const industrySectors = ['Agriculture', 'Education', 'Healthcare', 'IT / Technology', 'Government', 'Other']
 export const organisationTypes = ['Startup', 'MSME', 'Corporate', 'Government', 'Academic Institution', 'Research Organization', 'NGO', 'Other']
@@ -145,7 +145,7 @@ export function validatePanelForm(form) {
   else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) errors.email = 'Enter a valid email address, for example name@example.com.'
   if (!form.phone.trim()) errors.phone = 'Enter your phone number.'
   else if (!/^\d{10}$/.test(form.phone)) errors.phone = 'Enter exactly 10 digits after +91.'
-  if (!form.participantType) errors.participantType = 'Choose your participant type.'
+  if (!participantTypes.includes(form.participantType)) errors.participantType = 'Choose your participant type.'
   if (!form.organisation.trim()) errors.organisation = 'Enter your college, institution or organization name.'
   if (!form.panelSelection) errors.panelSelection = 'Choose the panel discussion you want to attend.'
   if (form.industrySector === 'Other' && !form.industrySectorOther.trim()) errors.industrySectorOther = 'Specify your industry sector.'
