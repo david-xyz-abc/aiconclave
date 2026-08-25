@@ -82,6 +82,7 @@ export const whatsappGroups = Object.freeze({
   panel: 'https://chat.whatsapp.com/J6rmQG3jAWn3tjVtT5Pbhn?s=sw&p=a&mlu=4',
   hackathon: 'https://chat.whatsapp.com/CrxG2ZqSr7ZJrqpzAgawjF?s=sw&p=a&mlu=4',
 })
+export const instagramProfileUrl = 'https://www.instagram.com/ai_conclave_ajce/?hl=en'
 
 export const blankTeamMember = () => ({ fullName: '', email: '', phone: '', institution: '', departmentOrCourse: '', yearOrGrade: '' })
 

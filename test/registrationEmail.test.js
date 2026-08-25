@@ -27,6 +27,8 @@ test('confirmation email contains the correct WhatsApp group link', () => {
   assert.match(bodies.html, /JOIN WHATSAPP GROUP/)
   assert.match(bodies.html, /J6rmQG3jAWn3tjVtT5Pbhn/)
   assert.doesNotMatch(bodies.html, /CrxG2ZqSr7ZJrqpzAgawjF/)
+  assert.match(bodies.text, /instagram\.com\/ai_conclave_ajce/)
+  assert.match(bodies.html, /FOLLOW ON INSTAGRAM/)
 })
 
 test('ticket generator creates the full downloadable-ticket layout as a valid PDF', () => {

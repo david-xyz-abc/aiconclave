@@ -107,6 +107,23 @@
   background: #0f6f3a;
 }
 
+.registration-social-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.instagram-follow-button {
+  border-color: #c13584;
+  background: #c13584;
+  color: #fff;
+}
+
+.instagram-follow-button:hover {
+  border-color: #962763;
+  background: #962763;
+}
+
 .whatsapp-joined-check {
   display: flex;
   align-items: flex-start;
