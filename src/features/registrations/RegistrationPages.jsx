@@ -1,13 +1,42 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { PATHS } from '../../config/routes.js'
 import { ApiError, registrationApi } from '../../services/api.js'
 import { ParticipantBar } from '../auth/AuthComponents.jsx'
 import { RegistrationTicket, TicketDownloadButton } from './ParticipantPortal.jsx'
 import { hasEventRegistration, useExistingRegistrations } from './useExistingRegistrations.js'
-import { HACKATHON_REGISTRATION_OPEN, blankTeamMember, hackathonChallengeAreas, hackathonTrackOptions, industrySectors, initialHackathonForm, initialPanelForm, organisationTypes, panelOptions, participantTypes, validateHackathonForm, validatePanelForm } from './registrationConfig.js'
+import { HACKATHON_REGISTRATION_OPEN, blankTeamMember, hackathonChallengeAreas, hackathonTrackOptions, industrySectors, initialHackathonForm, initialPanelForm, organisationTypes, panelOptions, participantTypes, validateHackathonForm, validatePanelForm, whatsappGroups } from './registrationConfig.js'
 
 function FieldError({ id, message }) {
   return message ? <p className="field-error" id={id} role="alert">{message}</p> : null
+}
+
+function WhatsAppJoinDialog({ open, eventName, groupUrl, onClose }) {
+  const dialogRef = useRef(null)
+  const [joined, setJoined] = useState(false)
+  const titleId = `whatsapp-${eventName}-title`
+
+  useEffect(() => {
+    const dialog = dialogRef.current
+    if (!dialog) return
+    if (open && !dialog.open) {
+      setJoined(false)
+      dialog.showModal()
+    } else if (!open && dialog.open) {
+      dialog.close()
+    }
+  }, [open])
+
+  const close = () => dialogRef.current?.close()
+
+  return <dialog ref={dialogRef} className="whatsapp-join-dialog" aria-labelledby={titleId} onClose={onClose}>
+    <div className="whatsapp-dialog-mark" aria-hidden="true">WA</div>
+    <p className="eyebrow">Registration complete</p>
+    <h2 id={titleId}>Join the {eventName} WhatsApp group</h2>
+    <p>Receive important schedules, announcements and event-day updates in the official participant group.</p>
+    <a className="btn whatsapp-join-button" href={groupUrl} target="_blank" rel="noopener noreferrer">Join us on WhatsApp <span aria-hidden="true">↗</span></a>
+    <label className="whatsapp-joined-check"><input type="checkbox" checked={joined} onChange={(event) => setJoined(event.target.checked)} /><span>Yes, I joined the WhatsApp group.</span></label>
+    <div className="whatsapp-dialog-actions"><button type="button" className="btn btn-primary" disabled={!joined} onClick={close}>Confirm</button><button type="button" className="btn btn-outline" onClick={close}>Not now</button></div>
+  </dialog>
 }
 
 function RegistrationEligibilityError({ message, onRetry }) {
@@ -55,6 +84,7 @@ export function HackathonRegisterPage({ participant }) {
   const [confirmation, setConfirmation] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [fieldErrors, setFieldErrors] = useState({})
+  const [whatsappPromptOpen, setWhatsappPromptOpen] = useState(false)
   const teamNameRef = useRef(null)
 
   if (registrationState.status === 'loading') return <main id="main"><section className="account-loading"><span className="account-spinner" aria-hidden="true"></span><p>Checking hackathon registration…</p></section></main>
@@ -122,7 +152,7 @@ export function HackathonRegisterPage({ participant }) {
       const data = await registrationApi.submit('hackathon', form)
       setConfirmation(data.registration)
       setSubmitted(true)
-      window.setTimeout(() => document.querySelector('.hackathon-confirmation-panel')?.focus(), 0)
+      setWhatsappPromptOpen(true)
     } catch (submitError) {
       const serverErrors = submitError instanceof ApiError && submitError.details?.fields && typeof submitError.details.fields === 'object' ? submitError.details.fields : {}
       setFieldErrors(serverErrors)
@@ -179,8 +209,9 @@ export function HackathonRegisterPage({ participant }) {
         </fieldset>
         <div className="form-submit-row"><button type="submit" className="btn btn-primary" disabled={submitting} aria-busy={submitting}>{submitting ? 'Creating team…' : <>Submit Team Registration <span aria-hidden="true">→</span></>}</button><p className={`form-error${error ? ' is-visible' : ''}`} role="alert" aria-live="polite">{error}</p></div>
       </form>
-      <div className={`confirmation-panel hackathon-confirmation-panel${submitted ? ' is-visible' : ''}`} role="status" aria-live="polite" tabIndex={submitted ? -1 : undefined}><span className="stamp">Team Registration Received</span><h2>Your team is registered.</h2><p>Keep the team code for future reference. The complete registration is available in My registrations.</p>{confirmation && <dl className="confirmation-summary"><dt>Team</dt><dd>{confirmation.teamName}</dd><dt>Team code</dt><dd>{confirmation.teamCode}</dd><dt>Category</dt><dd>{confirmation.participantCategory}</dd><dt>Team size</dt><dd>{confirmation.members.length} students</dd><dt>Entry</dt><dd>{confirmation.sectorTrack} · {confirmation.solutionType}</dd></dl>}<div className="confirmation-actions"><a className="btn btn-primary" href={PATHS.myRegistration}>View My Registration <span aria-hidden="true">→</span></a><a className="btn btn-outline" href={PATHS.register}>Back to Registrations</a></div></div>
+      <div className={`confirmation-panel hackathon-confirmation-panel${submitted ? ' is-visible' : ''}`} role="status" aria-live="polite" tabIndex={submitted ? -1 : undefined}><span className="stamp">Team Registration Received</span><h2>Your team is registered.</h2><p>Keep the team code for future reference. The complete registration is available in My registrations.</p>{confirmation && <dl className="confirmation-summary"><dt>Team</dt><dd>{confirmation.teamName}</dd><dt>Team code</dt><dd>{confirmation.teamCode}</dd><dt>Category</dt><dd>{confirmation.participantCategory}</dd><dt>Team size</dt><dd>{confirmation.members.length} students</dd><dt>Entry</dt><dd>{confirmation.sectorTrack} · {confirmation.solutionType}</dd></dl>}<div className="confirmation-actions"><a className="btn whatsapp-join-button" href={whatsappGroups.hackathon} target="_blank" rel="noopener noreferrer">Join WhatsApp Group <span aria-hidden="true">↗</span></a><a className="btn btn-primary" href={PATHS.myRegistration}>View My Registration <span aria-hidden="true">→</span></a><a className="btn btn-outline" href={PATHS.register}>Back to Registrations</a></div></div>
     </div></section>
+    <WhatsAppJoinDialog open={whatsappPromptOpen} eventName="Hackathon" groupUrl={whatsappGroups.hackathon} onClose={() => { setWhatsappPromptOpen(false); window.setTimeout(() => document.querySelector('.hackathon-confirmation-panel')?.focus(), 0) }} />
   </main>
 }
 
@@ -201,6 +232,7 @@ export function PanelRegisterPage({ participant }) {
   const [confirmation, setConfirmation] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [fieldErrors, setFieldErrors] = useState({})
+  const [whatsappPromptOpen, setWhatsappPromptOpen] = useState(false)
 
   if (registrationState.status === 'loading') return <main id="main"><section className="account-loading"><span className="account-spinner" aria-hidden="true"></span><p>Checking panel registration…</p></section></main>
   if (registrationState.status === 'error') return <RegistrationEligibilityError message={registrationState.error} onRetry={retryRegistrationCheck} />
@@ -236,6 +268,7 @@ export function PanelRegisterPage({ participant }) {
       const data = await registrationApi.submit('panel', form)
       setConfirmation(data.registration || form)
       setSubmitted(true)
+      setWhatsappPromptOpen(true)
     } catch (submitError) {
       const serverErrors = submitError instanceof ApiError && submitError.details?.fields && typeof submitError.details.fields === 'object' ? submitError.details.fields : {}
       setFieldErrors(serverErrors)
@@ -267,7 +300,8 @@ export function PanelRegisterPage({ participant }) {
         <fieldset className="form-section" data-reveal><legend><span>04</span> Confirmation</legend><label className={`confirmation-check${fieldErrors.informationConfirmed ? ' has-error' : ''}`}><input type="checkbox" name="informationConfirmed" checked={form.informationConfirmed} onChange={updateField} required aria-invalid={Boolean(fieldErrors.informationConfirmed)} aria-describedby={fieldErrors.informationConfirmed ? 'confirmation-error' : undefined} /><span>I confirm that the information provided above is accurate. *</span></label><FieldError id="confirmation-error" message={fieldErrors.informationConfirmed} /><label className="confirmation-check"><input type="checkbox" name="updatesOptIn" checked={form.updatesOptIn} onChange={updateField} /><span>I agree to receive official AI Conclave updates regarding the panel discussion.</span></label></fieldset>
         <div className="form-submit-row"><button type="submit" className="btn btn-primary" disabled={submitting} aria-busy={submitting}>{submitting ? 'Submitting…' : <>Submit Panel Registration <span aria-hidden="true">→</span></>}</button><p className={`form-error${error ? ' is-visible' : ''}`} role="alert" aria-live="polite">{error}</p></div>
       </form>
-      <div className={`confirmation-panel${submitted ? ' is-visible' : ''}`} role="status" aria-live="polite" tabIndex={submitted ? -1 : undefined}><span className="stamp">Panel Registration Received</span><h2>Your seat request is recorded.</h2><p>Thanks for registering for the AI Conclave 2026 Industry Panel Discussions.</p>{confirmation && <><RegistrationTicket registration={confirmation} /><dl className="confirmation-summary"><dt>Name</dt><dd>{confirmation.name}</dd><dt>Email</dt><dd>{confirmation.email}</dd><dt>Participant</dt><dd>{confirmation.participantType}</dd><dt>Panel</dt><dd>{confirmation.panelSelection}</dd></dl></>}<div className="confirmation-actions">{confirmation && <TicketDownloadButton registration={confirmation} />}<a className="btn btn-primary" href={PATHS.myRegistration}>View My Registration <span className="btn-arrow" aria-hidden="true">→</span></a><a className="btn btn-outline" href={PATHS.register}>Back to Registrations</a></div></div>
+      <div className={`confirmation-panel panel-confirmation-panel${submitted ? ' is-visible' : ''}`} role="status" aria-live="polite" tabIndex={submitted ? -1 : undefined}><span className="stamp">Panel Registration Received</span><h2>Your seat request is recorded.</h2><p>Thanks for registering for the AI Conclave 2026 Industry Panel Discussions.</p>{confirmation && <><RegistrationTicket registration={confirmation} /><dl className="confirmation-summary"><dt>Name</dt><dd>{confirmation.name}</dd><dt>Email</dt><dd>{confirmation.email}</dd><dt>Participant</dt><dd>{confirmation.participantType}</dd><dt>Panel</dt><dd>{confirmation.panelSelection}</dd></dl></>}<div className="confirmation-actions">{confirmation && <TicketDownloadButton registration={confirmation} />}<a className="btn whatsapp-join-button" href={whatsappGroups.panel} target="_blank" rel="noopener noreferrer">Join WhatsApp Group <span aria-hidden="true">↗</span></a><a className="btn btn-primary" href={PATHS.myRegistration}>View My Registration <span className="btn-arrow" aria-hidden="true">→</span></a><a className="btn btn-outline" href={PATHS.register}>Back to Registrations</a></div></div>
     </div></section>
+    <WhatsAppJoinDialog open={whatsappPromptOpen} eventName="Panel Discussion" groupUrl={whatsappGroups.panel} onClose={() => { setWhatsappPromptOpen(false); window.setTimeout(() => document.querySelector('.panel-confirmation-panel')?.focus(), 0) }} />
   </main>
 }
