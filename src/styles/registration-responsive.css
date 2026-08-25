@@ -55,6 +55,104 @@
   gap: 0.75rem;
 }
 
+.whatsapp-join-dialog {
+  width: min(32rem, calc(100vw - 2rem));
+  padding: 1.75rem;
+  border: 1px solid var(--color-line-strong);
+  border-top: 6px solid #168c4b;
+  background: #fff;
+  color: var(--color-text);
+  box-shadow: 0 1.5rem 5rem rgba(0, 0, 0, 0.3);
+}
+
+.whatsapp-join-dialog::backdrop {
+  background: rgba(14, 17, 15, 0.68);
+  backdrop-filter: blur(2px);
+}
+
+.whatsapp-dialog-mark {
+  display: grid;
+  width: 2.8rem;
+  height: 2.8rem;
+  margin-bottom: 1rem;
+  place-items: center;
+  border-radius: 50%;
+  background: #168c4b;
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.whatsapp-join-dialog h2 {
+  margin: 0.45rem 0 0.7rem;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+}
+
+.whatsapp-join-dialog > p:not(.eyebrow) {
+  margin: 0 0 1.1rem;
+  color: var(--color-text-soft);
+  line-height: 1.55;
+}
+
+.whatsapp-join-button {
+  border-color: #168c4b;
+  background: #168c4b;
+  color: #fff;
+}
+
+.whatsapp-join-button:hover {
+  border-color: #0f6f3a;
+  background: #0f6f3a;
+}
+
+.registration-social-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.instagram-follow-button {
+  border-color: #c13584;
+  background: #c13584;
+  color: #fff;
+}
+
+.instagram-follow-button:hover {
+  border-color: #962763;
+  background: #962763;
+}
+
+.whatsapp-joined-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  margin: 1.15rem 0;
+  padding: 0.9rem;
+  border: 1px solid var(--color-line);
+  background: #f7f7f4;
+  cursor: pointer;
+}
+
+.whatsapp-joined-check input {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0.1rem 0 0;
+  accent-color: #168c4b;
+}
+
+.whatsapp-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.whatsapp-dialog-actions .btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 .hackathon-rules-banner {
   display: grid;
   gap: 0.55rem;

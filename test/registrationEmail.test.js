@@ -11,12 +11,24 @@ const panelTicket = {
   eventDate: '15 September 2026',
   dateShort: '15 SEP',
   ticketCode: 'AIC26-P-00001',
+  whatsappGroupName: 'panel discussion',
+  whatsappGroupUrl: _test.WHATSAPP_GROUPS.panel,
 }
 
 test('confirmation HTML escapes participant-controlled fields', () => {
   const bodies = _test.buildEmailBodies(panelTicket, 'https://aiconclave26.ajce.in/my-registration')
   assert.match(bodies.html, /Test &lt;Participant&gt;/)
   assert.doesNotMatch(bodies.html, /Test <Participant>/)
+})
+
+test('confirmation email contains the correct WhatsApp group link', () => {
+  const bodies = _test.buildEmailBodies(panelTicket, 'https://aiconclave26.ajce.in/my-registration')
+  assert.match(bodies.text, new RegExp(_test.WHATSAPP_GROUPS.panel.replace(/[?&]/g, '\\$&')))
+  assert.match(bodies.html, /JOIN WHATSAPP GROUP/)
+  assert.match(bodies.html, /J6rmQG3jAWn3tjVtT5Pbhn/)
+  assert.doesNotMatch(bodies.html, /CrxG2ZqSr7ZJrqpzAgawjF/)
+  assert.match(bodies.text, /instagram\.com\/ai_conclave_ajce/)
+  assert.match(bodies.html, /FOLLOW ON INSTAGRAM/)
 })
 
 test('ticket generator creates the full downloadable-ticket layout as a valid PDF', () => {

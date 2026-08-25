@@ -1,5 +1,10 @@
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
 const GMAIL_SEND_URL = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send'
+const WHATSAPP_GROUPS = Object.freeze({
+  panel: 'https://chat.whatsapp.com/J6rmQG3jAWn3tjVtT5Pbhn?s=sw&p=a&mlu=4',
+  hackathon: 'https://chat.whatsapp.com/CrxG2ZqSr7ZJrqpzAgawjF?s=sw&p=a&mlu=4',
+})
+const INSTAGRAM_PROFILE_URL = 'https://www.instagram.com/ai_conclave_ajce/?hl=en'
 const MAX_RESPONSE_BYTES = 65_536
 const MAX_AUTOMATIC_ATTEMPTS = 3
 const TRANSIENT_HTTP_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504])
@@ -275,14 +280,16 @@ function ticketDetailsRows(ticket) {
 function buildEmailBodies(ticket, registrationsUrl) {
   const rows = ticketDetailsRows(ticket)
   const textRows = rows.map(([label, value]) => `${label}: ${value}`).join('\n')
+  const whatsappText = ticket.whatsappGroupUrl ? `\nJoin the official ${ticket.whatsappGroupName} WhatsApp group for event updates: ${ticket.whatsappGroupUrl}\n` : ''
+  const instagramText = `Follow AI Conclave AJCE on Instagram: ${INSTAGRAM_PROFILE_URL}\n`
   const htmlRows = rows.map(([label, value]) => `
     <tr>
       <td style="padding:10px 12px;border-bottom:1px solid #deded8;color:#686864;font-size:12px;text-transform:uppercase;letter-spacing:.08em">${escapeHtml(label)}</td>
       <td style="padding:10px 12px;border-bottom:1px solid #deded8;color:#111;font-size:15px;font-weight:700">${escapeHtml(value)}</td>
     </tr>`).join('')
   return {
-    text: `Hello ${ticket.name},\n\nYour AI Conclave 2026 registration has been received.\n\n${textRows}\nVenue: ${VENUE}\n\nYour ticket is attached as a PDF. You can also view your registration at ${registrationsUrl}.\n\nAI Conclave 2026\nAmal Jyothi College of Engineering`,
-    html: `<!doctype html><html><body style="margin:0;background:#f4f4f1;font-family:Arial,sans-serif;color:#111"><div style="max-width:680px;margin:0 auto;padding:28px 14px"><div style="border-top:7px solid #ff2229;background:#fff;border-left:1px solid #aaa;border-right:1px solid #aaa;border-bottom:1px solid #aaa"><div style="padding:28px 28px 18px"><div style="font:700 13px monospace;letter-spacing:.12em;color:#187440">REGISTRATION CONFIRMED</div><h1 style="font:700 30px monospace;margin:12px 0">AI CONCLAVE 2026</h1><p style="font-size:16px;line-height:1.55;color:#555">Hello ${escapeHtml(ticket.name)}, your registration has been received. Keep the attached ticket for event day.</p></div><table style="width:100%;border-collapse:collapse">${htmlRows}</table><div style="padding:22px 28px"><p style="font-size:14px;line-height:1.5"><strong>Venue</strong><br>${escapeHtml(VENUE)}</p><a href="${escapeHtml(registrationsUrl)}" style="display:inline-block;padding:13px 18px;background:#111;color:#fff;text-decoration:none;font:700 13px monospace">VIEW MY REGISTRATIONS →</a></div></div><p style="font-size:12px;color:#777;text-align:center">This is an automatic registration confirmation. Please do not share your ticket publicly.</p></div></body></html>`,
+    text: `Hello ${ticket.name},\n\nYour AI Conclave 2026 registration has been received.\n\n${textRows}\nVenue: ${VENUE}\n${whatsappText}${instagramText}\nYour ticket is attached as a PDF. You can also view your registration at ${registrationsUrl}.\n\nAI Conclave 2026\nAmal Jyothi College of Engineering`,
+    html: `<!doctype html><html><body style="margin:0;background:#f4f4f1;font-family:Arial,sans-serif;color:#111"><div style="max-width:680px;margin:0 auto;padding:28px 14px"><div style="border-top:7px solid #ff2229;background:#fff;border-left:1px solid #aaa;border-right:1px solid #aaa;border-bottom:1px solid #aaa"><div style="padding:28px 28px 18px"><div style="font:700 13px monospace;letter-spacing:.12em;color:#187440">REGISTRATION CONFIRMED</div><h1 style="font:700 30px monospace;margin:12px 0">AI CONCLAVE 2026</h1><p style="font-size:16px;line-height:1.55;color:#555">Hello ${escapeHtml(ticket.name)}, your registration has been received. Keep the attached ticket for event day.</p></div><table style="width:100%;border-collapse:collapse">${htmlRows}</table><div style="padding:22px 28px"><p style="font-size:14px;line-height:1.5"><strong>Venue</strong><br>${escapeHtml(VENUE)}</p>${ticket.whatsappGroupUrl ? `<div style="margin:18px 0;padding:18px;background:#eef8f1;border-left:4px solid #168c4b"><strong style="display:block;margin-bottom:8px">Join the official ${escapeHtml(ticket.whatsappGroupName)} WhatsApp group</strong><span style="display:block;margin-bottom:12px;color:#4b554e;font-size:14px">Get schedules, announcements and event-day updates.</span><a href="${escapeHtml(ticket.whatsappGroupUrl)}" style="display:inline-block;padding:13px 18px;background:#168c4b;color:#fff;text-decoration:none;font:700 13px monospace">JOIN WHATSAPP GROUP →</a></div>` : ''}<div style="margin:0 0 18px;padding:18px;background:#fff2f7;border-left:4px solid #c13584"><strong style="display:block;margin-bottom:8px">Follow AI Conclave AJCE on Instagram</strong><span style="display:block;margin-bottom:12px;color:#5d4b54;font-size:14px">Follow event announcements, highlights and updates.</span><a href="${escapeHtml(INSTAGRAM_PROFILE_URL)}" style="display:inline-block;padding:13px 18px;background:#c13584;color:#fff;text-decoration:none;font:700 13px monospace">FOLLOW ON INSTAGRAM →</a></div><a href="${escapeHtml(registrationsUrl)}" style="display:inline-block;padding:13px 18px;background:#111;color:#fff;text-decoration:none;font:700 13px monospace">VIEW MY REGISTRATIONS →</a></div></div><p style="font-size:12px;color:#777;text-align:center">This is an automatic registration confirmation. Please do not share your ticket publicly.</p></div></body></html>`,
   }
 }
 
@@ -344,6 +351,8 @@ async function loadTicket(db, delivery) {
         eventDate: '15 September 2026',
         dateShort: '15 SEP',
         ticketCode: `AIC26-P-${String(row.id).padStart(5, '0')}`,
+        whatsappGroupName: 'panel discussion',
+        whatsappGroupUrl: WHATSAPP_GROUPS.panel,
       },
     }
   }
@@ -373,6 +382,8 @@ async function loadTicket(db, delivery) {
         eventDate: '16 September 2026',
         dateShort: '16 SEP',
         ticketCode: row.team_code,
+        whatsappGroupName: 'hackathon',
+        whatsappGroupUrl: WHATSAPP_GROUPS.hackathon,
       },
     }
   }
@@ -482,4 +493,4 @@ export function queueRegistrationEmail(context, deliveryId) {
   context.waitUntil(task)
 }
 
-export const _test = { createTicketPdf, buildEmailBodies, buildMimeMessage, escapeHtml, safeHeader }
+export const _test = { createTicketPdf, buildEmailBodies, buildMimeMessage, escapeHtml, safeHeader, WHATSAPP_GROUPS, INSTAGRAM_PROFILE_URL }
