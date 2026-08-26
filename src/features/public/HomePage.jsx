@@ -20,7 +20,7 @@ export function HomePage() {
               <div className="hero-perforation"></div>
               <div className="hero-strip">
                 <div className="hero-strip-item"><span className="hero-strip-label">Dates</span><span className="hero-strip-value">15–16 September 2026</span></div>
-                <div className="hero-strip-item"><span className="hero-strip-label">Venue</span><span className="hero-strip-value">AJCE, Kanjirappally, Kerala</span></div>
+                <div className="hero-strip-item"><span className="hero-strip-label">Venue</span><a className="hero-strip-value hero-map-link" href="https://maps.app.goo.gl/ZvM8xhHBMKXsxpon7" target="_blank" rel="noopener noreferrer" aria-label="Get directions to Amal Jyothi College of Engineering on Google Maps"><span>AJCE, Kanjirappally, Kerala</span><small>Get directions <span aria-hidden="true">↗</span></small></a></div>
                 <div className="hero-strip-item"><span className="hero-strip-label">Organised By</span><span className="hero-strip-value">AI Club / Student Council</span></div>
               </div>
               <div className="hero-key">
