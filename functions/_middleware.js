@@ -26,7 +26,7 @@ function withSecurityHeaders(response, rateLimitHeaders) {
     "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style",
     "img-src 'self' data:",
     "connect-src 'self' https://accounts.google.com/gsi/ https://accounts.google.com/o/fedcm/",
-    "frame-src https://accounts.google.com/gsi/ https://accounts.google.com/ https://accounts.google.com/o/fedcm/",
+    "frame-src https://accounts.google.com/gsi/ https://accounts.google.com/ https://accounts.google.com/o/fedcm/ https://www.google.com",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
