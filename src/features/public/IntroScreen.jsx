@@ -9,10 +9,9 @@ export function IntroScreen() {
   useEffect(() => {
     if (!visible) return undefined
     document.body.classList.add('intro-active')
-    const mobileIntro = window.matchMedia('(max-width: 620px)').matches
-    const splitTimer = mobileIntro ? window.setTimeout(() => setSplitting(true), 1650) : undefined
-    const leaveTimer = window.setTimeout(() => setLeaving(true), mobileIntro ? 2020 : 1650)
-    const finishTimer = window.setTimeout(() => setVisible(false), mobileIntro ? 2800 : 2500)
+    const splitTimer = window.setTimeout(() => setSplitting(true), 1650)
+    const leaveTimer = window.setTimeout(() => setLeaving(true), 2020)
+    const finishTimer = window.setTimeout(() => setVisible(false), 2800)
     return () => {
       window.clearTimeout(splitTimer)
       window.clearTimeout(leaveTimer)

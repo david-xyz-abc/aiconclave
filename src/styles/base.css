@@ -195,6 +195,14 @@ body.intro-active {
   animation: intro-band-from-right 1.4s 0.1s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+.intro-screen.is-splitting .intro-band-primary {
+  animation: intro-band-exit-left 0.34s cubic-bezier(0.7, 0, 0.84, 0) both;
+}
+
+.intro-screen.is-splitting .intro-band-outline {
+  animation: intro-band-exit-right 0.34s cubic-bezier(0.7, 0, 0.84, 0) both;
+}
+
 .intro-scan {
   position: absolute;
   right: 0;
@@ -223,6 +231,16 @@ body.intro-active {
 @keyframes intro-band-from-right {
   from { opacity: 0; transform: translate3d(65vw, 0, 0) skewX(5deg); }
   to { opacity: 1; transform: translate3d(7vw, 0, 0) skewX(0); }
+}
+
+@keyframes intro-band-exit-left {
+  from { opacity: 1; transform: translate3d(-3vw, 0, 0); }
+  to { opacity: 0; transform: translate3d(-105%, 0, 0); }
+}
+
+@keyframes intro-band-exit-right {
+  from { opacity: 1; transform: translate3d(7vw, 0, 0); }
+  to { opacity: 0; transform: translate3d(105vw, 0, 0); }
 }
 
 @keyframes intro-scan-line {
