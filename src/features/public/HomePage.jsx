@@ -20,7 +20,7 @@ export function HomePage() {
               <div className="hero-perforation"></div>
               <div className="hero-strip">
                 <div className="hero-strip-item"><span className="hero-strip-label">Dates</span><span className="hero-strip-value">15–16 September 2026</span></div>
-                <div className="hero-strip-item"><span className="hero-strip-label">Venue</span><span className="hero-strip-value">AJCE, Kanjirappally, Kerala</span></div>
+                <div className="hero-strip-item"><span className="hero-strip-label">Venue</span><a className="hero-strip-value hero-map-link" href="https://maps.app.goo.gl/ZvM8xhHBMKXsxpon7" target="_blank" rel="noopener noreferrer" aria-label="Get directions to Amal Jyothi College of Engineering on Google Maps"><span>AJCE, Kanjirappally, Kerala</span><small>Get directions <span aria-hidden="true">↗</span></small></a></div>
                 <div className="hero-strip-item"><span className="hero-strip-label">Organised By</span><span className="hero-strip-value">AI Club / Student Council</span></div>
               </div>
               <div className="hero-key">
@@ -58,6 +58,18 @@ export function HomePage() {
             <a className="page-link-card" href={PATHS.schedule} data-reveal><span className="page-link-title">Schedule</span><span className="page-link-desc">The full Day 1 and Day 2 programme, including the panel discussion speakers.</span><span className="page-link-arrow" aria-hidden="true">→</span></a>
             <a className="page-link-card" href={PATHS.participate} data-reveal><span className="page-link-title">Who Should Attend</span><span className="page-link-desc">The audience across Agriculture, Health &amp; Education.</span><span className="page-link-arrow" aria-hidden="true">→</span></a>
             <a className="page-link-card page-link-card-cta" href={PATHS.register} data-reveal><span className="page-link-title">Register</span><span className="page-link-desc">Claim your delegate pass.</span><span className="page-link-arrow" aria-hidden="true">→</span></a>
+          </div>
+        </div>
+      </section>
+
+      <section id="venue" className="section venue-section">
+        <div className="container">
+          <div className="venue-section-header" data-reveal>
+            <div><p className="eyebrow">Venue</p><h2 className="section-heading">Amal Jyothi College of Engineering</h2><p className="section-lede">Kanjirappally, Kerala</p></div>
+            <a className="btn btn-primary venue-directions-button" href="https://maps.app.goo.gl/ZvM8xhHBMKXsxpon7" target="_blank" rel="noopener noreferrer">Get Directions on Google Maps <span aria-hidden="true">↗</span></a>
+          </div>
+          <div className="venue-map" data-reveal>
+            <iframe title="Map showing Amal Jyothi College of Engineering, Kanjirappally" src="https://www.google.com/maps?q=Amal%20Jyothi%20College%20of%20Engineering%20Autonomous%2C%20Kanjirappally%2C%20Kerala&amp;output=embed" loading="lazy" referrerPolicy="no-referrer-when-downgrade" allowFullScreen></iframe>
           </div>
         </div>
       </section>
