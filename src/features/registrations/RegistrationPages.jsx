@@ -18,6 +18,45 @@ const HACKATHON_REGISTRATION_RULES = [
   'Teams must present their work for assessment by external evaluators.',
 ]
 
+const WORKSHOPS = [
+  {
+    id: 'roboai-forge',
+    title: 'RoboAI Forge - Exploring Robotics & AI',
+    organisation: 'Unique World Robotics',
+    logo: '/partners/unique-world-robotics.png',
+    resourcePeople: 'Anumol P Joy, Robotics Engineer',
+    handsOn: true,
+    registrationUrl: 'https://e.ajce.in/gi0td2',
+  },
+  {
+    id: 'physical-ai',
+    title: 'Physical AI',
+    organisation: 'TCS',
+    logo: '/partners/tcs-horizontal.png',
+    resourcePeople: 'Jason Lenox and Jim Seelan',
+    handsOn: true,
+    registrationUrl: 'https://e.ajce.in/zvel8s',
+  },
+  {
+    id: 'edge-ai',
+    title: 'Edge AI',
+    organisation: 'Cloud Innovations',
+    logo: '/partners/cloud-innovations.jpg',
+    resourcePeople: 'Mr. Prajeesh A, Founder & Chief Executive Officer',
+    handsOn: true,
+    registrationUrl: 'https://e.ajce.in/3ualai',
+  },
+  {
+    id: 'ai-in-action',
+    title: 'AI in Action - How Generative AI and Autonomous Agents Are Transforming Industries',
+    organisation: 'UST',
+    logo: '/partners/ust.jpg',
+    resourcePeople: 'Renjith Paulose',
+    handsOn: false,
+    registrationUrl: 'https://e.ajce.in/wyqzwn',
+  },
+]
+
 function FieldError({ id, message }) {
   return message ? <p className="field-error" id={id} role="alert">{message}</p> : null
 }
@@ -90,6 +129,27 @@ function HackathonInstructionsDialog({ open, onContinue }) {
   </dialog>
 }
 
+function WorkshopRedirectDialog({ workshop, onClose }) {
+  const dialogRef = useRef(null)
+
+  useEffect(() => {
+    const dialog = dialogRef.current
+    if (!dialog) return
+    if (workshop && !dialog.open) dialog.showModal()
+    else if (!workshop && dialog.open) dialog.close()
+  }, [workshop])
+
+  if (!workshop) return <dialog ref={dialogRef} className="workshop-redirect-dialog" />
+
+  return <dialog ref={dialogRef} className="workshop-redirect-dialog" aria-labelledby="workshop-redirect-title" onClose={onClose}>
+    <span className="stamp">Paid workshop</span>
+    <h2 id="workshop-redirect-title">Continue to workshop registration?</h2>
+    <p>You are registering for <strong>{workshop.title}</strong>, conducted by <strong>{workshop.organisation}</strong>.</p>
+    <div className="workshop-redirect-notice"><strong>You will be redirected to the AJCE registration website.</strong><span>This is a paid workshop. Complete the registration and payment details on the college website.</span></div>
+    <div className="workshop-redirect-actions"><a className="btn btn-primary" href={workshop.registrationUrl} rel="noopener noreferrer">Continue to Registration <span aria-hidden="true">↗</span></a><button type="button" className="btn btn-outline" onClick={() => dialogRef.current?.close()}>Cancel</button></div>
+  </dialog>
+}
+
 function RegistrationEligibilityError({ message, onRetry }) {
   return <main id="main"><section className="section"><div className="container register-layout"><div className="account-error account-error-page" role="alert"><h1>Registration status could not be checked.</h1><p>{message}</p><button type="button" className="btn btn-outline" onClick={onRetry}>Try again</button></div></div></section></main>
 }
@@ -104,6 +164,7 @@ function AlreadyRegisteredPage({ eventName }) {
 
 export function RegistrationChoicePage({ participant, onSignOut, signingOut }) {
   const [registrationState, retryRegistrationCheck] = useExistingRegistrations(participant)
+  const [selectedWorkshop, setSelectedWorkshop] = useState(null)
   const panelRegistered = hasEventRegistration(registrationState.registrations, 'panel')
   const hackathonRegistered = hasEventRegistration(registrationState.registrations, 'hackathon')
   const panelRegistration = registrationState.registrations.find(({ type }) => type === 'Panel Discussion')
@@ -116,7 +177,19 @@ export function RegistrationChoicePage({ participant, onSignOut, signingOut }) {
     <section className="section"><div className="container"><ParticipantBar participant={participant} onSignOut={onSignOut} signingOut={signingOut} /><div className="registration-choice-grid">
       {panelRegistered ? <article className="registration-choice registration-choice-panel is-already-registered is-registration-status" data-reveal><span className="choice-number" aria-hidden="true">01</span><span className="stamp">Day 1 · Industry Panels</span><h2>Panel Discussion Registration</h2><p>For industry delegates, experts, professionals, educators and researchers attending the Agriculture, Education or Healthcare panels.</p><div className="registered-event-preview"><strong>Panel entry</strong><p>{panelRegistration?.panelSelection || 'Your panel registration has been received.'}</p></div><div className="registration-choice-registered-row"><span className="registration-state-badge"><i aria-hidden="true"></i> Already registered</span><a href={PATHS.myRegistration}>View registration <span aria-hidden="true">→</span></a></div></article> : <a className="registration-choice registration-choice-panel" href={PATHS.registerPanel} data-reveal><span className="choice-number" aria-hidden="true">01</span><span className="stamp">Day 1 · Industry Panels</span><h2>Panel Discussion Registration</h2><p>For industry delegates, experts, professionals, educators and researchers attending the Agriculture, Education or Healthcare panels.</p><span className="choice-action">{registrationState.status === 'loading' ? 'Checking registration…' : 'Register for Panel Discussion'} <span aria-hidden="true">→</span></span></a>}
       {hackathonRegistered ? <article className="registration-choice registration-choice-hackathon is-already-registered is-registration-status" data-reveal><span className="choice-number" aria-hidden="true">02</span><span className="stamp">Day 2 · Hackathon</span><h2>Hackathon Registration</h2><p>For school and college students joining either the Technical or Non-Technical track.</p><div className="registered-event-preview"><strong>{hackathonRegistration?.teamName ? `Team · ${hackathonRegistration.teamName}` : 'Hackathon entry'}</strong><p>{hackathonRegistration?.sectorTrack ? `${hackathonRegistration.sectorTrack} · ${hackathonRegistration.solutionType}` : 'Your hackathon registration has been received.'}</p></div><div className="registration-choice-registered-row"><span className="registration-state-badge"><i aria-hidden="true"></i> Already registered</span><a href={PATHS.myRegistration}>View registration <span aria-hidden="true">→</span></a></div></article> : HACKATHON_REGISTRATION_OPEN ? <a className="registration-choice registration-choice-hackathon" href={PATHS.registerHackathon} data-reveal><span className="choice-number" aria-hidden="true">02</span><span className="stamp">Day 2 · Hackathon</span><h2>Hackathon Registration</h2><p>For school and college students joining either the Technical or Non-Technical track.</p><div className="hackathon-instruction-preview"><strong>Before you apply</strong><p>Read the hackathon instructions carefully before applying. Make sure you understand and meet every eligibility criterion and participation requirement.</p></div><span className="choice-action">Register for Hackathon <span aria-hidden="true">→</span></span></a> : <div className="registration-choice registration-choice-hackathon is-registration-closed" aria-disabled="true" data-reveal><span className="choice-number" aria-hidden="true">02</span><span className="stamp">Day 2 · Hackathon</span><h2>Hackathon Registration</h2><p>For school and college students joining the Technical or Non-Technical hackathon.</p><span className="choice-action choice-action-disabled">Registration Not Started</span><div className="registration-closed-layer"><span className="closed-status"><i aria-hidden="true"></i> Registration update</span><strong>Opening Soon</strong><small>Hackathon registration has not started yet.</small></div></div>}
-    </div></div></section>
+    </div>
+    <section className="workshop-registration-section" aria-labelledby="workshop-registration-title">
+      <div className="workshop-registration-heading"><p className="eyebrow">Day 1 · Paid Workshops</p><h2 id="workshop-registration-title">Industry Workshops</h2><p>Select a workshop to continue registration on the official AJCE website.</p></div>
+      <div className="workshop-registration-grid">{WORKSHOPS.map((workshop, index) => <article className="workshop-registration-card" key={workshop.id}>
+        <header><span className="workshop-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span><div className="workshop-badges"><span>Paid Workshop</span>{workshop.handsOn && <strong>Hands-on</strong>}</div></header>
+        <div className="workshop-organisation"><img src={workshop.logo} alt={`${workshop.organisation} logo`} loading="lazy" decoding="async" /><div><small>Conducted by</small><strong>{workshop.organisation}</strong></div></div>
+        <h3>{workshop.title}</h3>
+        <div className="workshop-resource"><small>Resource {workshop.resourcePeople.includes(' and ') ? 'people' : 'person'}</small><span>{workshop.resourcePeople}</span></div>
+        <button type="button" className="btn btn-primary workshop-register-button" onClick={() => setSelectedWorkshop(workshop)}>Register for Workshop <span aria-hidden="true">→</span></button>
+      </article>)}</div>
+    </section>
+    </div></section>
+    <WorkshopRedirectDialog workshop={selectedWorkshop} onClose={() => setSelectedWorkshop(null)} />
   </main>
 }
 
