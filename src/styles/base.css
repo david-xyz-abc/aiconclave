@@ -273,8 +273,9 @@ body.intro-active {
   }
 
   .intro-type-stage {
-    right: 1.25rem;
-    left: 1.25rem;
+    right: 0;
+    left: 0;
+    padding-left: 0.35rem;
     gap: 0.7rem;
   }
 
