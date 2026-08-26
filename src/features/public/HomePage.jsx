@@ -50,6 +50,18 @@ export function HomePage() {
         </div>
       </section>
 
+      <section id="venue" className="section venue-section">
+        <div className="container">
+          <div className="venue-section-header" data-reveal>
+            <div><p className="eyebrow">Venue</p><h2 className="section-heading">Amal Jyothi College of Engineering</h2><p className="section-lede">Kanjirappally, Kerala</p></div>
+            <a className="btn btn-primary venue-directions-button" href="https://maps.app.goo.gl/ZvM8xhHBMKXsxpon7" target="_blank" rel="noopener noreferrer">Get Directions on Google Maps <span aria-hidden="true">↗</span></a>
+          </div>
+          <div className="venue-map" data-reveal>
+            <iframe title="Map showing Amal Jyothi College of Engineering, Kanjirappally" src="https://www.google.com/maps?q=Amal%20Jyothi%20College%20of%20Engineering%20Autonomous%2C%20Kanjirappally%2C%20Kerala&amp;output=embed" loading="lazy" referrerPolicy="no-referrer-when-downgrade" allowFullScreen></iframe>
+          </div>
+        </div>
+      </section>
+
       <section id="explore" className="section">
         <div className="container">
           <div className="section-head" data-reveal><p className="eyebrow">Explore</p><h2 className="section-heading">Everything about the conclave, one page at a time.</h2></div>
