@@ -448,7 +448,15 @@
 }
 
 .about-grid > div {
-  max-width: 52rem;
+  max-width: 72rem;
+}
+
+.about-grid .section-heading {
+  max-width: 54rem;
+}
+
+.about-grid .section-lede {
+  max-width: 90ch;
 }
 
 /* ===== Partners ===== */
