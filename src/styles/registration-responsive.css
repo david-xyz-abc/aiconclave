@@ -228,25 +228,7 @@
 }
 
 .workshop-registration-section {
-  margin-top: clamp(3rem, 7vw, 5.5rem);
-  padding-top: clamp(2rem, 5vw, 3.5rem);
-  border-top: 1px solid var(--color-line-strong);
-}
-
-.workshop-registration-heading {
-  max-width: 48rem;
-  margin-bottom: 1.5rem;
-}
-
-.workshop-registration-heading h2 {
-  margin: 0.45rem 0 0.55rem;
-  font-family: var(--font-display);
-  font-size: clamp(1.8rem, 4vw, 2.65rem);
-}
-
-.workshop-registration-heading > p:last-child {
-  margin: 0;
-  color: var(--color-text-soft);
+  margin-top: 1rem;
 }
 
 .workshop-registration-grid {
