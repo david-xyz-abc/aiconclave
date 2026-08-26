@@ -6,6 +6,18 @@ import { RegistrationTicket, TicketDownloadButton } from './ParticipantPortal.js
 import { hasEventRegistration, useExistingRegistrations } from './useExistingRegistrations.js'
 import { HACKATHON_REGISTRATION_OPEN, blankTeamMember, hackathonChallengeAreas, hackathonTrackOptions, industrySectors, initialHackathonForm, initialPanelForm, instagramProfileUrl, organisationTypes, panelOptions, participantTypes, validateHackathonForm, validatePanelForm, whatsappGroups } from './registrationConfig.js'
 
+const HACKATHON_REGISTRATION_RULES = [
+  'Teams must include 2 to 4 school or college students.',
+  'The five-hour session is open to internal and external students.',
+  'Each team must select one sector: Agriculture, Education or Healthcare.',
+  'Technical and non-technical solutions are accepted.',
+  'There is no preliminary idea selection or shortlisting.',
+  'Students may prepare projects at home before the event or build them at the venue during the five-hour session.',
+  'Power and Wi-Fi will be provided by the college at the venue.',
+  'Teams should bring an extension board if their project setup requires one.',
+  'Teams must present their work for assessment by external evaluators.',
+]
+
 function FieldError({ id, message }) {
   return message ? <p className="field-error" id={id} role="alert">{message}</p> : null
 }
@@ -59,6 +71,25 @@ function PanelEligibilityDialog({ open, onContinue }) {
   </dialog>
 }
 
+function HackathonInstructionsDialog({ open, onContinue }) {
+  const dialogRef = useRef(null)
+
+  useEffect(() => {
+    const dialog = dialogRef.current
+    if (!dialog) return
+    if (open && !dialog.open) dialog.showModal()
+    else if (!open && dialog.open) dialog.close()
+  }, [open])
+
+  return <dialog ref={dialogRef} className="hackathon-instructions-dialog" aria-labelledby="hackathon-instructions-title" onCancel={(event) => event.preventDefault()}>
+    <span className="stamp">Hackathon rules</span>
+    <h2 id="hackathon-instructions-title">Before you register</h2>
+    <p>Read and understand the participation rules before creating your team.</p>
+    <ul>{HACKATHON_REGISTRATION_RULES.map((rule) => <li key={rule}>{rule}</li>)}</ul>
+    <div className="hackathon-instructions-actions"><button type="button" className="btn btn-primary" onClick={onContinue}>I understand — Continue</button><a className="btn btn-outline" href={PATHS.register}>Go back</a></div>
+  </dialog>
+}
+
 function RegistrationEligibilityError({ message, onRetry }) {
   return <main id="main"><section className="section"><div className="container register-layout"><div className="account-error account-error-page" role="alert"><h1>Registration status could not be checked.</h1><p>{message}</p><button type="button" className="btn btn-outline" onClick={onRetry}>Try again</button></div></div></section></main>
 }
@@ -105,6 +136,7 @@ export function HackathonRegisterPage({ participant }) {
   const [submitting, setSubmitting] = useState(false)
   const [fieldErrors, setFieldErrors] = useState({})
   const [whatsappPromptOpen, setWhatsappPromptOpen] = useState(false)
+  const [instructionsPromptOpen, setInstructionsPromptOpen] = useState(true)
   const teamNameRef = useRef(null)
 
   if (registrationState.status === 'loading') return <main id="main"><section className="account-loading"><span className="account-spinner" aria-hidden="true"></span><p>Checking hackathon registration…</p></section></main>
@@ -187,7 +219,7 @@ export function HackathonRegisterPage({ participant }) {
     <section className="page-header hackathon-register-header"><div className="container"><a className="back-link" href={PATHS.register}>← All registrations</a><p className="eyebrow">Day 2 · Hackathon</p><h1 className="section-heading">Create your team</h1><p className="panel-theme-line">Agriculture <span>•</span> Healthcare <span>•</span> Education</p><p className="section-lede">Register one team of 2 to 4 internal or external school or college students. The captain completes this form for everyone.</p></div></section>
     <section id="registration-form" className="section"><div className="container register-layout">
       <form id="register-form" className="sectioned-form hackathon-register-form" noValidate hidden={submitted} onSubmit={submit}>
-        <div className="hackathon-rules-banner"><strong>Before you apply</strong><p>Read the hackathon instructions carefully. Make sure every student meets the eligibility criteria before submitting the team.</p><ul><li>The five-hour session is open to internal and external students.</li><li>No preliminary idea selection or shortlisting.</li><li>Students may prepare projects at home before the event or build them at the venue during the five-hour session, then present them for evaluation.</li><li>Technical and non-technical solutions are accepted.</li><li>Final presentations will be assessed by external evaluators.</li></ul></div>
+        <div className="hackathon-rules-banner"><strong>Before you apply</strong><p>Read the hackathon instructions carefully. Make sure every student meets the eligibility criteria before submitting the team.</p><ul>{HACKATHON_REGISTRATION_RULES.map((rule) => <li key={rule}>{rule}</li>)}</ul></div>
 
         <fieldset className="form-section"><legend><span>01</span> Team Setup</legend>
           <div className="team-setup-grid">
@@ -231,6 +263,7 @@ export function HackathonRegisterPage({ participant }) {
       </form>
       <div className={`confirmation-panel hackathon-confirmation-panel${submitted ? ' is-visible' : ''}`} role="status" aria-live="polite" tabIndex={submitted ? -1 : undefined}><span className="stamp">Team Registration Received</span><h2>Your team is registered.</h2><p>Keep the team code for future reference. The complete registration is available in My registrations.</p>{confirmation && <dl className="confirmation-summary"><dt>Team</dt><dd>{confirmation.teamName}</dd><dt>Team code</dt><dd>{confirmation.teamCode}</dd><dt>Category</dt><dd>{confirmation.participantCategory}</dd><dt>Team size</dt><dd>{confirmation.members.length} students</dd><dt>Entry</dt><dd>{confirmation.sectorTrack} · {confirmation.solutionType}</dd></dl>}<div className="confirmation-actions"><a className="btn whatsapp-join-button" href={whatsappGroups.hackathon} target="_blank" rel="noopener noreferrer">Join WhatsApp Group <span aria-hidden="true">↗</span></a><a className="btn instagram-follow-button" href={instagramProfileUrl} target="_blank" rel="noopener noreferrer">Follow on Instagram <span aria-hidden="true">↗</span></a><a className="btn btn-primary" href={PATHS.myRegistration}>View My Registration <span aria-hidden="true">→</span></a><a className="btn btn-outline" href={PATHS.register}>Back to Registrations</a></div></div>
     </div></section>
+    <HackathonInstructionsDialog open={instructionsPromptOpen} onContinue={() => setInstructionsPromptOpen(false)} />
     <WhatsAppJoinDialog open={whatsappPromptOpen} eventName="Hackathon" groupUrl={whatsappGroups.hackathon} onClose={() => { setWhatsappPromptOpen(false); window.setTimeout(() => document.querySelector('.hackathon-confirmation-panel')?.focus(), 0) }} />
   </main>
 }
