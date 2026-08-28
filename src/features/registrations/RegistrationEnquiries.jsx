@@ -12,9 +12,11 @@ export function RegistrationEnquiry({ eventKey, compact = false }) {
 
 export function RegistrationEnquiryDirectory() {
   return <section className="registration-enquiry-directory" aria-labelledby="registration-enquiry-title">
-    <div className="registration-enquiry-heading"><span className="eyebrow">Need help?</span><h2 id="registration-enquiry-title">Registration enquiries</h2></div>
-    <div className="registration-enquiry-list">
-      {Object.keys(registrationEnquiries).map((eventKey) => <RegistrationEnquiry eventKey={eventKey} compact key={eventKey} />)}
-    </div>
+    <details>
+      <summary><span className="registration-enquiry-heading"><span className="eyebrow">Need help?</span><h2 id="registration-enquiry-title">Registration enquiries</h2></span><span className="registration-enquiry-toggle"><span className="when-closed">View contacts</span><span className="when-open">Hide contacts</span><i aria-hidden="true"></i></span></summary>
+      <div className="registration-enquiry-list">
+        {Object.keys(registrationEnquiries).map((eventKey) => <RegistrationEnquiry eventKey={eventKey} compact key={eventKey} />)}
+      </div>
+    </details>
   </section>
 }
