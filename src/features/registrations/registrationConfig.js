@@ -84,6 +84,27 @@ export const whatsappGroups = Object.freeze({
 })
 export const instagramProfileUrl = 'https://www.instagram.com/ai_conclave_ajce/?hl=en'
 
+export const registrationEnquiries = Object.freeze({
+  workshop: {
+    label: 'Workshop enquiries',
+    name: 'Deon Berchmans',
+    phone: '+917907622696',
+    displayPhone: '+91 79076 22696',
+  },
+  panel: {
+    label: 'Panel Discussion enquiries',
+    name: 'Hanna Kunjumon',
+    phone: '+917012817966',
+    displayPhone: '+91 70128 17966',
+  },
+  hackathon: {
+    label: 'Hackathon enquiries',
+    name: 'Sonat Joseph',
+    phone: '+919747973286',
+    displayPhone: '+91 97479 73286',
+  },
+})
+
 export const blankTeamMember = () => ({ fullName: '', email: '', phone: '', institution: '', departmentOrCourse: '', yearOrGrade: '' })
 
 export const initialHackathonForm = {

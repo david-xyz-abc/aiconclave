@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { PATHS } from '../../config/routes.js'
 import { ApiError, registrationApi } from '../../services/api.js'
 import { ParticipantBar } from '../auth/AuthComponents.jsx'
+import { RegistrationEnquiry, RegistrationEnquiryDirectory } from './RegistrationEnquiries.jsx'
 import { RegistrationTicket, TicketDownloadButton } from './ParticipantPortal.jsx'
 import { hasEventRegistration, useExistingRegistrations } from './useExistingRegistrations.js'
 import { HACKATHON_REGISTRATION_OPEN, blankTeamMember, hackathonChallengeAreas, hackathonTrackOptions, industrySectors, initialHackathonForm, initialPanelForm, instagramProfileUrl, organisationTypes, panelOptions, participantTypes, validateHackathonForm, validatePanelForm, whatsappGroups } from './registrationConfig.js'
@@ -106,6 +107,7 @@ function PanelEligibilityDialog({ open, onContinue }) {
     <p>Panel Discussion registration is intended for industry delegates, experts, professionals, educators and researchers from:</p>
     <p className="panel-eligibility-sectors"><strong>Agriculture</strong><span>•</span><strong>Education</strong><span>•</span><strong>Healthcare</strong></p>
     <p className="panel-eligibility-warning">Student registrations are not accepted for this programme.</p>
+    <RegistrationEnquiry eventKey="panel" />
     <div className="panel-eligibility-actions"><button type="button" className="btn btn-primary" onClick={onContinue}>I understand — Continue</button><a className="btn btn-outline" href={PATHS.register}>Go back</a></div>
   </dialog>
 }
@@ -125,6 +127,7 @@ function HackathonInstructionsDialog({ open, onContinue }) {
     <h2 id="hackathon-instructions-title">Before you register</h2>
     <p>Read and understand the participation rules before creating your team.</p>
     <ul>{HACKATHON_REGISTRATION_RULES.map((rule) => <li key={rule}>{rule}</li>)}</ul>
+    <RegistrationEnquiry eventKey="hackathon" />
     <div className="hackathon-instructions-actions"><button type="button" className="btn btn-primary" onClick={onContinue}>I understand — Continue</button><a className="btn btn-outline" href={PATHS.register}>Go back</a></div>
   </dialog>
 }
@@ -146,6 +149,7 @@ function WorkshopRedirectDialog({ workshop, onClose }) {
     <h2 id="workshop-redirect-title">Continue to workshop registration?</h2>
     <p>You are registering for <strong>{workshop.title}</strong>, conducted by <strong>{workshop.organisation}</strong>.</p>
     <div className="workshop-redirect-notice"><strong>You will be redirected to the AJCE registration website.</strong><span>This is a paid workshop. Complete the registration and payment details on the college website.</span></div>
+    <RegistrationEnquiry eventKey="workshop" />
     <div className="workshop-redirect-actions"><a className="btn btn-primary" href={workshop.registrationUrl} rel="noopener noreferrer">Continue to Registration <span aria-hidden="true">↗</span></a><button type="button" className="btn btn-outline" onClick={() => dialogRef.current?.close()}>Cancel</button></div>
   </dialog>
 }
@@ -174,7 +178,7 @@ export function RegistrationChoicePage({ participant, onSignOut, signingOut }) {
 
   return <main id="main">
     <section className="page-header"><div className="container"><p className="eyebrow">Registration</p><h1 className="section-heading">Choose your experience</h1><p className="section-lede">Start with Day 1 panel discussions or register for the Day 2 hackathon.</p></div></section>
-    <section className="section"><div className="container"><ParticipantBar participant={participant} onSignOut={onSignOut} signingOut={signingOut} /><div className="registration-choice-grid">
+    <section className="section"><div className="container"><ParticipantBar participant={participant} onSignOut={onSignOut} signingOut={signingOut} /><RegistrationEnquiryDirectory /><div className="registration-choice-grid">
       {panelRegistered ? <article className="registration-choice registration-choice-panel is-already-registered is-registration-status" data-reveal><span className="choice-number" aria-hidden="true">01</span><span className="stamp">Day 1 · Industry Panels</span><h2>Panel Discussion Registration</h2><p>For industry delegates, experts, professionals, educators and researchers attending the Agriculture, Education or Healthcare panels.</p><div className="registered-event-preview"><strong>Panel entry</strong><p>{panelRegistration?.panelSelection || 'Your panel registration has been received.'}</p></div><div className="registration-choice-registered-row"><span className="registration-state-badge"><i aria-hidden="true"></i> Already registered</span><a href={PATHS.myRegistration}>View registration <span aria-hidden="true">→</span></a></div></article> : <a className="registration-choice registration-choice-panel" href={PATHS.registerPanel} data-reveal><span className="choice-number" aria-hidden="true">01</span><span className="stamp">Day 1 · Industry Panels</span><h2>Panel Discussion Registration</h2><p>For industry delegates, experts, professionals, educators and researchers attending the Agriculture, Education or Healthcare panels.</p><span className="choice-action">{registrationState.status === 'loading' ? 'Checking registration…' : 'Register for Panel Discussion'} <span aria-hidden="true">→</span></span></a>}
       {hackathonRegistered ? <article className="registration-choice registration-choice-hackathon is-already-registered is-registration-status" data-reveal><span className="choice-number" aria-hidden="true">02</span><span className="stamp">Day 2 · Hackathon</span><h2>Hackathon Registration</h2><p>For school and college students joining either the Technical or Non-Technical track.</p><div className="registered-event-preview"><strong>{hackathonRegistration?.teamName ? `Team · ${hackathonRegistration.teamName}` : 'Hackathon entry'}</strong><p>{hackathonRegistration?.sectorTrack ? `${hackathonRegistration.sectorTrack} · ${hackathonRegistration.solutionType}` : 'Your hackathon registration has been received.'}</p></div><div className="registration-choice-registered-row"><span className="registration-state-badge"><i aria-hidden="true"></i> Already registered</span><a href={PATHS.myRegistration}>View registration <span aria-hidden="true">→</span></a></div></article> : HACKATHON_REGISTRATION_OPEN ? <a className="registration-choice registration-choice-hackathon" href={PATHS.registerHackathon} data-reveal><span className="choice-number" aria-hidden="true">02</span><span className="stamp">Day 2 · Hackathon</span><h2>Hackathon Registration</h2><p>For school and college students joining either the Technical or Non-Technical track.</p><div className="hackathon-instruction-preview"><strong>Before you apply</strong><p>Read the hackathon instructions carefully before applying. Make sure you understand and meet every eligibility criterion and participation requirement.</p></div><span className="choice-action">Register for Hackathon <span aria-hidden="true">→</span></span></a> : <div className="registration-choice registration-choice-hackathon is-registration-closed" aria-disabled="true" data-reveal><span className="choice-number" aria-hidden="true">02</span><span className="stamp">Day 2 · Hackathon</span><h2>Hackathon Registration</h2><p>For school and college students joining the Technical or Non-Technical hackathon.</p><span className="choice-action choice-action-disabled">Registration Not Started</span><div className="registration-closed-layer"><span className="closed-status"><i aria-hidden="true"></i> Registration update</span><strong>Opening Soon</strong><small>Hackathon registration has not started yet.</small></div></div>}
     </div>

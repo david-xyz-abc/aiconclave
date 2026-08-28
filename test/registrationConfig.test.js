@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { _test as registrationApiTest } from '../functions/api/register.js'
-import { initialPanelForm, participantTypes, validatePanelForm } from '../src/features/registrations/registrationConfig.js'
+import { initialPanelForm, participantTypes, registrationEnquiries, validatePanelForm } from '../src/features/registrations/registrationConfig.js'
 
 function validPanelForm(phone) {
   return {
@@ -37,4 +37,13 @@ test('registration API stores panel phone numbers in canonical +91 format', () =
   assert.equal(registrationApiTest.normalizeIndianPhone('+91 98765 43210'), '+919876543210')
   assert.equal(registrationApiTest.normalizeIndianPhone('987654321'), null)
   assert.equal(registrationApiTest.normalizeIndianPhone('+1 9876543210'), null)
+})
+
+test('registration enquiry contacts use callable Indian phone numbers', () => {
+  assert.deepEqual(Object.keys(registrationEnquiries), ['workshop', 'panel', 'hackathon'])
+  for (const contact of Object.values(registrationEnquiries)) {
+    assert.match(contact.phone, /^\+91\d{10}$/)
+    assert.match(contact.displayPhone, /^\+91 \d{5} \d{5}$/)
+    assert.ok(contact.name)
+  }
 })

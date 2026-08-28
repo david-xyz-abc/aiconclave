@@ -3,6 +3,7 @@ import { PATHS } from '../../config/routes.js'
 import { PANEL_EVENT } from '../../config/events.js'
 import { ApiError, authApi, registrationApi } from '../../services/api.js'
 import { GOOGLE_SIGN_IN_ENABLED, SignInCard } from '../auth/AuthComponents.jsx'
+import { RegistrationEnquiryDirectory } from './RegistrationEnquiries.jsx'
 
 function ticketReference(registration) {
   const identifier = registration.id == null ? 'PENDING' : String(registration.id).padStart(5, '0')
@@ -259,6 +260,7 @@ export function MyRegistrationPage() {
 
   return <main id="main"><section className="page-header"><div className="container"><p className="eyebrow">Participant portal</p><h1 className="section-heading">My registrations</h1><p className="section-lede">Review the event details recorded for your verified Google account.</p></div></section><section className="section"><div className="container">
     <div className="participant-bar participant-portal-bar"><span className="participant-status-dot" aria-hidden="true"></span><div><small>Signed in as</small><strong>{state.participant.displayName || state.participant.email}</strong><span>{state.participant.email}</span></div><button type="button" className="text-button" onClick={signOut}>Sign out</button></div>
+    <RegistrationEnquiryDirectory />
     {state.registrations.length ? <div className="registration-records">{state.registrations.map((registration) => <RegistrationDetail registration={registration} key={`${registration.type}-${registration.id}`} />)}</div> : <div className="empty-registration"><span className="stamp">No registrations yet</span><h2>Choose your first event.</h2><p>Once you submit a registration, its complete details will appear here.</p><a className="btn btn-primary" href={PATHS.register}>Choose an event <span aria-hidden="true">→</span></a></div>}
   </div></section></main>
 }
