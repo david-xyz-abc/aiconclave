@@ -867,15 +867,28 @@
   background: #fff;
 }
 
-.registration-enquiry-directory > details {
+.registration-enquiry-desktop {
+  display: grid;
+  grid-template-columns: minmax(12rem, 0.7fr) minmax(0, 2fr);
+  align-items: stretch;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.registration-enquiry-desktop .registration-enquiry-list {
+  display: grid;
+}
+
+.registration-enquiry-mobile {
+  display: none;
   min-width: 0;
 }
 
-.registration-enquiry-directory summary {
+.registration-enquiry-mobile summary {
   list-style: none;
 }
 
-.registration-enquiry-directory summary::-webkit-details-marker {
+.registration-enquiry-mobile summary::-webkit-details-marker {
   display: none;
 }
 
@@ -954,11 +967,15 @@
 }
 
 @media (max-width: 820px) {
-  .registration-enquiry-directory > details {
+  .registration-enquiry-desktop {
+    display: none;
+  }
+
+  .registration-enquiry-mobile {
     display: block;
   }
 
-  .registration-enquiry-directory summary {
+  .registration-enquiry-mobile summary {
     display: flex;
     min-height: 4.5rem;
     align-items: center;
@@ -997,7 +1014,7 @@
     transition: transform 0.2s ease;
   }
 
-  .registration-enquiry-directory details[open] .registration-enquiry-toggle i {
+  .registration-enquiry-mobile[open] .registration-enquiry-toggle i {
     transform: rotate(225deg) translate(-0.1rem, -0.1rem);
   }
 
@@ -1005,19 +1022,19 @@
     display: none;
   }
 
-  .registration-enquiry-directory details[open] .when-open {
+  .registration-enquiry-mobile[open] .when-open {
     display: inline;
   }
 
-  .registration-enquiry-directory details[open] .when-closed {
+  .registration-enquiry-mobile[open] .when-closed {
     display: none;
   }
 
-  .registration-enquiry-directory details:not([open]) > .registration-enquiry-list {
+  .registration-enquiry-mobile:not([open]) > .registration-enquiry-list {
     display: none;
   }
 
-  .registration-enquiry-directory details[open] > .registration-enquiry-list {
+  .registration-enquiry-mobile[open] > .registration-enquiry-list {
     grid-template-columns: 1fr;
     display: grid;
     padding: 0 1rem 1rem;
@@ -1026,20 +1043,6 @@
   .registration-enquiry.is-compact {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-  }
-}
-
-@media (min-width: 821px) {
-  .registration-enquiry-directory > details {
-    display: grid;
-    grid-template-columns: minmax(12rem, 0.7fr) minmax(0, 2fr);
-    align-items: stretch;
-    gap: 1rem;
-    padding: 1rem;
-  }
-
-  .registration-enquiry-directory details > .registration-enquiry-list {
-    display: grid !important;
   }
 }
 
