@@ -868,15 +868,31 @@
 }
 
 .registration-enquiry-desktop {
-  display: grid;
-  grid-template-columns: minmax(12rem, 0.7fr) minmax(0, 2fr);
-  align-items: stretch;
-  gap: 1rem;
-  padding: 1rem;
+  display: block;
 }
 
-.registration-enquiry-desktop .registration-enquiry-list {
+.registration-enquiry-desktop summary {
+  display: flex;
+  min-height: 6rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.registration-enquiry-desktop summary::-webkit-details-marker {
+  display: none;
+}
+
+.registration-enquiry-desktop:not([open]) > .registration-enquiry-list {
+  display: none;
+}
+
+.registration-enquiry-desktop[open] > .registration-enquiry-list {
   display: grid;
+  padding: 0 1.5rem 1.25rem;
 }
 
 .registration-enquiry-mobile {
@@ -911,6 +927,39 @@
 }
 
 .registration-enquiry-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: #126135;
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.registration-enquiry-toggle i {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg) translateY(-0.15rem);
+  transition: transform 0.2s ease;
+}
+
+.registration-enquiry-toggle .when-open {
+  display: none;
+}
+
+.registration-enquiry-desktop[open] .registration-enquiry-toggle i {
+  transform: rotate(225deg) translate(-0.1rem, -0.1rem);
+}
+
+.registration-enquiry-desktop[open] .when-open {
+  display: inline;
+}
+
+.registration-enquiry-desktop[open] .when-closed {
   display: none;
 }
 
@@ -993,33 +1042,8 @@
     font-size: 1rem;
   }
 
-  .registration-enquiry-toggle {
-    display: flex;
-    align-items: center;
-    gap: 0.55rem;
-    color: #126135;
-    font-family: var(--font-display);
-    font-size: 0.68rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    white-space: nowrap;
-  }
-
-  .registration-enquiry-toggle i {
-    width: 0.55rem;
-    height: 0.55rem;
-    border-right: 2px solid currentColor;
-    border-bottom: 2px solid currentColor;
-    transform: rotate(45deg) translateY(-0.15rem);
-    transition: transform 0.2s ease;
-  }
-
   .registration-enquiry-mobile[open] .registration-enquiry-toggle i {
     transform: rotate(225deg) translate(-0.1rem, -0.1rem);
-  }
-
-  .registration-enquiry-toggle .when-open {
-    display: none;
   }
 
   .registration-enquiry-mobile[open] .when-open {

@@ -14,12 +14,12 @@ export function RegistrationEnquiryDirectory() {
   const contactKeys = Object.keys(registrationEnquiries)
 
   return <section className="registration-enquiry-directory" aria-label="Registration enquiries">
-    <div className="registration-enquiry-desktop">
-      <div className="registration-enquiry-heading"><span className="eyebrow">Need help?</span><h2>Registration enquiries</h2></div>
+    <details className="registration-enquiry-desktop">
+      <summary><span className="registration-enquiry-heading"><span className="eyebrow">Need help?</span><h2>Registration enquiries</h2></span><span className="registration-enquiry-toggle"><span className="when-closed">View contacts</span><span className="when-open">Hide contacts</span><i aria-hidden="true"></i></span></summary>
       <div className="registration-enquiry-list">
         {contactKeys.map((eventKey) => <RegistrationEnquiry eventKey={eventKey} compact key={eventKey} />)}
       </div>
-    </div>
+    </details>
     <details className="registration-enquiry-mobile">
       <summary><span className="registration-enquiry-heading"><span className="eyebrow">Need help?</span><h2>Registration enquiries</h2></span><span className="registration-enquiry-toggle"><span className="when-closed">View contacts</span><span className="when-open">Hide contacts</span><i aria-hidden="true"></i></span></summary>
       <div className="registration-enquiry-list">
