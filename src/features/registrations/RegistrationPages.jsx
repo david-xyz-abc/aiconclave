@@ -56,6 +56,24 @@ const WORKSHOPS = [
     handsOn: false,
     registrationUrl: 'https://e.ajce.in/wyqzwn',
   },
+  {
+    id: 'build-and-ship-ai-products',
+    title: 'Build and Ship Products with AI',
+    organisation: 'Creator of JioBase',
+    banner: '/workshops/sunith-vs-landscape.png',
+    resourcePeople: 'Sunith VS (TrueVibeCoder)',
+    handsOn: true,
+    registrationUrl: 'https://e.ajce.in/b10rxz',
+  },
+  {
+    id: 'agentic-ai-zero-to-one',
+    title: 'Agentic AI: From Zero to One',
+    organisation: 'AI Engineer and Researcher',
+    banner: '/workshops/alosh-denny-landscape.png',
+    resourcePeople: 'Alosh Denny',
+    handsOn: true,
+    registrationUrl: 'https://e.ajce.in/7tn6rb',
+  },
 ]
 
 function FieldError({ id, message }) {
@@ -147,7 +165,7 @@ function WorkshopRedirectDialog({ workshop, onClose }) {
   return <dialog ref={dialogRef} className="workshop-redirect-dialog" aria-labelledby="workshop-redirect-title" onClose={onClose}>
     <span className="stamp">Paid workshop</span>
     <h2 id="workshop-redirect-title">Continue to workshop registration?</h2>
-    <p>You are registering for <strong>{workshop.title}</strong>, conducted by <strong>{workshop.organisation}</strong>.</p>
+    <p>You are registering for <strong>{workshop.title}</strong>{workshop.banner ? <> with <strong>{workshop.resourcePeople}</strong>, {workshop.organisation}.</> : <>, conducted by <strong>{workshop.organisation}</strong>.</>}</p>
     <div className="workshop-redirect-notice"><strong>You will be redirected to the AJCE registration website.</strong><span>This is a paid workshop. Complete the registration and payment details on the college website.</span></div>
     <RegistrationEnquiry eventKey="workshop" />
     <div className="workshop-redirect-actions"><a className="btn btn-primary" href={workshop.registrationUrl} rel="noopener noreferrer">Continue to Registration <span aria-hidden="true">↗</span></a><button type="button" className="btn btn-outline" onClick={() => dialogRef.current?.close()}>Cancel</button></div>
@@ -185,9 +203,11 @@ export function RegistrationChoicePage({ participant, onSignOut, signingOut }) {
     <section className="workshop-registration-section" aria-label="Workshop registrations">
       <div className="workshop-registration-grid">{WORKSHOPS.map((workshop, index) => <article className="workshop-registration-card" key={workshop.id}>
         <header><span className="workshop-number">Workshop {String(index + 1).padStart(2, '0')}</span><div className="workshop-badges"><span>Paid Workshop</span>{workshop.handsOn && <strong>Hands-on</strong>}</div></header>
-        <div className="workshop-organisation"><img src={workshop.logo} alt={`${workshop.organisation} logo`} loading="lazy" decoding="async" /><div><small>Conducted by</small><strong>{workshop.organisation}</strong></div></div>
+        {workshop.banner
+          ? <div className="workshop-poster"><img src={workshop.banner} alt={`${workshop.title} workshop poster featuring ${workshop.resourcePeople}`} loading="lazy" decoding="async" /></div>
+          : <div className="workshop-organisation"><img src={workshop.logo} alt={`${workshop.organisation} logo`} loading="lazy" decoding="async" /><div><small>Conducted by</small><strong>{workshop.organisation}</strong></div></div>}
         <h3>{workshop.title}</h3>
-        <div className="workshop-resource"><small>Resource {workshop.resourcePeople.includes(' and ') ? 'people' : 'person'}</small><span>{workshop.resourcePeople}</span></div>
+        {!workshop.banner && <div className="workshop-resource"><small>Resource {workshop.resourcePeople.includes(' and ') ? 'people' : 'person'}</small><span>{workshop.resourcePeople}</span></div>}
         <button type="button" className="btn btn-primary workshop-register-button" onClick={() => setSelectedWorkshop(workshop)}>Register for Workshop <span aria-hidden="true">→</span></button>
       </article>)}</div>
     </section>
