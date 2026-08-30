@@ -1,4 +1,8 @@
-import { formatDate, parseTracks } from "../../utils/registration.js";
+import {
+  formatDate,
+  formatParticipantType,
+  parseTracks,
+} from "../../utils/registration.js";
 
 function TableState({ children }) {
   return <div className="table-state">{children}</div>;
@@ -49,7 +53,7 @@ export function PanelTable({ registrations, loading, onOpen }) {
               </td>
               <td data-label="Type">
                 <span className="category-mark">
-                  {registration.participant_type}
+                  {formatParticipantType(registration.participant_type)}
                 </span>
               </td>
               <td data-label="Organisation">

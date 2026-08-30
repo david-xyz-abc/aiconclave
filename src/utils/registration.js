@@ -20,6 +20,12 @@ export function displayValue(value) {
     : value;
 }
 
+export function formatParticipantType(value) {
+  return value === "Other"
+    ? "Other (Agriculture, Education or Healthcare Delegate)"
+    : value;
+}
+
 export function parseTracks(value) {
   if (Array.isArray(value)) return value;
   try {
@@ -41,6 +47,7 @@ export function searchableRegistrationText(registration) {
     registration.email,
     registration.phone,
     registration.participant_type,
+    formatParticipantType(registration.participant_type),
     registration.organisation,
     registration.department,
     registration.panel_selection,

@@ -1,3 +1,5 @@
+import { formatParticipantType } from "../utils/registration.js";
+
 const THEME = {
   red: "FFFF2525",
   black: "FF090909",
@@ -125,7 +127,7 @@ function createPanelSheet(registrations, generatedAt) {
     name: text(item.name),
     email: text(item.email),
     phone: text(item.phone),
-    participantType: text(item.participant_type),
+    participantType: text(formatParticipantType(item.participant_type)),
     organisation: text(item.organisation),
     department: text(item.department),
     panel: text(item.panel_selection),

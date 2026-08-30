@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import {
   displayValue,
   formatDate,
+  formatParticipantType,
   parseTracks,
 } from "../../utils/registration.js";
 
@@ -176,7 +177,7 @@ export function RegistrationDetails({
               <a href={`tel:${registration.phone}`}>{registration.phone}</a>
             </DetailItem>
             <DetailItem label="Participant type" important>
-              {registration.participant_type}
+              {formatParticipantType(registration.participant_type)}
             </DetailItem>
             <DetailItem label="Registered">
               {formatDate(registration.created_at)}

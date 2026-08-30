@@ -1,3 +1,5 @@
+import { formatParticipantType } from "../../utils/registration.js";
+
 export function RegistrationFilters({
   routeId,
   query,
@@ -56,7 +58,9 @@ export function RegistrationFilters({
               All {isHackathon ? "categories" : "participant types"}
             </option>
             {participantOptions.map((option) => (
-              <option key={option}>{option}</option>
+              <option key={option} value={option}>
+                {isHackathon ? option : formatParticipantType(option)}
+              </option>
             ))}
           </select>
         </label>
