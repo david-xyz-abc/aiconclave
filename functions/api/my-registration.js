@@ -46,7 +46,7 @@ export async function onRequestGet(context) {
       name: row.name,
       email: row.email,
       phone: row.phone,
-      participantType: row.participant_type,
+      participantType: row.participant_type === 'Faculty / Academic' ? 'Faculty' : row.participant_type,
       organisation: row.organisation,
       department: row.department,
       panelSelection: row.panel_selection,

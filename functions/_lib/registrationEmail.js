@@ -344,7 +344,7 @@ async function loadTicket(db, delivery) {
       filename: `ai-conclave-panel-${row.id}.pdf`,
       ticket: {
         name: row.name,
-        participantType: row.participant_type,
+        participantType: row.participant_type === 'Faculty / Academic' ? 'Faculty' : row.participant_type,
         organisation: row.organisation,
         panelSelection: row.panel_selection,
         eventLabel: 'Day 1 · Panel Discussion',

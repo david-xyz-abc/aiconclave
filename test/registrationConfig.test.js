@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { _test as registrationApiTest } from '../functions/api/register.js'
-import { initialPanelForm, participantTypes, registrationEnquiries, validatePanelForm } from '../src/features/registrations/registrationConfig.js'
+import { initialPanelForm, participantTypeLabels, participantTypes, registrationEnquiries, validatePanelForm } from '../src/features/registrations/registrationConfig.js'
 
 function validPanelForm(phone) {
   return {
@@ -9,7 +9,7 @@ function validPanelForm(phone) {
     name: 'Test Participant',
     email: 'participant@example.com',
     phone,
-    participantType: 'Faculty / Academic',
+    participantType: 'Faculty',
     organisation: 'AJCE',
     panelSelection: 'AI in Education',
     informationConfirmed: true,
@@ -30,6 +30,22 @@ test('panel registration does not offer or accept Student as a participant type'
   assert.equal(participantTypes.includes('Student'), false)
   assert.equal(validatePanelForm({ ...validPanelForm('9876543210'), participantType: 'Student' }).participantType, 'Choose your participant type.')
   assert.equal(registrationApiTest.isAllowedPanelParticipantType('Student'), false)
+})
+
+test('panel registration offers Faculty without accepting the legacy Academic option', () => {
+  assert.equal(participantTypes.includes('Faculty'), true)
+  assert.equal(participantTypes.includes('Faculty / Academic'), false)
+  assert.equal(validatePanelForm({ ...validPanelForm('9876543210'), participantType: 'Faculty' }).participantType, undefined)
+  assert.equal(validatePanelForm({ ...validPanelForm('9876543210'), participantType: 'Faculty / Academic' }).participantType, 'Choose your participant type.')
+  assert.equal(registrationApiTest.isAllowedPanelParticipantType('Faculty'), true)
+  assert.equal(registrationApiTest.isAllowedPanelParticipantType('Faculty / Academic'), false)
+})
+
+test('panel registration offers and accepts Other as a participant type', () => {
+  assert.equal(participantTypes.includes('Other'), true)
+  assert.equal(participantTypeLabels.Other, 'Other (Agriculture, Education or Healthcare Delegate)')
+  assert.equal(validatePanelForm({ ...validPanelForm('9876543210'), participantType: 'Other' }).participantType, undefined)
+  assert.equal(registrationApiTest.isAllowedPanelParticipantType('Other'), true)
 })
 
 test('registration API stores panel phone numbers in canonical +91 format', () => {

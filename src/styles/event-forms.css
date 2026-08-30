@@ -365,6 +365,17 @@
   line-height: 1.4;
 }
 
+.participant-type-warning {
+  margin: 0;
+  padding: 0.7rem 0.8rem;
+  border-left: 3px solid var(--color-signal);
+  background: rgba(255, 30, 30, 0.07);
+  color: #761b17;
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
 .form-fieldset {
   margin: 0;
   padding: 1.25rem;

@@ -13,7 +13,7 @@ const participantGroups = [
       'Food-processing, warehousing, cold-chain and agricultural supply-chain representatives',
       'Agricultural equipment manufacturers and input suppliers',
       'Representatives from NABARD, rural banks, agricultural insurance and development agencies',
-      'Students, faculty and researchers from Agriculture, Food Technology, Computer Science and related disciplines',
+      'Faculty and researchers from Agriculture, Food Technology, Computer Science and related disciplines',
       'NGOs and community organisations working with farmers and rural communities',
     ],
   },
@@ -29,7 +29,6 @@ const participantGroups = [
       'Health-tech and AI start-ups',
       'Public health officials and government health-department representatives',
       'Pharmacists and clinical laboratory professionals',
-      'Medical, dental, nursing, pharmacy and engineering students',
       'Faculty and researchers working in healthcare, AI and biomedical systems',
       'Patients, caregivers, patient-support groups and disability-support organisations',
       'NGOs working in rural health, rehabilitation and community care',
@@ -41,7 +40,6 @@ const participantGroups = [
     stamp: 'stamp-edu',
     name: 'Education',
     items: [
-      'School and college students',
       'Teachers, faculty members and academic mentors',
       'Principals, headteachers, department heads and academic administrators',
       'University leaders, curriculum designers and education policymakers',
@@ -58,6 +56,6 @@ const participantGroups = [
 ]
 
 export function ParticipatePage() {
-  return <main id="main"><section id="participants" className="section"><div className="container"><div className="section-head" data-reveal><p className="eyebrow">Who Should Attend</p><h1 className="section-heading">Built for people working across all three sectors.</h1><p className="section-lede">AI Conclave 2026 is open to anyone with a stake in how AI touches Agriculture, Health or Education — students, practitioners and decision-makers alike.</p></div><div className="participants-grid">{participantGroups.map((group) => <div id={group.id} className="participant-group" data-reveal key={group.id}><span className={`stamp ${group.stamp}`}>{group.name}</span><h2>{group.name}</h2><ul className="participant-list">{group.items.map((item) => <li key={item}>{item}</li>)}</ul></div>)}</div></div></section></main>
+  return <main id="main"><section id="participants" className="section"><div className="container"><div className="section-head" data-reveal><p className="eyebrow">Who Should Attend</p><h1 className="section-heading">Built for people working across all three sectors.</h1><p className="section-lede">AI Conclave 2026 brings together experts, professionals, educators, researchers and decision-makers working across Agriculture, Health and Education.</p></div><div className="participants-grid">{participantGroups.map((group) => <div id={group.id} className="participant-group" data-reveal key={group.id}><span className={`stamp ${group.stamp}`}>{group.name}</span><h2>{group.name}</h2><ul className="participant-list">{group.items.map((item) => <li key={item}>{item}</li>)}</ul></div>)}</div></div></section></main>
 }
 

@@ -5,7 +5,7 @@ import { ParticipantBar } from '../auth/AuthComponents.jsx'
 import { RegistrationEnquiry, RegistrationEnquiryDirectory } from './RegistrationEnquiries.jsx'
 import { RegistrationTicket, TicketDownloadButton } from './ParticipantPortal.jsx'
 import { hasEventRegistration, useExistingRegistrations } from './useExistingRegistrations.js'
-import { HACKATHON_REGISTRATION_OPEN, blankTeamMember, hackathonChallengeAreas, hackathonTrackOptions, industrySectors, initialHackathonForm, initialPanelForm, instagramProfileUrl, organisationTypes, panelOptions, participantTypes, validateHackathonForm, validatePanelForm, whatsappGroups } from './registrationConfig.js'
+import { HACKATHON_REGISTRATION_OPEN, blankTeamMember, hackathonChallengeAreas, hackathonTrackOptions, industrySectors, initialHackathonForm, initialPanelForm, instagramProfileUrl, organisationTypes, panelOptions, participantTypeLabels, participantTypes, validateHackathonForm, validatePanelForm, whatsappGroups } from './registrationConfig.js'
 
 const HACKATHON_REGISTRATION_RULES = [
   'Teams must include 2 to 4 school or college students.',
@@ -437,7 +437,23 @@ export function PanelRegisterPage({ participant }) {
             <div className="form-field participant-name"><label htmlFor="panel-name">Full Name *</label><input id="panel-name" name="name" type="text" autoComplete="name" required value={form.name} onChange={updateField} aria-invalid={Boolean(fieldErrors.name)} aria-describedby={fieldErrors.name ? 'panel-name-error' : undefined} /><FieldError id="panel-name-error" message={fieldErrors.name} /></div>
             <div className="form-field participant-email"><label htmlFor="panel-email">{participant.isPreview ? 'Email Address *' : 'Verified Google Email'}</label><input className={participant.isPreview ? undefined : 'verified-email-input'} id="panel-email" name="email" type="email" autoComplete="email" readOnly={!participant.isPreview} required value={form.email} onChange={participant.isPreview ? updateField : undefined} aria-invalid={Boolean(fieldErrors.email)} aria-describedby={fieldErrors.email ? 'panel-email-error' : participant.isPreview ? undefined : 'panel-email-hint'} />{!participant.isPreview && <p className="field-hint" id="panel-email-hint">Connected securely through Google Sign-In.</p>}<FieldError id="panel-email-error" message={fieldErrors.email} /></div>
             <div className="form-field participant-phone"><label htmlFor="panel-phone">Phone Number *</label><div className={`india-phone-input${fieldErrors.phone ? ' has-error' : ''}`}><span aria-hidden="true">+91</span><input id="panel-phone" name="phone" type="tel" inputMode="numeric" autoComplete="tel-national" maxLength={10} pattern="[0-9]{10}" placeholder="9876543210" required value={form.phone} onChange={updateField} aria-invalid={Boolean(fieldErrors.phone)} aria-describedby={fieldErrors.phone ? 'panel-phone-error' : 'panel-phone-hint'} /></div><p className="field-hint" id="panel-phone-hint">Enter exactly 10 digits after +91.</p><FieldError id="panel-phone-error" message={fieldErrors.phone} /></div>
-            <div className="form-field participant-type"><label htmlFor="panel-participant-type">Participant Type *</label><select id="panel-participant-type" name="participantType" required value={form.participantType} onChange={updateField} aria-invalid={Boolean(fieldErrors.participantType)} aria-describedby={fieldErrors.participantType ? 'participant-type-error' : undefined}><option value="" disabled>Select participant type</option>{participantTypes.map((type) => <option value={type} key={type}>{type}</option>)}</select><FieldError id="participant-type-error" message={fieldErrors.participantType} /></div>
+            <div className="form-field participant-type">
+              <label htmlFor="panel-participant-type">Participant Type *</label>
+              <select
+                id="panel-participant-type"
+                name="participantType"
+                required
+                value={form.participantType}
+                onChange={updateField}
+                aria-invalid={Boolean(fieldErrors.participantType)}
+                aria-describedby={fieldErrors.participantType ? 'participant-type-error' : form.participantType === 'Other' ? 'participant-type-other-warning' : undefined}
+              >
+                <option value="" disabled>Select participant type</option>
+                {participantTypes.map((type) => <option value={type} key={type}>{participantTypeLabels[type] ?? type}</option>)}
+              </select>
+              {form.participantType === 'Other' && <p className="participant-type-warning" id="participant-type-other-warning" role="status">Panel Discussion registration is not open to students. Select “Other” only if you are a non-student delegate or sector representative.</p>}
+              <FieldError id="participant-type-error" message={fieldErrors.participantType} />
+            </div>
             <div className="form-field participant-organisation"><label htmlFor="panel-organisation">College / Institution / Organization *</label><input id="panel-organisation" name="organisation" type="text" autoComplete="organization" required value={form.organisation} onChange={updateField} aria-invalid={Boolean(fieldErrors.organisation)} aria-describedby={fieldErrors.organisation ? 'panel-organisation-error' : undefined} /><FieldError id="panel-organisation-error" message={fieldErrors.organisation} /></div>
             <div className="form-field participant-department"><label htmlFor="panel-department">Department / Branch</label><input id="panel-department" name="department" type="text" value={form.department} onChange={updateField} /></div>
           </div>

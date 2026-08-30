@@ -74,7 +74,10 @@ export const hackathonChallengeAreas = Object.freeze({
   },
 })
 
-export const participantTypes = ['Faculty / Academic', 'Professional / Industry Delegate', 'Researcher', 'Other']
+export const participantTypes = ['Faculty', 'Professional / Industry Delegate', 'Researcher', 'Other']
+export const participantTypeLabels = {
+  Other: 'Other (Agriculture, Education or Healthcare Delegate)',
+}
 export const panelOptions = ['AI in Agriculture', 'AI in Education', 'AI in Healthcare']
 export const industrySectors = ['Agriculture', 'Education', 'Healthcare', 'IT / Technology', 'Government', 'Other']
 export const organisationTypes = ['Startup', 'MSME', 'Corporate', 'Government', 'Academic Institution', 'Research Organization', 'NGO', 'Other']

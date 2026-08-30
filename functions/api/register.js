@@ -3,7 +3,7 @@ import { enforceParticipantRegistrationLimit } from '../_lib/rateLimit.js'
 import { queueRegistrationEmail } from '../_lib/registrationEmail.js'
 import { getParticipantSession } from '../_lib/session.js'
 
-const ALLOWED_PARTICIPANT_TYPES = new Set(['Faculty / Academic', 'Professional / Industry Delegate', 'Researcher', 'Other'])
+const ALLOWED_PARTICIPANT_TYPES = new Set(['Faculty', 'Professional / Industry Delegate', 'Researcher', 'Other'])
 const ALLOWED_PANELS = new Set(['AI in Agriculture', 'AI in Education', 'AI in Healthcare'])
 const ALLOWED_SECTORS = new Set(['', 'Agriculture', 'Education', 'Healthcare', 'IT / Technology', 'Government', 'Other'])
 const ALLOWED_ORGANISATION_TYPES = new Set(['', 'Startup', 'MSME', 'Corporate', 'Government', 'Academic Institution', 'Research Organization', 'NGO', 'Other'])
@@ -81,6 +81,7 @@ export async function onRequestPost(context) {
     const phoneInput = trimStr(body.phone, MAX_LEN.phone)
     const phone = normalizeIndianPhone(phoneInput)
     const participantType = trimStr(body.participantType, 80)
+    const storedParticipantType = participantType === 'Faculty' ? 'Faculty / Academic' : participantType
     const organisation = trimStr(body.organisation, MAX_LEN.organisation)
     const department = trimStr(body.department, 160)
     const panelSelection = trimStr(body.panelSelection, 80)
@@ -112,7 +113,7 @@ export async function onRequestPost(context) {
 
       const siteOrigin = new URL(context.request.url).origin
       await db.batch([
-        db.prepare(`INSERT INTO panel_registrations (name, email, phone, participant_type, organisation, department, panel_selection, industry_sector, industry_sector_other, organisation_type, organisation_type_other, information_confirmed, updates_opt_in, participant_account_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(name, email, phone, participantType, organisation, department, panelSelection, industrySector, industrySectorOther, organisationType, organisationTypeOther, 1, updatesOptIn ? 1 : 0, participant.id),
+        db.prepare(`INSERT INTO panel_registrations (name, email, phone, participant_type, organisation, department, panel_selection, industry_sector, industry_sector_other, organisation_type, organisation_type_other, information_confirmed, updates_opt_in, participant_account_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(name, email, phone, storedParticipantType, organisation, department, panelSelection, industrySector, industrySectorOther, organisationType, organisationTypeOther, 1, updatesOptIn ? 1 : 0, participant.id),
         db.prepare(`
           INSERT INTO registration_email_deliveries (
             dedupe_key, registration_type, registration_id, site_origin
