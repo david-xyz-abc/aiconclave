@@ -21,9 +21,11 @@ export function displayValue(value) {
 }
 
 export function formatParticipantType(value) {
-  return value === "Other"
-    ? "Other (Agriculture, Education or Healthcare Delegate)"
-    : value;
+  if (value === "Faculty / Academic") return "Faculty";
+  if (value === "Other") {
+    return "Other (Agriculture, Education or Healthcare Delegate)";
+  }
+  return value;
 }
 
 export function parseTracks(value) {
