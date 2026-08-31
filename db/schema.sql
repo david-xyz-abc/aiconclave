@@ -22,6 +22,8 @@ CREATE TABLE IF NOT EXISTS panel_registrations (
   organisation_type_other TEXT NOT NULL DEFAULT '',
   information_confirmed INTEGER NOT NULL DEFAULT 0 CHECK (information_confirmed IN (0, 1)),
   updates_opt_in INTEGER NOT NULL DEFAULT 0 CHECK (updates_opt_in IN (0, 1)),
+  edit_version INTEGER NOT NULL DEFAULT 1,
+  last_edit_request_id TEXT NOT NULL DEFAULT '',
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   CHECK (industry_sector <> 'Other' OR length(trim(industry_sector_other)) > 0),
   CHECK (organisation_type <> 'Other' OR length(trim(organisation_type_other)) > 0)
@@ -52,6 +54,8 @@ CREATE TABLE IF NOT EXISTS hackathon_registrations (
   idea_summary TEXT NOT NULL DEFAULT '',
   information_confirmed INTEGER NOT NULL DEFAULT 0 CHECK (information_confirmed IN (0, 1)),
   participant_account_id INTEGER,
+  edit_version INTEGER NOT NULL DEFAULT 1,
+  last_edit_request_id TEXT NOT NULL DEFAULT '',
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
 );
 
@@ -87,6 +91,8 @@ CREATE TABLE IF NOT EXISTS hackathon_teams (
   updates_opt_in INTEGER NOT NULL DEFAULT 0 CHECK (updates_opt_in IN (0, 1)),
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
   updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  edit_version INTEGER NOT NULL DEFAULT 1,
+  last_edit_request_id TEXT NOT NULL DEFAULT '',
   submitted_at TEXT,
   FOREIGN KEY (captain_account_id) REFERENCES participant_accounts(id)
 );
@@ -106,6 +112,8 @@ CREATE TABLE IF NOT EXISTS hackathon_team_members (
   year_or_grade TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
   updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  edit_version INTEGER NOT NULL DEFAULT 1,
+  last_edit_request_id TEXT NOT NULL DEFAULT '',
   FOREIGN KEY (team_id) REFERENCES hackathon_teams(id) ON DELETE CASCADE,
   FOREIGN KEY (account_id) REFERENCES participant_accounts(id) ON DELETE SET NULL,
   UNIQUE (team_id, member_order),
@@ -134,6 +142,7 @@ CREATE TABLE IF NOT EXISTS admin_users (
   password_hash TEXT NOT NULL,
   password_salt TEXT NOT NULL,
   password_iterations INTEGER NOT NULL,
+  role TEXT NOT NULL DEFAULT 'admin' CHECK (role IN ('viewer', 'editor', 'admin')),
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -147,3 +156,23 @@ CREATE TABLE IF NOT EXISTS admin_sessions (
 
 CREATE INDEX IF NOT EXISTS idx_admin_sessions_expires_at
   ON admin_sessions (expires_at);
+
+CREATE TABLE IF NOT EXISTS admin_registration_audit (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  request_id TEXT NOT NULL UNIQUE,
+  admin_user_id INTEGER NOT NULL,
+  admin_username TEXT NOT NULL,
+  registration_type TEXT NOT NULL CHECK (registration_type IN ('panel', 'hackathon')),
+  record_type TEXT NOT NULL CHECK (record_type IN ('panel', 'team', 'legacy')),
+  registration_id INTEGER NOT NULL,
+  before_json TEXT NOT NULL CHECK (json_valid(before_json)),
+  after_json TEXT NOT NULL CHECK (json_valid(after_json)),
+  changed_fields_json TEXT NOT NULL CHECK (json_valid(changed_fields_json)),
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_admin_registration_audit_registration
+  ON admin_registration_audit (registration_type, record_type, registration_id, created_at);
+
+CREATE INDEX IF NOT EXISTS idx_admin_registration_audit_admin
+  ON admin_registration_audit (admin_user_id, created_at);

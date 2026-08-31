@@ -34,6 +34,6 @@ export default function App() {
       <LoginPage onLogin={(user) => setSession({ loading: false, user })} />
     );
   return (
-    <Dashboard route={route} onNavigate={navigate} onLogout={clearSession} />
+    <Dashboard user={session.user} route={route} onNavigate={navigate} onLogout={clearSession} />
   );
 }

@@ -13,7 +13,11 @@ import { EmptyRegistrationSection } from "../registrations/EmptyRegistrationSect
 import { RegistrationDetails } from "../registrations/RegistrationDetails.jsx";
 import { RegistrationDirectory } from "../registrations/RegistrationDirectory.jsx";
 
-export function Dashboard({ route, onNavigate, onLogout }) {
+export function Dashboard({ user, route, onNavigate, onLogout }) {
+  // Accounts created before role-based access was introduced were all dashboard
+  // administrators. Preserve their existing permissions until the migration
+  // supplies the explicit `admin` role.
+  const userRole = user?.role || "admin";
   const {
     registrations,
     summary,
@@ -22,9 +26,11 @@ export function Dashboard({ route, onNavigate, onLogout }) {
     error,
     setError,
     removeRegistration,
+    updateRegistration,
   } = useDashboardData(route.id, onLogout);
   const [selectedRegistration, setSelectedRegistration] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [savingId, setSavingId] = useState(null);
   const [exporting, setExporting] = useState("");
   const [exportError, setExportError] = useState("");
   useEffect(() => {
@@ -50,6 +56,20 @@ export function Dashboard({ route, onNavigate, onLogout }) {
       else setError(deleteError.message);
     } finally {
       setDeletingId(null);
+    }
+  }
+  async function saveRegistration(registration, payload) {
+    setError("");
+    setSavingId(registration.id);
+    try {
+      const updated = await updateRegistration(route.id, registration, payload);
+      setSelectedRegistration(updated);
+      return updated;
+    } catch (saveError) {
+      if (isUnauthorized(saveError)) onLogout();
+      throw saveError;
+    } finally {
+      setSavingId(null);
     }
   }
   async function logout() {
@@ -132,8 +152,12 @@ export function Dashboard({ route, onNavigate, onLogout }) {
       <RegistrationDetails
         registration={selectedRegistration}
         registrationType={route.id}
+        canEdit={new Set(["editor", "admin"]).has(userRole)}
+        canDelete={userRole === "admin"}
         onClose={closeDetails}
+        onUpdate={saveRegistration}
         onDelete={deleteRegistration}
+        saving={savingId === selectedRegistration?.id}
         deleting={deletingId === selectedRegistration?.id}
       />
     </div>

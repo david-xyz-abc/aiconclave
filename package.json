@@ -8,7 +8,8 @@
     "dev:pages": "npm run build && npx --yes wrangler@4.38.0 pages dev dist --port 5174",
     "dev:vite": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",

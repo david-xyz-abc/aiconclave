@@ -10,7 +10,7 @@ export async function onRequestGet(context) {
       },
     });
   return new Response(
-    JSON.stringify({ ok: true, user: { username: session.username } }),
+    JSON.stringify({ ok: true, user: { username: session.username, role: session.role } }),
     {
       headers: {
         "content-type": "application/json",

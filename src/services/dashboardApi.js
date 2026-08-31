@@ -1,8 +1,10 @@
 class DashboardApiError extends Error {
-  constructor(message, status) {
+  constructor(message, status, details = {}) {
     super(message);
     this.name = "DashboardApiError";
     this.status = status;
+    this.code = details.code || "";
+    this.fields = details.fields || {};
   }
 }
 
@@ -19,6 +21,7 @@ async function requestJson(path, options) {
     throw new DashboardApiError(
       data.error || "The request could not be completed.",
       response.status,
+      data,
     );
   }
   return data;
@@ -45,6 +48,15 @@ export const registrationsApi = {
     requestJson(
       `/api/registrations/${encodeURIComponent(id)}?type=${encodeURIComponent(registrationType)}&record_type=${encodeURIComponent(recordType || registrationType)}`,
       { method: "DELETE" },
+    ),
+  update: (registrationType, id, recordType, payload) =>
+    requestJson(
+      `/api/registrations/${encodeURIComponent(id)}?type=${encodeURIComponent(registrationType)}&record_type=${encodeURIComponent(recordType || registrationType)}`,
+      {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      },
     ),
 };
 

@@ -169,6 +169,29 @@ td a { text-decoration-thickness: 1px; text-underline-offset: .2em; }
 .detail-item-important dd a { text-decoration-thickness: 1.5px; text-underline-offset: .22em; }
 .detail-item-important .panel-mark { padding: .42rem .6rem; font-size: .88rem; font-weight: 600; }
 .detail-actions { display: flex; justify-content: space-between; gap: 1rem; margin-top: 2rem; }
+.detail-actions-top { margin: 1rem 0; padding-bottom: 1rem; border-bottom: 1px solid var(--line); }
+.detail-manage-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .75rem; }
+.detail-save-success { margin: 1rem 0 0; padding: .8rem 1rem; border-left: 4px solid var(--green); background: rgba(22, 112, 68, .08); color: var(--green); font: 600 .72rem/1.45 var(--mono); }
+.registration-edit-form { display: grid; gap: 1.25rem; margin-top: 1.25rem; }
+.edit-notice { display: grid; gap: .25rem; padding: .9rem 1rem; border-left: 4px solid var(--signal); background: var(--signal-soft); }
+.edit-notice strong { font: 600 .78rem/1.25 var(--mono); text-transform: uppercase; }
+.edit-notice span { color: var(--muted); font-size: .82rem; }
+.edit-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .9rem; }
+.edit-field { display: grid; min-width: 0; align-content: start; gap: .38rem; color: var(--muted); font: 600 .62rem/1.25 var(--mono); letter-spacing: .07em; text-transform: uppercase; }
+.edit-field-wide { grid-column: 1 / -1; }
+.edit-field input, .edit-field select, .edit-field textarea { width: 100%; min-width: 0; min-height: 2.8rem; border: 1px solid var(--line-strong); border-radius: 0; padding: .68rem .75rem; resize: vertical; background: #fff; color: var(--text); font: .86rem/1.35 var(--sans); letter-spacing: 0; text-transform: none; }
+.edit-field input:disabled { background: var(--surface); color: var(--muted); cursor: not-allowed; }
+.edit-field small { color: #a60000; font: 600 .68rem/1.35 var(--sans); letter-spacing: 0; text-transform: none; }
+.edit-checkbox { display: flex; align-items: flex-start; gap: .65rem; padding: .75rem; border: 1px solid var(--line); background: #fff; font-size: .86rem; }
+.edit-checkbox input { width: 1rem; height: 1rem; margin-top: .15rem; accent-color: var(--signal); }
+.edit-members { display: grid; gap: 1rem; }
+.edit-members-heading { display: grid; gap: .25rem; padding-bottom: .7rem; border-bottom: 3px solid var(--text); }
+.edit-members-heading span { font: 600 1.05rem/1.2 var(--mono); }
+.edit-members-heading small { color: var(--muted); }
+.edit-member { margin: 0; padding: 1rem; border: 1px solid var(--line-strong); }
+.edit-member legend { padding: 0 .45rem; color: var(--signal); font: 600 .7rem/1.2 var(--mono); text-transform: uppercase; }
+.edit-form-error { margin: 0; padding: .75rem .9rem; border-left: 4px solid #a60000; background: rgba(166, 0, 0, .07); color: #8f0000; font: 600 .72rem/1.45 var(--mono); }
+.edit-form-actions { display: flex; justify-content: flex-end; gap: .75rem; padding-top: 1rem; border-top: 1px solid var(--line); }
 .team-members { margin-top: 2rem; }
 .team-members-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; padding-bottom: .85rem; border-bottom: 3px solid var(--text); }
 .team-members-head .eyebrow { grid-column: 1 / -1; }
@@ -281,6 +304,11 @@ td a { text-decoration-thickness: 1px; text-underline-offset: .2em; }
   .detail-item-important dd { font-size: .96rem; }
   .detail-actions { flex-direction: column-reverse; }
   .detail-actions .button { width: 100%; }
+  .detail-manage-actions { display: grid; width: 100%; }
+  .edit-form-grid { grid-template-columns: 1fr; }
+  .edit-field-wide { grid-column: auto; }
+  .edit-form-actions { display: grid; }
+  .edit-form-actions .button { width: 100%; }
   .team-member-card dl { grid-template-columns: 1fr; margin-left: 0; }
   .team-member-card dl > div:nth-child(3) { grid-column: auto; }
 }

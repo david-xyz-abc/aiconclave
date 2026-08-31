@@ -87,6 +87,30 @@ export function useDashboardData(routeId, onUnauthorized) {
     [],
   );
 
+  const updateRegistration = useCallback(
+    async (registrationType, registration, payload) => {
+      const data = await registrationsApi.update(
+        registrationType,
+        registration.id,
+        registration.record_type,
+        payload,
+      );
+      const updated = data.registration;
+      setDirectories((current) => ({
+        ...current,
+        [registrationType]: (current[registrationType] || []).map((item) =>
+          item.id === registration.id &&
+          (registrationType !== "hackathon" || item.record_type === registration.record_type)
+            ? updated
+            : item,
+        ),
+      }));
+      setOverview(null);
+      return updated;
+    },
+    [],
+  );
+
   return {
     registrations: directories[routeId] || [],
     summary: overview?.summary || EMPTY_SUMMARY,
@@ -95,5 +119,6 @@ export function useDashboardData(routeId, onUnauthorized) {
     error,
     setError,
     removeRegistration,
+    updateRegistration,
   };
 }

@@ -28,7 +28,7 @@ export async function loadPanelRegistrations(db, tables) {
       `SELECT id, name, email, phone, participant_type, organisation, department,
       panel_selection, industry_sector, industry_sector_other,
       organisation_type, organisation_type_other,
-      information_confirmed, updates_opt_in, created_at
+      information_confirmed, updates_opt_in, edit_version, created_at
     FROM panel_registrations
     ORDER BY datetime(created_at) DESC, id DESC`,
     )
@@ -52,6 +52,7 @@ function mapTeamRows(rows) {
         information_confirmed: row.information_confirmed,
         rules_accepted: row.rules_accepted,
         updates_opt_in: row.updates_opt_in,
+        edit_version: row.edit_version,
         submitted_at: row.submitted_at,
         created_at: row.submitted_at || row.created_at,
         members: [],
@@ -68,6 +69,7 @@ function mapTeamRows(rows) {
         institution: row.institution,
         department_or_course: row.department_or_course,
         year_or_grade: row.year_or_grade,
+        edit_version: row.member_edit_version,
       });
     }
   }
@@ -82,9 +84,10 @@ export async function loadHackathonRegistrations(db, tables) {
         `SELECT
         t.id, t.team_code, t.team_name, t.participant_category, t.team_size,
         t.sector_track, t.solution_type, t.information_confirmed,
-        t.rules_accepted, t.updates_opt_in, t.submitted_at, t.created_at,
+        t.rules_accepted, t.updates_opt_in, t.edit_version, t.submitted_at, t.created_at,
         m.id AS member_id, m.member_order, m.role, m.full_name, m.email,
-        m.phone, m.institution, m.department_or_course, m.year_or_grade
+        m.phone, m.institution, m.department_or_course, m.year_or_grade,
+        m.edit_version AS member_edit_version
       FROM hackathon_teams t
       LEFT JOIN hackathon_team_members m ON m.team_id = t.id
       WHERE t.submitted_at IS NOT NULL
@@ -98,7 +101,7 @@ export async function loadHackathonRegistrations(db, tables) {
       .prepare(
         `SELECT id, name, email, phone, participant_type, organisation, tracks,
         challenge_area, subcategory, problem_area, idea_summary,
-        information_confirmed, created_at
+        information_confirmed, edit_version, created_at
       FROM hackathon_registrations
       ORDER BY datetime(created_at) DESC, id DESC`,
       )

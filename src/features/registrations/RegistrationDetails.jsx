@@ -1,10 +1,11 @@
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   displayValue,
   formatDate,
   formatParticipantType,
   parseTracks,
 } from "../../utils/registration.js";
+import { RegistrationEditForm } from "./RegistrationEditForm.jsx";
 
 function DetailItem({ label, children, wide = false, important = false }) {
   return (
@@ -111,17 +112,48 @@ function TeamDetails({ registration }) {
 export function RegistrationDetails({
   registration,
   registrationType,
+  canEdit,
+  canDelete,
   onClose,
+  onUpdate,
   onDelete,
+  saving,
   deleting,
 }) {
+  const [editing, setEditing] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [savedMessage, setSavedMessage] = useState("");
+  useEffect(() => {
+    setEditing(false);
+    setDirty(false);
+    setSavedMessage("");
+  }, [registration?.id, registration?.record_type]);
+  const requestClose = useCallback(() => {
+    if (saving) return;
+    if (editing && dirty && !window.confirm("Discard the unsaved participant changes?")) return;
+    setEditing(false);
+    setDirty(false);
+    onClose();
+  }, [dirty, editing, onClose, saving]);
+  const cancelEditing = useCallback(() => {
+    if (dirty && !window.confirm("Discard the unsaved participant changes?")) return;
+    setEditing(false);
+    setDirty(false);
+  }, [dirty]);
+  const saveChanges = useCallback(async (current, payload) => {
+    const updated = await onUpdate(current, payload);
+    setEditing(false);
+    setDirty(false);
+    setSavedMessage("Participant details updated and recorded in the audit log.");
+    return updated;
+  }, [onUpdate]);
   useEffect(() => {
     const handleKey = (event) => {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") requestClose();
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [onClose]);
+  }, [requestClose]);
   if (!registration) return null;
   const isHackathon = registrationType === "hackathon";
   const isTeam = isHackathon && registration.record_type === "team";
@@ -131,7 +163,7 @@ export function RegistrationDetails({
       className="detail-backdrop"
       role="presentation"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
+        if (event.target === event.currentTarget) requestClose();
       }}
     >
       <aside
@@ -160,13 +192,57 @@ export function RegistrationDetails({
           <button
             className="close-button"
             type="button"
-            onClick={onClose}
+            onClick={requestClose}
             aria-label="Close registration details"
+            disabled={saving}
           >
             ×
           </button>
         </div>
-        {isTeam ? (
+        {!editing && (
+          <div className="detail-actions detail-actions-top">
+            <button className="button button-quiet" type="button" onClick={requestClose}>
+              Close
+            </button>
+            <div className="detail-manage-actions">
+              {canEdit && (
+                <button
+                  className="button button-primary"
+                  type="button"
+                  onClick={() => {
+                    setSavedMessage("");
+                    setEditing(true);
+                  }}
+                >
+                  Edit participant
+                </button>
+              )}
+              {canDelete && (
+                <button
+                  className="button button-danger"
+                  type="button"
+                  disabled={deleting}
+                  onClick={() => onDelete(registration)}
+                >
+                  {deleting ? "Deleting…" : "Delete registration"}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+        {savedMessage && !editing && (
+          <p className="detail-save-success" role="status">{savedMessage}</p>
+        )}
+        {editing ? (
+          <RegistrationEditForm
+            registration={registration}
+            registrationType={registrationType}
+            onCancel={cancelEditing}
+            onDirtyChange={setDirty}
+            onSave={saveChanges}
+            saving={saving}
+          />
+        ) : isTeam ? (
           <TeamDetails registration={registration} />
         ) : (
           <dl className="detail-grid">
@@ -232,23 +308,6 @@ export function RegistrationDetails({
             )}
           </dl>
         )}
-        <div className="detail-actions">
-          <button
-            className="button button-quiet"
-            type="button"
-            onClick={onClose}
-          >
-            Close
-          </button>
-          <button
-            className="button button-danger"
-            type="button"
-            disabled={deleting}
-            onClick={() => onDelete(registration)}
-          >
-            {deleting ? "Deleting…" : "Delete registration"}
-          </button>
-        </div>
       </aside>
     </div>
   );
