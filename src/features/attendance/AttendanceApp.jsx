@@ -90,23 +90,9 @@ function TeamRow({ team, selected, onSelect }) {
   );
 }
 
-function AttendancePersonRow({ person, dates, onSelect }) {
-  return (
-    <button type="button" className="attendance-person-row" onClick={() => onSelect(person.team_id)}>
-      <span className="attendance-person-name"><strong>{person.full_name}</strong><small>{person.institution}</small></span>
-      <span>{person.team_name}</span>
-      <span>{person.lead_name || "—"}</span>
-      <span className="attendance-person-code">{person.team_code || `TEAM-${String(person.team_id).padStart(4, "0")}`}</span>
-      {dates.map((date) => <span className={`attendance-person-status${person.attendance[date] === true ? " is-present" : person.attendance[date] === false ? " is-absent" : ""}`} key={date}>{person.attendance[date] === true ? "Present" : person.attendance[date] === false ? "Absent" : "—"}</span>)}
-    </button>
-  );
-}
-
 function AttendanceDesk({ onLogout }) {
   const [query, setQuery] = useState("");
   const [teams, setTeams] = useState([]);
-  const [people, setPeople] = useState([]);
-  const [directoryDates, setDirectoryDates] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [team, setTeam] = useState(null);
   const [date, setDate] = useState(today);
@@ -124,7 +110,7 @@ function AttendanceDesk({ onLogout }) {
     attendanceApi
       .teams(query, date)
       .then((data) => {
-        if (active) { setTeams(data.teams || []); setPeople(data.people || []); setDirectoryDates(data.dates || []); }
+        if (active) setTeams(data.teams || []);
       })
       .catch((e) => {
         if (active) {
@@ -298,12 +284,16 @@ function AttendanceDesk({ onLogout }) {
               {loadingTeams ? (
                 <div className="table-state">Loading teams…</div>
               ) : people.length ? (
-                <div className="attendance-person-table" style={{ "--attendance-date-count": Math.max(directoryDates.length, 1) }} role="table" aria-label="Participant attendance">
-                  <div className="attendance-person-header" role="row"><span>Participant</span><span>Team</span><span>Lead</span><span>Team ID</span>{directoryDates.map((attendanceDate) => <span key={attendanceDate}>{attendanceDate}</span>)}</div>
-                  {people.map((person) => <AttendancePersonRow key={person.member_id} person={person} dates={directoryDates} onSelect={setSelectedId} />)}
-                </div>
+                teams.map((item) => (
+                  <TeamRow
+                    key={item.id}
+                    team={item}
+                    selected={item.id === selectedId}
+                    onSelect={setSelectedId}
+                  />
+                ))
               ) : (
-                <div className="table-state">No participants match that search.</div>
+                <div className="table-state">No teams match that search.</div>
               )}
             </div>
           </section>
