@@ -187,7 +187,7 @@ function AttendanceDesk({ onLogout }) {
       );
       setTeam(data.team);
       setEditingAttendance(false);
-      setConfirmingAttendance(false);
+      setShowConfirmDialog(false);
       setMessage("");
     } catch (e) {
       setError(e.message);
