@@ -283,7 +283,7 @@ function AttendanceDesk({ onLogout }) {
             <div className="attendance-team-list">
               {loadingTeams ? (
                 <div className="table-state">Loading teams…</div>
-              ) : people.length ? (
+              ) : teams.length ? (
                 teams.map((item) => (
                   <TeamRow
                     key={item.id}
