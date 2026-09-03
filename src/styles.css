@@ -262,6 +262,18 @@ td a { text-decoration-thickness: 1px; text-underline-offset: .2em; }
 .attendance-search { display: block; padding: 0 1.25rem 1rem; }
 .attendance-search input { width: 100%; }
 .attendance-team-list { min-height: 0; overflow-y: auto; border-top: 3px solid var(--text); }
+.attendance-person-table { min-width: 860px; }
+.attendance-person-header, .attendance-person-row { display: grid; grid-template-columns: minmax(190px, 1.4fr) minmax(150px, 1fr) minmax(150px, 1fr) 130px repeat(var(--attendance-date-count), minmax(100px, 1fr)); align-items: center; gap: .75rem; }
+.attendance-person-header { position: sticky; top: 0; z-index: 1; min-height: 2.75rem; padding: .75rem 1.25rem; background: var(--surface); color: var(--muted); font: 600 .62rem/1.2 var(--mono); letter-spacing: .07em; text-transform: uppercase; }
+.attendance-person-row { width: 100%; min-height: 4.2rem; padding: .7rem 1.25rem; border: 0; border-bottom: 1px solid var(--line); background: #fff; color: var(--text); text-align: left; font-size: .76rem; }
+.attendance-person-row:hover { background: var(--surface); }
+.attendance-person-name { display: grid; gap: .25rem; min-width: 0; }
+.attendance-person-name strong { overflow: hidden; font: 600 .84rem/1.2 var(--mono); text-overflow: ellipsis; white-space: nowrap; }
+.attendance-person-name small { overflow: hidden; color: var(--muted); text-overflow: ellipsis; white-space: nowrap; }
+.attendance-person-code { font: .68rem/1.2 var(--mono); }
+.attendance-person-status { color: var(--muted); font: 600 .62rem/1.2 var(--mono); text-transform: uppercase; }
+.attendance-person-status.is-present { color: #a30f0f; }
+.attendance-person-status.is-absent { color: #63635c; }
 .attendance-team-row { display: grid; grid-template-columns: 5.7rem minmax(0, 1fr) 3.5rem 1.2rem; align-items: center; gap: .8rem; width: 100%; padding: 1rem 1.25rem; border: 0; border-bottom: 1px solid var(--line); background: #fff; color: var(--text); text-align: left; }
 .attendance-team-row:hover, .attendance-team-row.is-selected { background: var(--surface); }
 .attendance-team-row.is-selected { box-shadow: inset 4px 0 0 var(--signal); }

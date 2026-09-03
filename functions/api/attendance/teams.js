@@ -20,7 +20,26 @@ export async function onRequestGet(context) {
       LEFT JOIN hackathon_attendance a ON a.team_id = t.id AND a.member_id = m.id AND a.attendance_date = ?
       WHERE t.submitted_at IS NOT NULL AND (t.team_name LIKE ? OR t.team_code LIKE ? OR lead.full_name LIKE ? OR captain.full_name LIKE ?)
       GROUP BY t.id ORDER BY lower(t.team_name), t.id`).bind(date, like, like, like, like).all();
-    return attendanceJson({ ok: true, teams: result.results || [] });
+    const peopleResult = await context.env.DB.prepare(`
+      SELECT t.id AS team_id, t.team_code, t.team_name,
+        COALESCE(lead.full_name, captain.full_name, '') AS lead_name,
+        m.id AS member_id, m.full_name, m.institution,
+        a.attendance_date, a.present
+      FROM hackathon_teams t
+      LEFT JOIN hackathon_team_members lead ON lead.id = t.attendance_lead_member_id
+      LEFT JOIN hackathon_team_members captain ON captain.team_id = t.id AND captain.role = 'Captain'
+      JOIN hackathon_team_members m ON m.team_id = t.id
+      LEFT JOIN hackathon_attendance a ON a.team_id = t.id AND a.member_id = m.id
+      WHERE t.submitted_at IS NOT NULL
+        AND (t.team_name LIKE ? OR t.team_code LIKE ? OR lead.full_name LIKE ? OR captain.full_name LIKE ? OR m.full_name LIKE ?)
+      ORDER BY lower(t.team_name), t.id, m.member_order, a.attendance_date`).bind(like, like, like, like, like).all();
+    const peopleMap = new Map();
+    for (const row of peopleResult.results || []) {
+      if (!peopleMap.has(row.member_id)) peopleMap.set(row.member_id, { team_id: row.team_id, team_code: row.team_code, team_name: row.team_name, lead_name: row.lead_name, member_id: row.member_id, full_name: row.full_name, institution: row.institution, attendance: {} });
+      if (row.attendance_date) peopleMap.get(row.member_id).attendance[row.attendance_date] = Boolean(row.present);
+    }
+    const datesResult = await context.env.DB.prepare("SELECT DISTINCT attendance_date FROM hackathon_attendance WHERE attendance_date IS NOT NULL ORDER BY attendance_date DESC").all();
+    return attendanceJson({ ok: true, teams: result.results || [], people: [...peopleMap.values()], dates: (datesResult.results || []).map((row) => row.attendance_date) });
   } catch (error) {
     console.error(JSON.stringify({ event: "attendance_teams_query_failed", reason: error instanceof Error ? error.message : "unknown" }));
     return attendanceJson({ ok: false, error: "Could not load hackathon teams. Apply the attendance migration first." }, 500);
