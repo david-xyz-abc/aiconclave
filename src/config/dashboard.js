@@ -25,7 +25,7 @@ export const REGISTRATION_SECTIONS = [
 export const DASHBOARD_NAVIGATION = [
   {
     id: "overview",
-    path: "/",
+    path: "/dashboard",
     number: "00",
     label: "Overview",
     status: "Dashboard",

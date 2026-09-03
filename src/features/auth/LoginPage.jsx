@@ -26,11 +26,7 @@ export function LoginPage({ onLogin }) {
     <main className="auth-shell">
       <section className="auth-panel" aria-labelledby="login-heading">
         <BrandLockup />
-        <div className="auth-copy">
-          <p className="eyebrow">Private operations</p>
-          <h1 id="login-heading">Registration dashboard</h1>
-          <p>Sign in to review and manage delegate registrations.</p>
-        </div>
+        <div className="auth-copy"><p className="eyebrow">Admin access</p><h1 id="login-heading">Registrations</h1></div>
         <form className="auth-form" onSubmit={submit}>
           <label>
             Username
@@ -57,11 +53,10 @@ export function LoginPage({ onLogin }) {
             </p>
           )}
           <button className="button button-primary" disabled={busy}>
-            {busy ? "Signing in…" : "Sign in"}
+            {busy ? "Signing in…" : "Continue"}
             <span aria-hidden="true">→</span>
           </button>
         </form>
-        <p className="auth-footnote">AI Conclave 2026 · Delegate data</p>
       </section>
     </main>
   );

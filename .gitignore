@@ -11,3 +11,4 @@ dist/
 !/functions/
 !/functions/**
 .env
+/backups/
