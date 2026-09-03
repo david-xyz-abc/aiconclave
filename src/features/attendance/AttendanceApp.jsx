@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { BrandLockup } from "../../components/common/BrandLockup.jsx";
 import { attendanceApi, isUnauthorized } from "../../services/dashboardApi.js";
+import { downloadAttendanceWorkbook } from "../../services/registrationExport.js";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -98,6 +99,9 @@ function AttendanceDesk({ onLogout }) {
   const [loadingTeams, setLoadingTeams] = useState(true);
   const [loadingTeam, setLoadingTeam] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [editingAttendance, setEditingAttendance] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   useEffect(() => {
@@ -122,8 +126,12 @@ function AttendanceDesk({ onLogout }) {
   useEffect(() => {
     if (!selectedId) {
       setTeam(null);
+      setEditingAttendance(false);
+      setShowConfirmDialog(false);
       return;
     }
+    setEditingAttendance(false);
+    setShowConfirmDialog(false);
     let active = true;
     setLoadingTeam(true);
     setError("");
@@ -149,6 +157,9 @@ function AttendanceDesk({ onLogout }) {
     () => [...new Set([date, ...(team?.attendance_dates || [])])],
     [date, team],
   );
+  const attendanceMarked = Boolean(
+    team?.attendance_dates?.includes(date),
+  );
   function updateMember(memberId, present) {
     setTeam((current) => ({
       ...current,
@@ -157,10 +168,11 @@ function AttendanceDesk({ onLogout }) {
       ),
     }));
     setMessage("");
+    setShowConfirmDialog(false);
   }
+  function requestSaveAttendance() { setShowConfirmDialog(true); }
   async function saveAttendance() {
-    if (!window.confirm(`Save attendance for ${team.team_name} on ${date}?`))
-      return;
+    setShowConfirmDialog(false);
     setSaving(true);
     setError("");
     setMessage("");
@@ -174,13 +186,26 @@ function AttendanceDesk({ onLogout }) {
         })),
       );
       setTeam(data.team);
-      setMessage(`Attendance saved for ${date}.`);
+      setEditingAttendance(false);
+      setConfirmingAttendance(false);
+      setMessage("");
     } catch (e) {
       setError(e.message);
       if (isUnauthorized(e)) onLogout();
     } finally {
       setSaving(false);
     }
+  }
+  async function exportAttendance() {
+    setExporting(true);
+    setError("");
+    try {
+      const data = await attendanceApi.exportData();
+      await downloadAttendanceWorkbook(data.teams || []);
+    } catch (e) {
+      setError(e.message);
+      if (isUnauthorized(e)) onLogout();
+    } finally { setExporting(false); }
   }
   async function changeLead(event) {
     const memberId = Number(event.target.value);
@@ -207,9 +232,9 @@ function AttendanceDesk({ onLogout }) {
       <header className="attendance-topbar">
         <BrandLockup />
         <div className="attendance-topbar-actions">
-          <span className="attendance-live">
-            <i aria-hidden="true" /> Attendance
-          </span>
+          <button className="attendance-export-button" type="button" onClick={exportAttendance} disabled={exporting}>
+            {exporting ? "Preparing…" : "Excel"}<span aria-hidden="true">↓</span>
+          </button>
           <button
             className="button button-quiet"
             onClick={async () => {
@@ -338,6 +363,7 @@ function AttendanceDesk({ onLogout }) {
                     >
                       <input
                         type="checkbox"
+                        disabled={attendanceMarked && !editingAttendance}
                         checked={Boolean(member.present)}
                         onChange={(event) =>
                           updateMember(member.id, event.target.checked)
@@ -371,16 +397,27 @@ function AttendanceDesk({ onLogout }) {
                     {message}
                   </p>
                 )}
-                <button
-                  className="button button-primary attendance-save"
-                  disabled={saving}
-                  onClick={saveAttendance}
-                >
-                  {saving
-                    ? "Saving attendance…"
-                    : "Mark attendance"}
-                  <span aria-hidden="true">→</span>
-                </button>
+                {attendanceMarked && !editingAttendance ? (
+                  <div className="attendance-locked-bar">
+                    <span>Attendance marked</span>
+                    <button
+                      type="button"
+                      className="attendance-edit-button"
+                      onClick={() => setEditingAttendance(true)}
+                    >
+                      Edit
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    className="button button-primary attendance-save"
+                    disabled={saving}
+                    onClick={requestSaveAttendance}
+                  >
+                    {saving ? "Saving attendance…" : attendanceMarked ? "Save changes" : "Mark attendance"}
+                    <span aria-hidden="true">→</span>
+                  </button>
+                )}
               </>
             ) : (
               <div className="attendance-empty">
@@ -394,6 +431,16 @@ function AttendanceDesk({ onLogout }) {
           </section>
         </div>
       </main>
+      {showConfirmDialog && (
+        <div className="attendance-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowConfirmDialog(false); }}>
+          <section className="attendance-dialog" role="dialog" aria-modal="true" aria-labelledby="attendance-dialog-title">
+            <p className="eyebrow">Confirm</p>
+            <h2 id="attendance-dialog-title">Mark attendance?</h2>
+            <p>{team?.team_name} · {date}</p>
+            <div className="attendance-dialog-actions"><button type="button" className="button button-quiet" onClick={() => setShowConfirmDialog(false)}>Cancel</button><button type="button" className="button button-primary" onClick={saveAttendance}>Confirm</button></div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

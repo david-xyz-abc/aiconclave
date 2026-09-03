@@ -456,6 +456,25 @@ export async function createHackathonParticipantsWorkbook(registrations) {
   };
 }
 
+export async function createAttendanceWorkbook(teams) {
+  if (!teams.length) throw new Error("There are no teams to export.");
+  const generatedAt = new Date();
+  const teamRows = teams.map((team) => ({
+    id: team.id, code: text(team.team_code), name: text(team.team_name), lead: text(team.lead_name), leadId: team.lead_member_id || "", category: text(team.participant_category), sector: text(team.sector_track), solution: text(team.solution_type), members: team.members.length,
+  }));
+  const memberRows = teams.flatMap((team) => team.members.map((member) => ({
+    teamId: team.id, teamCode: text(team.team_code), teamName: text(team.team_name), memberId: member.id, name: text(member.full_name), role: member.is_lead ? "Team lead" : "Team member", email: text(member.email), phone: text(member.phone), institution: text(member.institution), course: text(member.department_or_course), year: text(member.year_or_grade),
+  })));
+  const attendanceRows = teams.flatMap((team) => team.attendance.map((entry) => ({ teamId: team.id, teamCode: text(team.team_code), teamName: text(team.team_name), memberId: entry.member_id, member: text(entry.member_name), date: text(entry.date), status: entry.present ? "Present" : "Absent", markedAt: excelDate(entry.marked_at) })));
+  const teamColumns = [{ key: "id", header: "Team ID", width: 12 }, { key: "code", header: "Team Code", width: 20 }, { key: "name", header: "Team Name", width: 28 }, { key: "lead", header: "Team Lead", width: 26 }, { key: "leadId", header: "Lead Member ID", width: 16 }, { key: "category", header: "Category", width: 16 }, { key: "sector", header: "Sector", width: 18 }, { key: "solution", header: "Solution Type", width: 18 }, { key: "members", header: "Members", width: 12 }];
+  const memberColumns = [{ key: "teamId", header: "Team ID", width: 12 }, { key: "teamCode", header: "Team Code", width: 20 }, { key: "teamName", header: "Team Name", width: 28 }, { key: "memberId", header: "Member ID", width: 14 }, { key: "name", header: "Full Name", width: 26 }, { key: "role", header: "Role", width: 16 }, { key: "email", header: "Email", width: 32 }, { key: "phone", header: "Phone", width: 20 }, { key: "institution", header: "Institution", width: 38 }, { key: "course", header: "Course / Department", width: 26 }, { key: "year", header: "Year / Grade", width: 16 }];
+  const attendanceColumns = [{ key: "teamId", header: "Team ID", width: 12 }, { key: "teamCode", header: "Team Code", width: 20 }, { key: "teamName", header: "Team Name", width: 28 }, { key: "memberId", header: "Member ID", width: 14 }, { key: "member", header: "Member", width: 26 }, { key: "date", header: "Attendance Date", width: 18 }, { key: "status", header: "Status", width: 14 }, { key: "markedAt", header: "Marked At", width: 24 }];
+  const subtitle = `${teams.length} teams · ${memberRows.length} members · Exported ${generatedAt.toLocaleString("en-IN")}`;
+  const sheets = [createSheet("Teams", "AI CONCLAVE 2026 · TEAMS", subtitle, teamColumns, teamRows), createSheet("Members", "AI CONCLAVE 2026 · TEAM MEMBERS", subtitle, memberColumns, memberRows), createSheet("Attendance", "AI CONCLAVE 2026 · ATTENDANCE", `${attendanceRows.length} attendance records · Exported ${generatedAt.toLocaleString("en-IN")}`, attendanceColumns, attendanceRows)];
+  const { strToU8, zipSync } = await import("fflate");
+  return { bytes: packageWorkbook(sheets, zipSync, strToU8), filename: `ai-conclave-2026-attendance-${localDatePart(generatedAt)}.xlsx` };
+}
+
 function downloadBytes(bytes, filename) {
   const blob = new Blob([bytes], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -482,5 +501,10 @@ export async function downloadRegistrationsWorkbook(routeId, registrations) {
 export async function downloadHackathonParticipantsWorkbook(registrations) {
   const { bytes, filename } =
     await createHackathonParticipantsWorkbook(registrations);
+  downloadBytes(bytes, filename);
+}
+
+export async function downloadAttendanceWorkbook(teams) {
+  const { bytes, filename } = await createAttendanceWorkbook(teams);
   downloadBytes(bytes, filename);
 }

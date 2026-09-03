@@ -80,6 +80,7 @@ export const attendanceApi = {
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ leadMemberId: memberId }),
   }),
+  exportData: () => requestJson("/api/attendance/export"),
 };
 
 export function isUnauthorized(error) {
