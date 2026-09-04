@@ -6,9 +6,9 @@ function validDate(value) { return typeof value === "string" && /^\d{4}-\d{2}-\d
 async function loadTeam(db, id, date) {
   const team = await db.prepare(`SELECT t.id, t.team_code, t.team_name, t.participant_category, t.sector_track, t.team_size, COALESCE(t.attendance_lead_member_id, captain.id) AS lead_member_id FROM hackathon_teams t LEFT JOIN hackathon_team_members captain ON captain.team_id = t.id AND captain.role = 'Captain' WHERE t.id = ? AND t.submitted_at IS NOT NULL`).bind(id).first();
   if (!team) return null;
-  const members = await db.prepare(`SELECT m.id, m.full_name, m.email, m.institution, m.role, CASE WHEN a.present = 1 THEN 1 ELSE 0 END AS present FROM hackathon_team_members m LEFT JOIN hackathon_attendance a ON a.member_id = m.id AND a.team_id = m.team_id AND a.attendance_date = ? WHERE m.team_id = ? ORDER BY m.member_order`).bind(date, id).all();
+  const members = await db.prepare(`SELECT m.id, m.full_name, m.email, m.institution, m.role, CASE WHEN a.present = 1 THEN 1 ELSE 0 END AS present FROM hackathon_team_members m LEFT JOIN hackathon_attendance a ON a.id = (SELECT aa.id FROM hackathon_attendance aa WHERE aa.member_id = m.id AND aa.team_id = m.team_id ORDER BY aa.attendance_date DESC, aa.marked_at DESC, aa.id DESC LIMIT 1) WHERE m.team_id = ? ORDER BY m.member_order`).bind(id).all();
   const dates = await db.prepare("SELECT DISTINCT attendance_date FROM hackathon_attendance WHERE team_id = ? ORDER BY attendance_date DESC").bind(id).all();
-  return { ...team, member_count: (members.results || []).length, members: members.results || [], attendance_dates: (dates.results || []).map((row) => row.attendance_date) };
+  return { ...team, member_count: (members.results || []).length, members: members.results || [], attendance_dates: (dates.results || []).map((row) => row.attendance_date), attendance_marked: Boolean((dates.results || []).length) };
 }
 
 export async function onRequestGet(context) {

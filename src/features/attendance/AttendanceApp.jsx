@@ -159,9 +159,7 @@ function AttendanceDesk({ onLogout, user }) {
     () => team?.members?.filter((member) => member.present).length || 0,
     [team],
   );
-  const attendanceMarked = Boolean(
-    team?.attendance_dates?.includes(date),
-  );
+  const attendanceMarked = Boolean(team?.attendance_marked);
   function updateMember(memberId, present) {
     setTeam((current) => ({
       ...current,
