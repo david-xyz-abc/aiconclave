@@ -17,9 +17,9 @@ export async function onRequestGet(context) {
       LEFT JOIN hackathon_team_members m ON m.team_id = t.id
       LEFT JOIN hackathon_team_members lead ON lead.id = t.attendance_lead_member_id
       LEFT JOIN hackathon_team_members captain ON captain.team_id = t.id AND captain.role = 'Captain'
-      LEFT JOIN hackathon_attendance a ON a.team_id = t.id AND a.member_id = m.id AND a.attendance_date = ?
+      LEFT JOIN hackathon_attendance a ON a.id = (SELECT aa.id FROM hackathon_attendance aa WHERE aa.team_id = t.id AND aa.member_id = m.id ORDER BY aa.attendance_date DESC, aa.marked_at DESC, aa.id DESC LIMIT 1)
       WHERE t.submitted_at IS NOT NULL AND (t.team_name LIKE ? OR t.team_code LIKE ? OR lead.full_name LIKE ? OR captain.full_name LIKE ?)
-      GROUP BY t.id ORDER BY lower(t.team_name), t.id`).bind(date, like, like, like, like).all();
+      GROUP BY t.id ORDER BY lower(t.team_name), t.id`).bind(like, like, like, like).all();
     const peopleResult = await context.env.DB.prepare(`
       SELECT t.id AS team_id, t.team_code, t.team_name,
         COALESCE(lead.full_name, captain.full_name, '') AS lead_name,
