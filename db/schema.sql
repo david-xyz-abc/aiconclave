@@ -196,6 +196,7 @@ CREATE INDEX IF NOT EXISTS idx_hackathon_attendance_date ON hackathon_attendance
 
 CREATE TABLE IF NOT EXISTS attendance_sessions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  admin_user_id INTEGER REFERENCES admin_users(id) ON DELETE CASCADE,
   token_hash TEXT NOT NULL UNIQUE,
   expires_at TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))

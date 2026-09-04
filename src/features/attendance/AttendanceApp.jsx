@@ -6,6 +6,7 @@ import { downloadAttendanceWorkbook } from "../../services/registrationExport.js
 const today = () => new Date().toISOString().slice(0, 10);
 
 function AttendanceLogin({ onLogin }) {
+  const [username, setUsername] = useState("admin");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -14,8 +15,8 @@ function AttendanceLogin({ onLogin }) {
     setBusy(true);
     setError("");
     try {
-      await attendanceApi.login(password);
-      onLogin();
+      const data = await attendanceApi.login(username, password);
+      onLogin(data.user);
     } catch (loginError) {
       setError(loginError.message);
     } finally {
@@ -34,6 +35,10 @@ function AttendanceLogin({ onLogin }) {
           <h1 id="attendance-login-heading">Sign in</h1>
         </div>
         <form className="auth-form" onSubmit={submit}>
+          <label>
+            Username
+            <input value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" required />
+          </label>
           <label>
             Password
             <input
@@ -90,7 +95,8 @@ function TeamRow({ team, selected, onSelect }) {
   );
 }
 
-function AttendanceDesk({ onLogout }) {
+function AttendanceDesk({ onLogout, user }) {
+  const canEdit = user?.role === "admin";
   const [query, setQuery] = useState("");
   const [teams, setTeams] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
@@ -228,9 +234,9 @@ function AttendanceDesk({ onLogout }) {
       <header className="attendance-topbar">
         <BrandLockup />
         <div className="attendance-topbar-actions">
-          <button className="attendance-export-button" type="button" onClick={exportAttendance} disabled={exporting}>
+          {canEdit && <button className="attendance-export-button" type="button" onClick={exportAttendance} disabled={exporting}>
             {exporting ? "Preparing…" : "Excel"}<span aria-hidden="true">↓</span>
-          </button>
+          </button>}
           <button
             className="button button-quiet"
             onClick={async () => {
@@ -318,6 +324,7 @@ function AttendanceDesk({ onLogout }) {
                       <select
                         value={team.lead_member_id || ""}
                         onChange={changeLead}
+                        disabled={!canEdit}
                       >
                         {team.members.map((member) => (
                           <option value={member.id} key={member.id}>
@@ -339,7 +346,7 @@ function AttendanceDesk({ onLogout }) {
                     >
                       <input
                         type="checkbox"
-                        disabled={attendanceMarked && !editingAttendance}
+                        disabled={!canEdit || (attendanceMarked && !editingAttendance)}
                         checked={Boolean(member.present)}
                         onChange={(event) =>
                           updateMember(member.id, event.target.checked)
@@ -376,15 +383,15 @@ function AttendanceDesk({ onLogout }) {
                 {attendanceMarked && !editingAttendance ? (
                   <div className="attendance-locked-bar">
                     <span>Attendance marked</span>
-                    <button
+                    {canEdit && <button
                       type="button"
                       className="attendance-edit-button"
                       onClick={() => setEditingAttendance(true)}
                     >
                       Edit
-                    </button>
+                    </button>}
                   </div>
-                ) : (
+                ) : canEdit ? (
                   <button
                     className="button button-primary attendance-save"
                     disabled={saving}
@@ -393,7 +400,7 @@ function AttendanceDesk({ onLogout }) {
                     {saving ? "Saving attendance…" : attendanceMarked ? "Save changes" : "Mark attendance"}
                     <span aria-hidden="true">→</span>
                   </button>
-                )}
+                ) : null}
               </>
             ) : (
               <div className="attendance-empty">
@@ -429,7 +436,7 @@ export function AttendanceApp() {
   useEffect(() => {
     attendanceApi
       .currentSession()
-      .then(() => setSession({ loading: false, authenticated: true }))
+      .then((data) => setSession({ loading: false, authenticated: true, user: data.user }))
       .catch(() => setSession({ loading: false, authenticated: false }));
   }, []);
   if (session.loading)
@@ -437,12 +444,13 @@ export function AttendanceApp() {
   if (!session.authenticated)
     return (
       <AttendanceLogin
-        onLogin={() => setSession({ loading: false, authenticated: true })}
+      onLogin={(user) => setSession({ loading: false, authenticated: true, user })}
       />
     );
   return (
     <AttendanceDesk
-      onLogout={() => setSession({ loading: false, authenticated: false })}
+      user={session.user}
+      onLogout={() => setSession({ loading: false, authenticated: false, user: null })}
     />
   );
 }

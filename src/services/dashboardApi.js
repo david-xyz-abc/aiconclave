@@ -61,10 +61,10 @@ export const registrationsApi = {
 };
 
 export const attendanceApi = {
-  login: (password) => requestJson("/api/attendance/auth", {
+  login: (username, password) => requestJson("/api/attendance/auth", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ password }),
+    body: JSON.stringify({ username, password }),
   }),
   currentSession: () => requestJson("/api/attendance/auth"),
   logout: () => requestJson("/api/attendance/auth", { method: "DELETE" }),

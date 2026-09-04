@@ -1,7 +1,7 @@
-import { attendanceJson, requireAttendanceSession } from "../../_shared/attendance.js";
+import { attendanceJson, requireAttendanceAdmin } from "../../_shared/attendance.js";
 
 export async function onRequestGet(context) {
-  const auth = await requireAttendanceSession(context);
+  const auth = await requireAttendanceAdmin(context);
   if (auth.response) return auth.response;
   try {
     const result = await context.env.DB.prepare(`
