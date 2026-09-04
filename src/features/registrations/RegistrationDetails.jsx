@@ -201,9 +201,6 @@ export function RegistrationDetails({
         </div>
         {!editing && (
           <div className="detail-actions detail-actions-top">
-            <button className="button button-quiet" type="button" onClick={requestClose}>
-              Close
-            </button>
             <div className="detail-manage-actions">
               {canEdit && (
                 <button
