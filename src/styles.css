@@ -32,7 +32,7 @@ a { color: inherit; }
 .auth-copy { margin: 4.5rem 0 2rem; }
 .eyebrow { margin: 0 0 .55rem; color: var(--muted); font: 500 .68rem/1.2 var(--mono); letter-spacing: .14em; text-transform: uppercase; }
 h1, h2 { margin: 0; font-family: var(--mono); font-weight: 600; letter-spacing: -.045em; line-height: 1.04; }
-.auth-copy h1 { max-width: 100%; overflow-wrap: anywhere; font-size: clamp(2rem, 7vw, 3.7rem); }
+.auth-copy h1 { max-width: none; font-size: clamp(2rem, 6vw, 3rem); white-space: nowrap; }
 .auth-copy p:last-child { max-width: 34ch; margin: 1rem 0 0; color: var(--muted); }
 .auth-form { display: grid; gap: 1rem; }
 .auth-form label { display: grid; gap: .42rem; font: 600 .72rem/1.2 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
