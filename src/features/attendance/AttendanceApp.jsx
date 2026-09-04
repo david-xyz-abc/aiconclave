@@ -95,7 +95,7 @@ function AttendanceDesk({ onLogout }) {
   const [teams, setTeams] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [team, setTeam] = useState(null);
-  const [date, setDate] = useState(today);
+  const [date] = useState(today);
   const [loadingTeams, setLoadingTeams] = useState(true);
   const [loadingTeam, setLoadingTeam] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -152,10 +152,6 @@ function AttendanceDesk({ onLogout }) {
   const presentCount = useMemo(
     () => team?.members?.filter((member) => member.present).length || 0,
     [team],
-  );
-  const attendanceDates = useMemo(
-    () => [...new Set([date, ...(team?.attendance_dates || [])])],
-    [date, team],
   );
   const attendanceMarked = Boolean(
     team?.attendance_dates?.includes(date),
@@ -252,14 +248,6 @@ function AttendanceDesk({ onLogout }) {
             <p className="eyebrow">Hackathon</p>
             <h1>Attendance</h1>
           </div>
-          <label className="attendance-date">
-            Date
-            <input
-              type="date"
-              value={date}
-              onChange={(event) => setDate(event.target.value)}
-            />
-          </label>
         </div>
         <div className="attendance-workspace">
           <section
@@ -324,18 +312,6 @@ function AttendanceDesk({ onLogout }) {
                   </span>
                 </div>
                 <div className="attendance-controls">
-                  <div className="attendance-history-control">
-                    <label>
-                      History
-                      <select value={date} onChange={(event) => setDate(event.target.value)}>
-                        {attendanceDates.map((attendanceDate) => (
-                          <option value={attendanceDate} key={attendanceDate}>
-                            {attendanceDate === date ? `${attendanceDate} · selected` : attendanceDate}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
                   <div className="attendance-lead-control">
                     <label>
                       Team lead
