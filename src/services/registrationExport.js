@@ -35,8 +35,8 @@ function localDatePart(date) {
   ].join("-");
 }
 
-function createSheet(name, title, subtitle, columns, rows) {
-  return { name, title, subtitle, columns, rows };
+function createSheet(name, title, subtitle, columns, rows, options = {}) {
+  return { name, title, subtitle, columns, rows, ...options };
 }
 
 function findTeamLeader(team) {
@@ -280,6 +280,35 @@ function cellXml(reference, value, style = 5) {
 
 function worksheetXml(sheet) {
   const lastColumn = columnName(sheet.columns.length);
+  if (sheet.plain) {
+    const lastRow = Math.max(1, sheet.rows.length + 1);
+    const headerRow = sheet.columns
+      .map((column, index) => cellXml(`${columnName(index + 1)}1`, column.header, 0))
+      .join("");
+    const dataRows = sheet.rows
+      .map((row, rowIndex) => {
+        const rowNumber = rowIndex + 2;
+        const cells = sheet.columns
+          .map((column, columnIndex) => cellXml(`${columnName(columnIndex + 1)}${rowNumber}`, row[column.key], 0))
+          .join("");
+        return `<row r="${rowNumber}">${cells}</row>`;
+      })
+      .join("");
+    const columns = sheet.columns
+      .map((column, index) => `<col min="${index + 1}" max="${index + 1}" width="${column.width}" customWidth="1"/>`)
+      .join("");
+    const autoFilter = sheet.rows.length ? `<autoFilter ref="A1:${lastColumn}${lastRow}"/>` : "";
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <dimension ref="A1:${lastColumn}${lastRow}"/>
+  <sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
+  <sheetFormatPr defaultRowHeight="20"/>
+  <cols>${columns}</cols>
+  <sheetData><row r="1">${headerRow}</row>${dataRows}</sheetData>
+  ${autoFilter}
+  <pageMargins left="0.25" right="0.25" top="0.5" bottom="0.5" header="0.2" footer="0.2"/>
+</worksheet>`;
+  }
   const lastRow = Math.max(4, sheet.rows.length + 4);
   const bandRow = sheet.columns
     .map((_, index) => `<c r="${columnName(index + 1)}3" s="3"/>`)
@@ -467,10 +496,10 @@ export async function createAttendanceWorkbook(teams) {
     const row = { teamId: team.id, teamCode: text(team.team_code), teamName: text(team.team_name), lead: text(team.lead_name), memberId: member.id, member: text(member.full_name), role: member.is_lead ? "Team lead" : "Team member", email: text(member.email), phone: text(member.phone), institution: text(member.institution) };
     attendanceDates.forEach((attendanceDate, index) => { const entry = records.get(attendanceDate); row[`date_${index}`] = entry ? (entry.present ? "Present" : "Absent") : "—"; });
     return row;
-  })).filter(Boolean);
-  const attendanceColumns = [{ key: "teamId", header: "Team ID", width: 12 }, { key: "teamCode", header: "Team Code", width: 20 }, { key: "teamName", header: "Team Name", width: 28 }, { key: "lead", header: "Team Lead", width: 26 }, { key: "memberId", header: "Member ID", width: 14 }, { key: "member", header: "Participant", width: 26 }, { key: "role", header: "Role", width: 16 }, { key: "email", header: "Email", width: 32 }, { key: "phone", header: "Phone", width: 20 }, { key: "institution", header: "Institution", width: 36 }, ...attendanceDates.map((attendanceDate, index) => ({ key: `date_${index}`, header: attendanceDate, width: 16 }))];
+  })).filter(Boolean).map((row, index) => ({ index: index + 1, ...row }));
+  const attendanceColumns = [{ key: "index", header: "#", width: 8 }, { key: "teamId", header: "Team ID", width: 12 }, { key: "teamCode", header: "Team Code", width: 20 }, { key: "teamName", header: "Team Name", width: 28 }, { key: "lead", header: "Team Lead", width: 26 }, { key: "memberId", header: "Member ID", width: 14 }, { key: "member", header: "Participant", width: 26 }, { key: "role", header: "Role", width: 16 }, { key: "email", header: "Email", width: 32 }, { key: "phone", header: "Phone", width: 20 }, { key: "institution", header: "Institution", width: 36 }, ...attendanceDates.map((attendanceDate, index) => ({ key: `date_${index}`, header: attendanceDate, width: 16 }))];
   if (!attendanceRows.length) throw new Error("There are no present students to export.");
-  const sheets = [createSheet("Attendance", "AI CONCLAVE 2026 · PRESENT PARTICIPANTS", `${attendanceRows.length} present participants · Exported ${generatedAt.toLocaleString("en-IN")}`, attendanceColumns, attendanceRows)];
+  const sheets = [createSheet("Attendance", "", "", attendanceColumns, attendanceRows, { plain: true })];
   const { strToU8, zipSync } = await import("fflate");
   return { bytes: packageWorkbook(sheets, zipSync, strToU8), filename: `ai-conclave-2026-attendance-${localDatePart(generatedAt)}.xlsx` };
 }
