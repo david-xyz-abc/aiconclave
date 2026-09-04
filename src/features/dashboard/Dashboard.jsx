@@ -14,10 +14,7 @@ import { RegistrationDetails } from "../registrations/RegistrationDetails.jsx";
 import { RegistrationDirectory } from "../registrations/RegistrationDirectory.jsx";
 
 export function Dashboard({ user, route, onNavigate, onLogout }) {
-  // Accounts created before role-based access was introduced were all dashboard
-  // administrators. Preserve their existing permissions until the migration
-  // supplies the explicit `admin` role.
-  const userRole = user?.role || "admin";
+  const canManageRegistrations = user?.registrationsAccess === "write";
   const {
     registrations,
     summary,
@@ -152,8 +149,8 @@ export function Dashboard({ user, route, onNavigate, onLogout }) {
       <RegistrationDetails
         registration={selectedRegistration}
         registrationType={route.id}
-        canEdit={new Set(["editor", "admin"]).has(userRole)}
-        canDelete={userRole === "admin"}
+        canEdit={canManageRegistrations}
+        canDelete={canManageRegistrations}
         onClose={closeDetails}
         onUpdate={saveRegistration}
         onDelete={deleteRegistration}

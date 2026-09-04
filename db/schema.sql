@@ -144,6 +144,8 @@ CREATE TABLE IF NOT EXISTS admin_users (
   password_salt TEXT NOT NULL,
   password_iterations INTEGER NOT NULL,
   role TEXT NOT NULL DEFAULT 'admin' CHECK (role IN ('viewer', 'editor', 'admin')),
+  registrations_access TEXT NOT NULL DEFAULT 'none' CHECK (registrations_access IN ('none', 'read', 'write')),
+  attendance_access TEXT NOT NULL DEFAULT 'none' CHECK (attendance_access IN ('none', 'read', 'write')),
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

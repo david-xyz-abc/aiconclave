@@ -16,7 +16,7 @@ export async function getAttendanceSession(context) {
   const token = parseCookies(context.request)[ATTENDANCE_COOKIE];
   if (!token || !context.env?.DB) return null;
   const tokenHash = await sha256(token);
-  return context.env.DB.prepare("SELECT s.id, s.expires_at, u.username, u.role FROM attendance_sessions s JOIN admin_users u ON u.id = s.admin_user_id WHERE s.token_hash = ? AND s.expires_at > datetime('now')").bind(tokenHash).first();
+  return context.env.DB.prepare("SELECT s.id, s.expires_at, u.username, u.role, u.registrations_access, u.attendance_access FROM attendance_sessions s JOIN admin_users u ON u.id = s.admin_user_id WHERE s.token_hash = ? AND s.expires_at > datetime('now')").bind(tokenHash).first();
 }
 
 export async function requireAttendanceSession(context) {
@@ -28,14 +28,14 @@ export async function requireAttendanceSession(context) {
 export async function requireAttendanceAdmin(context) {
   const auth = await requireAttendanceSession(context);
   if (auth.response) return auth;
-  if (auth.session.role !== "admin") return { response: attendanceJson({ ok: false, error: "Administrator access is required." }, 403) };
+  if (auth.session.attendance_access !== "write") return { response: attendanceJson({ ok: false, error: "This account cannot modify attendance." }, 403) };
   return auth;
 }
 
 export async function handleAttendanceAuth(context) {
   if (context.request.method === "GET") {
     const session = await getAttendanceSession(context);
-    return session ? attendanceJson({ ok: true }) : attendanceJson({ ok: false }, 401);
+    return session ? attendanceJson({ ok: true, user: { username: session.username, role: session.role, registrationsAccess: session.registrations_access, attendanceAccess: session.attendance_access } }) : attendanceJson({ ok: false }, 401);
   }
   if (!isSameOrigin(context.request)) return attendanceJson({ ok: false, error: "This sign-in request could not be verified." }, 403);
   if (context.request.method === "DELETE") {
@@ -48,13 +48,14 @@ export async function handleAttendanceAuth(context) {
   const username = typeof body?.username === "string" ? body.username.trim().slice(0, 80) : "";
   const password = typeof body?.password === "string" ? body.password : "";
   if (!username || !password) return attendanceJson({ ok: false, error: "Username and password are required." }, 400);
-  const user = await context.env.DB.prepare("SELECT id, username, password_hash, password_salt, password_iterations, role FROM admin_users WHERE username = ?").bind(username).first();
+  const user = await context.env.DB.prepare("SELECT id, username, password_hash, password_salt, password_iterations, role, registrations_access, attendance_access FROM admin_users WHERE username = ?").bind(username).first();
   if (!user) return attendanceJson({ ok: false, error: "Invalid username or password." }, 401);
+  if (user.attendance_access === "none") return attendanceJson({ ok: false, error: "This account cannot access attendance." }, 403);
   let passwordHash;
   try { passwordHash = await hashPassword(password, user.password_salt, user.password_iterations); } catch { return attendanceJson({ ok: false, error: "Invalid username or password." }, 401); }
   if (!(await constantTimeEqual(passwordHash, user.password_hash))) return attendanceJson({ ok: false, error: "Invalid username or password." }, 401);
   const token = newToken();
   await context.env.DB.prepare("INSERT INTO attendance_sessions (admin_user_id, token_hash, expires_at) VALUES (?, ?, datetime('now', '+12 hours'))").bind(user.id, await sha256(token)).run();
   await context.env.DB.prepare("DELETE FROM attendance_sessions WHERE expires_at <= datetime('now')").run();
-  return attendanceJson({ ok: true, user: { username: user.username, role: user.role || "admin" } }, 200, { "set-cookie": attendanceCookie(token) });
+  return attendanceJson({ ok: true, user: { username: user.username, role: user.role || "admin", registrationsAccess: user.registrations_access, attendanceAccess: user.attendance_access } }, 200, { "set-cookie": attendanceCookie(token) });
 }

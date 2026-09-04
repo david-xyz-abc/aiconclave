@@ -42,12 +42,14 @@ export async function onRequestPost(context) {
     );
 
   const user = await context.env.DB.prepare(
-    "SELECT id, username, password_hash, password_salt, password_iterations, role FROM admin_users WHERE username = ?",
+    "SELECT id, username, password_hash, password_salt, password_iterations, role, registrations_access, attendance_access FROM admin_users WHERE username = ?",
   )
     .bind(username)
     .first();
   if (!user)
     return json({ ok: false, error: "Invalid username or password." }, 401);
+  if (user.registrations_access === "none")
+    return json({ ok: false, error: "This account cannot access registrations." }, 403);
 
   let passwordHash;
   try {
@@ -74,7 +76,7 @@ export async function onRequestPost(context) {
     "DELETE FROM admin_sessions WHERE expires_at <= datetime('now')",
   ).run();
 
-  return json({ ok: true, user: { username: user.username, role: user.role || "admin" } }, 200, {
+  return json({ ok: true, user: { username: user.username, role: user.role || "admin", registrationsAccess: user.registrations_access, attendanceAccess: user.attendance_access } }, 200, {
     "set-cookie": sessionCookie(token, SESSION_TTL_SECONDS),
   });
 }

@@ -362,7 +362,7 @@ export async function onRequestPatch(context) {
     return json({ ok: false, error: "This edit request could not be verified." }, 403);
   const session = await getSession(context);
   if (!session) return json({ ok: false, error: "Authentication required." }, 401);
-  if (!new Set(["editor", "admin"]).has(session.role))
+  if (session.registrationsAccess !== "write")
     return json({ ok: false, error: "Your account cannot edit registrations." }, 403);
   const id = validId(context.params.id);
   if (!id) return json({ ok: false, error: "Invalid registration id." }, 400);
@@ -406,7 +406,7 @@ export async function onRequestDelete(context) {
   const session = await getSession(context);
   if (!session)
     return json({ ok: false, error: "Authentication required." }, 401);
-  if (session.role !== "admin")
+  if (session.registrationsAccess !== "write")
     return json({ ok: false, error: "Your account cannot delete registrations." }, 403);
 
   const url = new URL(context.request.url);

@@ -96,7 +96,7 @@ function TeamRow({ team, selected, onSelect }) {
 }
 
 function AttendanceDesk({ onLogout, user }) {
-  const canEdit = user?.role === "admin";
+  const canEdit = user?.attendanceAccess === "write";
   const [query, setQuery] = useState("");
   const [teams, setTeams] = useState([]);
   const [selectedId, setSelectedId] = useState(null);

@@ -111,7 +111,8 @@ export async function getSession(context) {
   if (!token) return null;
   const tokenHash = await sha256(token);
   const row = await context.env.DB.prepare(
-    `SELECT s.id, u.id AS user_id, u.username, u.role
+    `SELECT s.id, u.id AS user_id, u.username, u.role,
+            u.registrations_access, u.attendance_access
      FROM admin_sessions s
      JOIN admin_users u ON u.id = s.admin_user_id
      WHERE s.token_hash = ? AND s.expires_at > datetime('now')`,
@@ -124,6 +125,8 @@ export async function getSession(context) {
         userId: row.user_id,
         username: row.username,
         role: row.role || "admin",
+        registrationsAccess: row.registrations_access || "none",
+        attendanceAccess: row.attendance_access || "none",
       }
     : null;
 }
