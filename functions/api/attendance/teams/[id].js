@@ -1,4 +1,4 @@
-import { attendanceJson, requireAttendanceAdmin } from "../../../_shared/attendance.js";
+import { attendanceJson, requireAttendanceAdmin, requireAttendanceSession } from "../../../_shared/attendance.js";
 
 function validId(value) { const id = Number.parseInt(value, 10); return Number.isInteger(id) && id > 0 ? id : null; }
 function validDate(value) { return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null; }
@@ -12,7 +12,7 @@ async function loadTeam(db, id, date) {
 }
 
 export async function onRequestGet(context) {
-  const auth = await requireAttendanceAdmin(context); if (auth.response) return auth.response;
+  const auth = await requireAttendanceSession(context); if (auth.response) return auth.response;
   const id = validId(context.params.id); const date = validDate(new URL(context.request.url).searchParams.get("date")) || new Date().toISOString().slice(0, 10);
   if (!id) return attendanceJson({ ok: false, error: "Invalid team." }, 400);
   try { const team = await loadTeam(context.env.DB, id, date); return team ? attendanceJson({ ok: true, team, date }) : attendanceJson({ ok: false, error: "Team not found." }, 404); } catch { return attendanceJson({ ok: false, error: "Could not load this team." }, 500); }
@@ -34,7 +34,7 @@ export async function onRequestPost(context) {
 }
 
 export async function onRequestPatch(context) {
-  const auth = await requireAttendanceSession(context); if (auth.response) return auth.response;
+  const auth = await requireAttendanceAdmin(context); if (auth.response) return auth.response;
   const id = validId(context.params.id); if (!id) return attendanceJson({ ok: false, error: "Invalid team." }, 400);
   let body; try { body = await context.request.json(); } catch { return attendanceJson({ ok: false, error: "Invalid request." }, 400); }
   const memberId = validId(body?.leadMemberId); if (!memberId) return attendanceJson({ ok: false, error: "Choose a valid team lead." }, 400);
