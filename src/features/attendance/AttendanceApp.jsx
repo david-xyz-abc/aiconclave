@@ -234,9 +234,9 @@ function AttendanceDesk({ onLogout, user }) {
       <header className="attendance-topbar">
         <BrandLockup />
         <div className="attendance-topbar-actions">
-          {canEdit && <button className="attendance-export-button" type="button" onClick={exportAttendance} disabled={exporting}>
+          <button className="attendance-export-button" type="button" onClick={exportAttendance} disabled={exporting}>
             {exporting ? "Preparing…" : "Excel"}<span aria-hidden="true">↓</span>
-          </button>}
+          </button>
           <button
             className="button button-quiet"
             onClick={async () => {
