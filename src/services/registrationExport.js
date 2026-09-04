@@ -459,27 +459,18 @@ export async function createHackathonParticipantsWorkbook(registrations) {
 export async function createAttendanceWorkbook(teams) {
   if (!teams.length) throw new Error("There are no teams to export.");
   const generatedAt = new Date();
-  const teamRows = teams.map((team) => ({
-    id: team.id, code: text(team.team_code), name: text(team.team_name), lead: text(team.lead_name), leadId: team.lead_member_id || "", category: text(team.participant_category), sector: text(team.sector_track), solution: text(team.solution_type), members: team.members.length,
-  }));
-  const memberRows = teams.flatMap((team) => team.members.map((member) => ({
-    teamId: team.id, teamCode: text(team.team_code), teamName: text(team.team_name), memberId: member.id, name: text(member.full_name), role: member.is_lead ? "Team lead" : "Team member", email: text(member.email), phone: text(member.phone), institution: text(member.institution), course: text(member.department_or_course), year: text(member.year_or_grade),
-  })));
   const attendanceDates = [...new Set(teams.flatMap((team) => team.attendance.map((entry) => text(entry.date))))].filter(Boolean).sort();
   const attendanceRows = teams.flatMap((team) => team.members.map((member) => {
     const records = new Map(team.attendance.filter((entry) => entry.member_id === member.id).map((entry) => [text(entry.date), entry]));
+    // Export only participants who were actually present on at least one date.
+    if (![...records.values()].some((entry) => entry.present)) return null;
     const row = { teamId: team.id, teamCode: text(team.team_code), teamName: text(team.team_name), lead: text(team.lead_name), memberId: member.id, member: text(member.full_name), role: member.is_lead ? "Team lead" : "Team member", email: text(member.email), phone: text(member.phone), institution: text(member.institution) };
     attendanceDates.forEach((attendanceDate, index) => { const entry = records.get(attendanceDate); row[`date_${index}`] = entry ? (entry.present ? "Present" : "Absent") : "—"; });
     return row;
-  }));
-  const teamColumns = [{ key: "id", header: "Team ID", width: 12 }, { key: "code", header: "Team Code", width: 20 }, { key: "name", header: "Team Name", width: 28 }, { key: "lead", header: "Team Lead", width: 26 }, { key: "leadId", header: "Lead Member ID", width: 16 }, { key: "category", header: "Category", width: 16 }, { key: "sector", header: "Sector", width: 18 }, { key: "solution", header: "Solution Type", width: 18 }, { key: "members", header: "Members", width: 12 }];
-  const memberColumns = [{ key: "teamId", header: "Team ID", width: 12 }, { key: "teamCode", header: "Team Code", width: 20 }, { key: "teamName", header: "Team Name", width: 28 }, { key: "memberId", header: "Member ID", width: 14 }, { key: "name", header: "Full Name", width: 26 }, { key: "role", header: "Role", width: 16 }, { key: "email", header: "Email", width: 32 }, { key: "phone", header: "Phone", width: 20 }, { key: "institution", header: "Institution", width: 38 }, { key: "course", header: "Course / Department", width: 26 }, { key: "year", header: "Year / Grade", width: 16 }];
+  })).filter(Boolean);
   const attendanceColumns = [{ key: "teamId", header: "Team ID", width: 12 }, { key: "teamCode", header: "Team Code", width: 20 }, { key: "teamName", header: "Team Name", width: 28 }, { key: "lead", header: "Team Lead", width: 26 }, { key: "memberId", header: "Member ID", width: 14 }, { key: "member", header: "Participant", width: 26 }, { key: "role", header: "Role", width: 16 }, { key: "email", header: "Email", width: 32 }, { key: "phone", header: "Phone", width: 20 }, { key: "institution", header: "Institution", width: 36 }, ...attendanceDates.map((attendanceDate, index) => ({ key: `date_${index}`, header: attendanceDate, width: 16 }))];
-  const subtitle = `${teams.length} teams · ${memberRows.length} members · Exported ${generatedAt.toLocaleString("en-IN")}`;
-  // Put the participant-level attendance view first so Excel opens on the useful
-  // sheet instead of the team summary. The summary sheets remain available as
-  // secondary tabs for reference.
-  const sheets = [createSheet("Attendance", "AI CONCLAVE 2026 · ATTENDANCE BY PARTICIPANT", `${attendanceRows.length} participants · Exported ${generatedAt.toLocaleString("en-IN")}`, attendanceColumns, attendanceRows), createSheet("Members", "AI CONCLAVE 2026 · TEAM MEMBERS", subtitle, memberColumns, memberRows), createSheet("Teams", "AI CONCLAVE 2026 · TEAMS", subtitle, teamColumns, teamRows)];
+  if (!attendanceRows.length) throw new Error("There are no present students to export.");
+  const sheets = [createSheet("Attendance", "AI CONCLAVE 2026 · PRESENT PARTICIPANTS", `${attendanceRows.length} present participants · Exported ${generatedAt.toLocaleString("en-IN")}`, attendanceColumns, attendanceRows)];
   const { strToU8, zipSync } = await import("fflate");
   return { bytes: packageWorkbook(sheets, zipSync, strToU8), filename: `ai-conclave-2026-attendance-${localDatePart(generatedAt)}.xlsx` };
 }
