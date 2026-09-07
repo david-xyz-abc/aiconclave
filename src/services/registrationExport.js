@@ -489,9 +489,9 @@ export async function createAttendanceWorkbook(teams) {
   if (!teams.length) throw new Error("There are no teams to export.");
   const generatedAt = new Date();
   const attendanceRows = teams.flatMap((team) => team.members.map((member) => {
-    const records = new Map(team.attendance.filter((entry) => entry.member_id === member.id).map((entry) => [text(entry.date), entry]));
-    // Export only participants who were actually present on at least one date.
-    if (![...records.values()].some((entry) => entry.present)) return null;
+    const latest = team.attendance.filter((entry) => entry.member_id === member.id)
+      .sort((a, b) => text(b.date).localeCompare(text(a.date)) || text(b.marked_at).localeCompare(text(a.marked_at)))[0];
+    if (!latest?.present) return null;
     return { teamId: team.id, teamCode: text(team.team_code), teamName: text(team.team_name), lead: text(team.lead_name), memberId: member.id, member: text(member.full_name), role: member.is_lead ? "Team lead" : "Team member", email: text(member.email), phone: text(member.phone), institution: text(member.institution), attendance: "Present" };
   })).filter(Boolean).map((row, index) => ({ index: index + 1, ...row }));
   const attendanceColumns = [{ key: "index", header: "#", width: 8 }, { key: "teamId", header: "Team ID", width: 12 }, { key: "teamCode", header: "Team Code", width: 20 }, { key: "teamName", header: "Team Name", width: 28 }, { key: "lead", header: "Team Lead", width: 26 }, { key: "memberId", header: "Member ID", width: 14 }, { key: "member", header: "Participant", width: 26 }, { key: "role", header: "Role", width: 16 }, { key: "email", header: "Email", width: 32 }, { key: "phone", header: "Phone", width: 20 }, { key: "institution", header: "Institution", width: 36 }, { key: "attendance", header: "Attendance", width: 16 }];

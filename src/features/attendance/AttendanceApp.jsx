@@ -160,6 +160,7 @@ function AttendanceDesk({ onLogout, user }) {
     [team],
   );
   const attendanceMarked = Boolean(team?.attendance_marked);
+  const leadPresent = Boolean(team?.members?.some((member) => member.id === team.lead_member_id && member.present));
   function updateMember(memberId, present) {
     setTeam((current) => ({
       ...current,
@@ -170,8 +171,9 @@ function AttendanceDesk({ onLogout, user }) {
     setMessage("");
     setShowConfirmDialog(false);
   }
-  function requestSaveAttendance() { setShowConfirmDialog(true); }
+  function requestSaveAttendance() { if (leadPresent) setShowConfirmDialog(true); }
   async function saveAttendance() {
+    if (!leadPresent) return;
     setShowConfirmDialog(false);
     setSaving(true);
     setError("");
@@ -213,7 +215,11 @@ function AttendanceDesk({ onLogout, user }) {
     setError("");
     try {
       const data = await attendanceApi.changeLead(team.id, memberId);
-      setTeam(data.team);
+      setTeam((current) => current?.id === data.team.id ? {
+        ...data.team,
+        members: data.team.members.map((member) => ({ ...member, present: current.members.find((draft) => draft.id === member.id)?.present ?? member.present })),
+      } : current);
+      setShowConfirmDialog(false);
       setTeams((current) =>
         current.map((item) =>
           item.id === team.id
@@ -378,6 +384,9 @@ function AttendanceDesk({ onLogout, user }) {
                     {message}
                   </p>
                 )}
+                {canEdit && (!attendanceMarked || editingAttendance) && !leadPresent && (
+                  <p className="form-error">The team lead must be present. If absent, select a present member as team lead.</p>
+                )}
                 {attendanceMarked && !editingAttendance ? (
                   <div className="attendance-locked-bar">
                     <span>Attendance marked</span>
@@ -392,7 +401,7 @@ function AttendanceDesk({ onLogout, user }) {
                 ) : canEdit ? (
                   <button
                     className="button button-primary attendance-save"
-                    disabled={saving}
+                    disabled={saving || !leadPresent}
                     onClick={requestSaveAttendance}
                   >
                     {saving ? "Saving attendance…" : attendanceMarked ? "Save changes" : "Mark attendance"}
