@@ -203,7 +203,7 @@
 }
 
 .is-registration-closed > :not(.registration-closed-layer) {
-  opacity: 0.28;
+  opacity: 1;
 }
 
 .registration-closed-layer {

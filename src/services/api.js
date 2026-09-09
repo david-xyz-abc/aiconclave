@@ -34,6 +34,7 @@ export const authApi = {
 }
 
 export const registrationApi = {
+  capacity: () => requestJson('/api/registration-capacity', { cache: 'no-store', signal: AbortSignal.timeout(10000) }),
   listMine: () => requestJson('/api/my-registration'),
   submit: (registrationType, form) => requestJson('/api/register', {
     method: 'POST',

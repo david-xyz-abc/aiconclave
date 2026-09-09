@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useHackathonCapacity } from './useHackathonCapacity.js'
 import { PATHS } from '../../config/routes.js'
 import { ApiError, registrationApi } from '../../services/api.js'
 import { ParticipantBar } from '../auth/AuthComponents.jsx'
@@ -185,6 +186,7 @@ function AlreadyRegisteredPage({ eventName }) {
 }
 
 export function RegistrationChoicePage({ participant, onSignOut, signingOut }) {
+  const [capacity, retryCapacity] = useHackathonCapacity()
   const [registrationState, retryRegistrationCheck] = useExistingRegistrations(participant)
   const [selectedWorkshop, setSelectedWorkshop] = useState(null)
   const panelRegistered = hasEventRegistration(registrationState.registrations, 'panel')
@@ -198,7 +200,7 @@ export function RegistrationChoicePage({ participant, onSignOut, signingOut }) {
     <section className="page-header"><div className="container"><p className="eyebrow">Registration</p><h1 className="section-heading">Choose your experience</h1><p className="section-lede">Start with Day 1 panel discussions or register for the Day 2 hackathon.</p></div></section>
     <section className="section"><div className="container"><ParticipantBar participant={participant} onSignOut={onSignOut} signingOut={signingOut} /><RegistrationEnquiryDirectory /><div className="registration-choice-grid">
       {panelRegistered ? <article className="registration-choice registration-choice-panel is-already-registered is-registration-status" data-reveal><span className="choice-number" aria-hidden="true">01</span><span className="stamp">Day 1 · Industry Panels</span><h2>Panel Discussion Registration</h2><p>For industry delegates, experts, professionals, educators and researchers attending the Agriculture, Education or Healthcare panels.</p><div className="registered-event-preview"><strong>Panel entry</strong><p>{panelRegistration?.panelSelection || 'Your panel registration has been received.'}</p></div><div className="registration-choice-registered-row"><span className="registration-state-badge"><i aria-hidden="true"></i> Already registered</span><a href={PATHS.myRegistration}>View registration <span aria-hidden="true">→</span></a></div></article> : <a className="registration-choice registration-choice-panel" href={PATHS.registerPanel} data-reveal><span className="choice-number" aria-hidden="true">01</span><span className="stamp">Day 1 · Industry Panels</span><h2>Panel Discussion Registration</h2><p>For industry delegates, experts, professionals, educators and researchers attending the Agriculture, Education or Healthcare panels.</p><span className="choice-action">{registrationState.status === 'loading' ? 'Checking registration…' : 'Register for Panel Discussion'} <span aria-hidden="true">→</span></span></a>}
-      {hackathonRegistered ? <article className="registration-choice registration-choice-hackathon is-already-registered is-registration-status" data-reveal><span className="choice-number" aria-hidden="true">02</span><span className="stamp">Day 2 · Hackathon</span><h2>Hackathon Registration</h2><p>For school and college students joining either the Technical or Non-Technical track.</p><div className="registered-event-preview"><strong>{hackathonRegistration?.teamName ? `Team · ${hackathonRegistration.teamName}` : 'Hackathon entry'}</strong><p>{hackathonRegistration?.sectorTrack ? `${hackathonRegistration.sectorTrack} · ${hackathonRegistration.solutionType}` : 'Your hackathon registration has been received.'}</p></div><div className="registration-choice-registered-row"><span className="registration-state-badge"><i aria-hidden="true"></i> Already registered</span><a href={PATHS.myRegistration}>View registration <span aria-hidden="true">→</span></a></div></article> : HACKATHON_REGISTRATION_OPEN ? <a className="registration-choice registration-choice-hackathon" href={PATHS.registerHackathon} data-reveal><span className="choice-number" aria-hidden="true">02</span><span className="stamp">Day 2 · Hackathon</span><h2>Hackathon Registration</h2><p>For school and college students joining either the Technical or Non-Technical track.</p><div className="hackathon-instruction-preview"><strong>Before you apply</strong><p>Read the hackathon instructions carefully before applying. Make sure you understand and meet every eligibility criterion and participation requirement.</p></div><span className="choice-action">Register for Hackathon <span aria-hidden="true">→</span></span></a> : <div className="registration-choice registration-choice-hackathon is-registration-closed" aria-disabled="true" data-reveal><span className="choice-number" aria-hidden="true">02</span><span className="stamp">Day 2 · Hackathon</span><h2>Hackathon Registration</h2><p>For school and college students joining the Technical or Non-Technical hackathon.</p><span className="choice-action choice-action-disabled">Registration Not Started</span><div className="registration-closed-layer"><span className="closed-status"><i aria-hidden="true"></i> Registration update</span><strong>Opening Soon</strong><small>Hackathon registration has not started yet.</small></div></div>}
+      {hackathonRegistered ? <article className="registration-choice registration-choice-hackathon is-already-registered is-registration-status" data-reveal><span className="choice-number" aria-hidden="true">02</span><span className="stamp">Day 2 · Hackathon</span><h2>Hackathon Registration</h2><p>For school and college students joining either the Technical or Non-Technical track.</p><div className="registered-event-preview"><strong>{hackathonRegistration?.teamName ? `Team · ${hackathonRegistration.teamName}` : 'Hackathon entry'}</strong><p>{hackathonRegistration?.sectorTrack ? `${hackathonRegistration.sectorTrack} · ${hackathonRegistration.solutionType}` : 'Your hackathon registration has been received.'}</p></div><div className="registration-choice-registered-row"><span className="registration-state-badge"><i aria-hidden="true"></i> Already registered</span><a href={PATHS.myRegistration}>View registration <span aria-hidden="true">→</span></a></div></article> : HACKATHON_REGISTRATION_OPEN && capacity.open ? <a className="registration-choice registration-choice-hackathon" href={PATHS.registerHackathon} data-reveal><span className="choice-number" aria-hidden="true">02</span><span className="stamp">Day 2 · Hackathon</span><h2>Hackathon Registration</h2><p>For school and college students joining either the Technical or Non-Technical track.</p><div className="hackathon-instruction-preview"><strong>Before you apply</strong><p>Read the hackathon instructions carefully before applying. Make sure you understand and meet every eligibility criterion and participation requirement.</p></div><span className="choice-action">Register for Hackathon <span aria-hidden="true">→</span></span></a> : <div className="registration-choice registration-choice-hackathon is-registration-closed" aria-disabled="true" data-reveal><span className="choice-number" aria-hidden="true">02</span><span className="stamp">Day 2 · Hackathon</span><h2>Hackathon Registration</h2><p>For school and college students joining the Technical or Non-Technical hackathon.</p><span className="choice-action choice-action-disabled" role="status">{capacity.status === 'loading' ? 'Checking availability…' : capacity.status === 'error' ? 'Registration status unavailable' : 'Registration closed'}</span>{capacity.status === 'error' && <button type="button" className="btn btn-outline" onClick={retryCapacity}>Try again</button>}</div>}
     </div>
     <section className="workshop-registration-section" aria-label="Workshop registrations">
       <div className="workshop-registration-grid">{WORKSHOPS.map((workshop, index) => <article className="workshop-registration-card" key={workshop.id}>
@@ -216,7 +218,8 @@ export function RegistrationChoicePage({ participant, onSignOut, signingOut }) {
   </main>
 }
 
-export function HackathonRegisterPage({ participant }) {
+export function HackathonRegisterPage({ participant, capacity, refreshCapacity }) {
+  const [capacityRejected, setCapacityRejected] = useState(false)
   const [registrationState, retryRegistrationCheck] = useExistingRegistrations(participant)
   const freshHackathonForm = () => ({
     ...initialHackathonForm,
@@ -238,6 +241,8 @@ export function HackathonRegisterPage({ participant }) {
   if (registrationState.status === 'loading') return <main id="main"><section className="account-loading"><span className="account-spinner" aria-hidden="true"></span><p>Checking hackathon registration…</p></section></main>
   if (registrationState.status === 'error') return <RegistrationEligibilityError message={registrationState.error} onRetry={retryRegistrationCheck} />
   if (hasEventRegistration(registrationState.registrations, 'hackathon')) return <AlreadyRegisteredPage eventName="Hackathon" />
+
+  if (!submitted && (capacityRejected || (capacity.status === 'ready' && !capacity.open))) return <HackathonRegistrationClosedPage />
 
   const updateField = (event) => {
     const { name, value, type, checked } = event.target
@@ -286,6 +291,11 @@ export function HackathonRegisterPage({ participant }) {
   const submit = async (event) => {
     event.preventDefault()
     if (submitting) return
+    if (!capacity.open || form.members.length > capacity.remaining) {
+      setError('Your whole team must fit within the remaining places.')
+      refreshCapacity()
+      return
+    }
     const validationErrors = validateHackathonForm(form)
     if (Object.keys(validationErrors).length) {
       setFieldErrors(validationErrors)
@@ -302,6 +312,10 @@ export function HackathonRegisterPage({ participant }) {
       setSubmitted(true)
       setWhatsappPromptOpen(true)
     } catch (submitError) {
+      if (submitError.details?.code === 'HACKATHON_CAPACITY') {
+        setCapacityRejected(submitError.details.capacity?.open === false)
+        refreshCapacity()
+      }
       const serverErrors = submitError instanceof ApiError && submitError.details?.fields && typeof submitError.details.fields === 'object' ? submitError.details.fields : {}
       setFieldErrors(serverErrors)
       setError(submitError.message || 'Network error. Check your connection and try again.')
@@ -315,6 +329,7 @@ export function HackathonRegisterPage({ participant }) {
     <section className="page-header hackathon-register-header"><div className="container"><a className="back-link" href={PATHS.register}>← All registrations</a><p className="eyebrow">Day 2 · Hackathon</p><h1 className="section-heading">Create your team</h1><p className="panel-theme-line">Agriculture <span>•</span> Healthcare <span>•</span> Education</p><p className="section-lede">Register one team of 2 to 4 internal or external school or college students. The captain completes this form for everyone.</p></div></section>
     <section id="registration-form" className="section"><div className="container register-layout">
       <form id="register-form" className="sectioned-form hackathon-register-form" noValidate hidden={submitted} onSubmit={submit}>
+        <p role="status">{capacity.status === 'error' ? 'Registration availability could not be checked. Please try again.' : `${capacity.remaining} places remaining.`}</p>
         <div className="hackathon-rules-banner"><strong>Before you apply</strong><p>Read the hackathon instructions carefully. Make sure every student meets the eligibility criteria before submitting the team.</p><ul>{HACKATHON_REGISTRATION_RULES.map((rule) => <li key={rule}>{rule}</li>)}</ul></div>
 
         <fieldset className="form-section"><legend><span>01</span> Team Setup</legend>
@@ -355,7 +370,7 @@ export function HackathonRegisterPage({ participant }) {
           <label className={`confirmation-check${fieldErrors.rulesAccepted ? ' has-error' : ''}`}><input type="checkbox" name="rulesAccepted" checked={form.rulesAccepted} onChange={updateField} required /><span>Every listed student has agreed to participate and meets the hackathon criteria. *</span></label><FieldError id="hackathon-rules-error" message={fieldErrors.rulesAccepted} />
           <label className="confirmation-check"><input type="checkbox" name="updatesOptIn" checked={form.updatesOptIn} onChange={updateField} /><span>I agree to receive official hackathon updates.</span></label>
         </fieldset>
-        <div className="form-submit-row"><button type="submit" className="btn btn-primary" disabled={submitting} aria-busy={submitting}>{submitting ? 'Creating team…' : <>Submit Team Registration <span aria-hidden="true">→</span></>}</button><p className={`form-error${error ? ' is-visible' : ''}`} role="alert" aria-live="polite">{error}</p></div>
+        <div className="form-submit-row"><button type="submit" className="btn btn-primary" disabled={submitting || !capacity.open || form.members.length > capacity.remaining} aria-busy={submitting}>{submitting ? 'Creating team…' : <>Submit Team Registration <span aria-hidden="true">→</span></>}</button><p className={`form-error${error ? ' is-visible' : ''}`} role="alert" aria-live="polite">{error}</p></div>
       </form>
       <div className={`confirmation-panel hackathon-confirmation-panel${submitted ? ' is-visible' : ''}`} role="status" aria-live="polite" tabIndex={submitted ? -1 : undefined}><span className="stamp">Team Registration Received</span><h2>Your team is registered.</h2><p>Keep the team code for future reference. The complete registration is available in My registrations.</p>{confirmation && <dl className="confirmation-summary"><dt>Team</dt><dd>{confirmation.teamName}</dd><dt>Team code</dt><dd>{confirmation.teamCode}</dd><dt>Category</dt><dd>{confirmation.participantCategory}</dd><dt>Team size</dt><dd>{confirmation.members.length} students</dd><dt>Entry</dt><dd>{confirmation.sectorTrack} · {confirmation.solutionType}</dd></dl>}<div className="confirmation-actions"><a className="btn whatsapp-join-button" href={whatsappGroups.hackathon} target="_blank" rel="noopener noreferrer">Join WhatsApp Group <span aria-hidden="true">↗</span></a><a className="btn instagram-follow-button" href={instagramProfileUrl} target="_blank" rel="noopener noreferrer">Follow on Instagram <span aria-hidden="true">↗</span></a><a className="btn btn-primary" href={PATHS.myRegistration}>View My Registration <span aria-hidden="true">→</span></a><a className="btn btn-outline" href={PATHS.register}>Back to Registrations</a></div></div>
     </div></section>
@@ -365,7 +380,7 @@ export function HackathonRegisterPage({ participant }) {
 }
 
 export function HackathonRegistrationClosedPage() {
-  return <main id="main"><section className="page-header"><div className="container"><a className="back-link" href={PATHS.register}>← All registrations</a><p className="eyebrow">Day 2 · Hackathon</p><h1 className="section-heading">Hackathon Registration</h1><p className="section-lede">Technical and Non-Technical tracks for school and college students.</p></div></section><section className="section"><div className="container register-layout"><div className="registration-closed-notice"><span className="stamp">Coming Soon</span><h2>Registration has not started.</h2><p>Hackathon registration is temporarily closed. Please check back soon for the opening announcement.</p><a className="btn btn-primary" href={PATHS.registerPanel}>Register for Panel Discussion <span aria-hidden="true">→</span></a></div></div></section></main>
+  return <main id="main"><section className="page-header"><div className="container"><a className="back-link" href={PATHS.register}>← All registrations</a><p className="eyebrow">Day 2 · Hackathon</p><h1 className="section-heading">Hackathon Registration</h1><p className="section-lede">Technical and Non-Technical tracks for school and college students.</p></div></section><section className="section"><div className="container register-layout"><div className="registration-closed-notice"><span className="stamp">Registration closed</span><h2>Hackathon registration is closed.</h2><p>No further teams can register.</p><a className="btn btn-primary" href={PATHS.registerPanel}>Register for Panel Discussion <span aria-hidden="true">→</span></a></div></div></section></main>
 }
 
 function RadioOptions({ name, options, value, onChange, required = false, errorId, invalid = false }) {

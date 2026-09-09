@@ -10,6 +10,7 @@ const API_POLICIES = [
   { method: 'GET', path: '/api/my-registration', limit: 600, windowSeconds: 60 },
   { method: 'GET', path: '/api/auth/session', limit: 1_200, windowSeconds: 60 },
   { method: 'GET', path: '/api/auth/config', limit: 600, windowSeconds: 60 },
+  { method: 'GET', path: '/api/registration-capacity', limit: 2400, windowSeconds: 60 },
 ]
 
 const FALLBACK_POLICY = { limit: 300, windowSeconds: 60 }
