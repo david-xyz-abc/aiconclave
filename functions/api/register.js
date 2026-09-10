@@ -2,7 +2,6 @@ import { isSameOrigin, json, readJsonBody } from '../_lib/http.js'
 import { enforceParticipantRegistrationLimit } from '../_lib/rateLimit.js'
 import { queueRegistrationEmail } from '../_lib/registrationEmail.js'
 import { getParticipantSession } from '../_lib/session.js'
-import { capacityError, getHackathonCapacity, PUBLIC_STUDENT_LIMIT, STUDENT_COUNT_SQL } from '../_lib/capacity.js'
 
 const ALLOWED_PARTICIPANT_TYPES = new Set(['Faculty', 'Professional / Industry Delegate', 'Researcher', 'Other'])
 const ALLOWED_PANELS = new Set(['AI in Agriculture', 'AI in Education', 'AI in Healthcare'])
@@ -206,11 +205,8 @@ export async function onRequestPost(context) {
       const submittedAt = new Date().toISOString()
       const siteOrigin = new URL(context.request.url).origin
       const statements = [
-        // Check capacity inside the write transaction. A rejected insert makes every
-        // following team-code-scoped statement a no-op, including the email outbox.
         db.prepare(`INSERT INTO hackathon_teams (team_code, team_name, team_name_key, captain_account_id, participant_category, team_size, sector_track, solution_type, information_confirmed, rules_accepted, updates_opt_in, submitted_at)
-          SELECT ?, ?, ?, ?, ?, ?, ?, ?, 1, 1, ?, ?
-          WHERE ? = 'School' OR (${STUDENT_COUNT_SQL}) + ? <= ?`).bind(code, name, nameKey, participant.id, participantCategory, members.length, sectorTrack, solutionType, updatesOptIn ? 1 : 0, submittedAt, participantCategory, members.length, PUBLIC_STUDENT_LIMIT),
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 1, ?, ?)`).bind(code, name, nameKey, participant.id, participantCategory, members.length, sectorTrack, solutionType, updatesOptIn ? 1 : 0, submittedAt),
         ...members.map((member, index) => db.prepare(`INSERT INTO hackathon_team_members (team_id, member_order, role, account_id, full_name, email, email_key, phone, institution, department_or_course, year_or_grade) SELECT id, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FROM hackathon_teams WHERE team_code = ?`).bind(index + 1, index === 0 ? 'Captain' : 'Member', index === 0 ? participant.id : null, member.fullName, member.email, member.emailKey, member.phone, member.institution, member.departmentOrCourse, member.yearOrGrade, code)),
         ...members.map((member, index) => db.prepare(`INSERT INTO hackathon_member_claims (email_key, email, team_id, member_id) SELECT ?, ?, t.id, m.id FROM hackathon_teams t JOIN hackathon_team_members m ON m.team_id = t.id AND m.member_order = ? WHERE t.team_code = ?`).bind(member.emailKey, member.email, index + 1, code)),
         db.prepare(`
@@ -221,8 +217,7 @@ export async function onRequestPost(context) {
           FROM hackathon_teams WHERE team_code = ?
         `).bind(siteOrigin, code),
       ]
-      const results = await db.batch(statements)
-      if (!results[0].meta.changes) return json(capacityError(await getHackathonCapacity(db)), 409)
+      await db.batch(statements)
       const savedTeam = await db.prepare(`
         SELECT t.id, d.id AS delivery_id
         FROM hackathon_teams t
@@ -235,7 +230,6 @@ export async function onRequestPost(context) {
     } catch (error) {
       console.error(JSON.stringify({ event: 'hackathon_registration_insert_failed', reason: error instanceof Error ? error.message : 'unknown' }))
       const reason = error instanceof Error ? error.message : ''
-      if (reason.includes('hackathon_capacity_exceeded')) return json(capacityError(await getHackathonCapacity(db)), 409)
       if (reason.includes('hackathon_teams.team_name_key')) return json({ ok: false, error: 'That team name is already registered.', fields: { teamName: 'Choose a different team name.' } }, 409)
       if (reason.includes('hackathon_teams.captain_account_id')) return json({ ok: false, error: 'You have already registered a hackathon team.' }, 409)
       if (reason.includes('hackathon_member_claims.email_key')) return json({ ok: false, error: 'One of these students is already registered in another team.', fields: { members: 'Every student can belong to only one submitted team.' } }, 409)

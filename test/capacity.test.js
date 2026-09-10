@@ -63,109 +63,40 @@ function fixture(students) {
   return { sql, db, submit, seedTeam, addMember }
 }
 
-test('whole team fits exactly at public limit', async () => {
-  const f = fixture(1292)
-  assert.equal((await f.submit(4)).status, 201)
-  assert.deepEqual(await getHackathonCapacity(f.db), { students: 1296, category: 'All', limit: 1296, remaining: 0, open: true, collegeOpen: false, schoolOpen: true })
-  f.sql.close()
-})
 
-test('oversized team rejected without members, claims, team or email; smaller team fits', async () => {
-  const f = fixture(1293)
-  const before = f.sql.prepare('SELECT COUNT(*) AS n FROM hackathon_teams').get().n
-  const response = await f.submit(4)
-  assert.equal(response.status, 409)
-  assert.equal((await response.json()).capacity.remaining, 3)
-  assert.equal(f.sql.prepare('SELECT COUNT(*) AS n FROM hackathon_teams').get().n, before)
-  assert.equal(f.sql.prepare('SELECT COUNT(*) AS n FROM hackathon_member_claims').get().n, 0)
-  assert.equal(f.sql.prepare('SELECT COUNT(*) AS n FROM registration_email_deliveries').get().n, 0)
-  assert.equal((await f.submit(3)).status, 201)
-  f.sql.close()
-})
-
-test('concurrent submissions cannot both claim final places', async () => {
-  const f = fixture(1292)
-  const responses = await Promise.all([f.submit(4), f.submit(4)])
-  assert.deepEqual(responses.map(r => r.status).sort(), [201, 409])
-  assert.equal((await getHackathonCapacity(f.db)).students, 1296)
-  f.sql.close()
-})
-
-test('one remaining college place closes only colleges; drafts do not consume places', async () => {
-  const f = fixture(1295)
-  f.seedTeam(4, false)
-  assert.equal((await getHackathonCapacity(f.db)).collegeOpen, false)
-  assert.equal((await getHackathonCapacity(f.db)).open, true)
-  assert.equal((await f.submit(2)).status, 409)
+test('both categories register beyond former public and hard limits', async () => {
+  const f = fixture(1400)
+  for (const category of ['College', 'School']) {
+    for (const size of [2, 3, 4]) assert.equal((await f.submit(size, category)).status, 201)
+  }
+  const capacity = await getHackathonCapacity(f.db)
+  assert.equal(capacity.students, 1418)
+  assert.equal(capacity.limit, null)
+  assert.equal(capacity.unlimited, true)
+  assert.equal(capacity.collegeOpen, true)
+  assert.equal(capacity.schoolOpen, true)
   const response = await onRequestGet({ env: { DB: f.db } })
   assert.equal(response.headers.get('cache-control'), 'no-store')
-  assert.equal((await response.json()).hackathon.students, 1295)
+  assert.equal((await response.json()).hackathon.open, true)
   f.sql.close()
 })
 
-test('hard limit blocks member additions, draft submission and moving draft members', () => {
-  const f = fixture(1298)
+test('concurrent teams all succeed across the former cutoff', async () => {
+  const f = fixture(1294)
+  const responses = await Promise.all([f.submit(4), f.submit(4, 'School'), f.submit(4)])
+  assert.deepEqual(responses.map(r => r.status), [201, 201, 201])
+  assert.equal((await getHackathonCapacity(f.db)).students, 1306)
+  f.sql.close()
+})
+
+test('database capacity guards are removed for member additions and draft submission', () => {
+  const f = fixture(1400)
   const team = f.seedTeam(2)
-  assert.throws(() => f.addMember(team, 3), /hackathon_capacity_exceeded/)
+  f.addMember(team, 3)
   const draft = f.seedTeam(2, false)
-  assert.throws(() => f.sql.prepare('UPDATE hackathon_teams SET submitted_at = ? WHERE id = ?').run('2026-09-01', draft), /hackathon_capacity_exceeded/)
-  assert.throws(() => f.sql.prepare("UPDATE hackathon_team_members SET team_id = ?, member_order = 3, role = 'Member' WHERE team_id = ? AND member_order = 2").run(team, draft), /hackathon_capacity_exceeded/)
-  f.sql.close()
-})
-
-test('capacity failure never reports registrations open', async () => {
-  const response = await onRequestGet({ env: {} })
-  assert.equal(response.status, 503)
-  assert.equal((await response.json()).ok, false)
-})
-
-test('schools count toward the total but remain unlimited beyond the limit', async () => {
-  const f = fixture(1300)
-  for (let i = 0; i < 5; i++) assert.equal((await f.submit(4, 'School')).status, 201)
-  assert.equal((await getHackathonCapacity(f.db)).students, 1320)
-  assert.equal((await getHackathonCapacity(f.db)).schoolOpen, true)
-  const tampered = await f.submit(4, 'College')
-  assert.equal(tampered.status, 409)
-  assert.match((await tampered.json()).error, /Registrations concluded for colleges/)
-  f.sql.close()
-})
-
-test('school members count toward closing colleges at the public cutoff', async () => {
-  const f = fixture(1292)
-  f.seedTeam(4, true, 'School')
-  assert.equal((await getHackathonCapacity(f.db)).remaining, 0)
-  assert.equal((await getHackathonCapacity(f.db)).collegeOpen, false)
-  assert.equal((await f.submit(4, 'College')).status, 409)
-  assert.equal((await f.submit(4, 'School')).status, 201)
-  f.sql.close()
-})
-
-test('school-to-college recategorization cannot bypass the hard limit', () => {
-  const f = fixture(1298)
-  const school = f.seedTeam(3, true, 'School')
-  assert.throws(() => f.sql.prepare("UPDATE hackathon_teams SET participant_category = 'College' WHERE id = ?").run(school), /hackathon_capacity_exceeded/)
-  assert.equal(f.sql.prepare('SELECT participant_category FROM hackathon_teams WHERE id = ?').get(school).participant_category, 'School')
-  const fits = 1
-  const draftSchool = f.seedTeam(4, false, 'School')
-  f.sql.prepare('UPDATE hackathon_teams SET submitted_at = ? WHERE id = ?').run('2026-09-01', draftSchool)
-  assert.throws(() => f.sql.prepare("UPDATE hackathon_team_members SET team_id = ?, member_order = 3, role = 'Member' WHERE team_id = ? AND member_order = 2").run(fits, school), /hackathon_capacity_exceeded/)
-  f.sql.close()
-})
-
-test('concurrent college and school submissions share the count while schools remain open', async () => {
-  const f = fixture(1292)
-  const responses = await Promise.all([f.submit(4, 'College'), f.submit(4, 'School'), f.submit(4, 'College')])
-  assert.equal(responses[1].status, 201)
-  const acceptedColleges = [responses[0], responses[2]].filter(r => r.status === 201).length
-  assert.ok(acceptedColleges <= 1)
-  assert.ok([responses[0], responses[2]].every(r => [201, 409].includes(r.status)))
-  assert.equal((await getHackathonCapacity(f.db)).students, 1296 + acceptedColleges * 4)
-  f.sql.close()
-})
-
-test('school-to-college recategorization at the hard limit does not double count members', () => {
-  const f = fixture(1298)
+  f.sql.prepare('UPDATE hackathon_teams SET submitted_at = ? WHERE id = ?').run('2026-09-10', draft)
   const school = f.seedTeam(2, true, 'School')
   f.sql.prepare("UPDATE hackathon_teams SET participant_category = 'College' WHERE id = ?").run(school)
+  assert.equal(f.sql.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE type = 'trigger' AND name LIKE 'hackathon_capacity_%'").get().n, 0)
   f.sql.close()
 })

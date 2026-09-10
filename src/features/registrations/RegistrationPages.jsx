@@ -220,7 +220,6 @@ export function RegistrationChoicePage({ participant, onSignOut, signingOut }) {
 }
 
 export function HackathonRegisterPage({ participant, capacity, refreshCapacity }) {
-  const [capacityRejected, setCapacityRejected] = useState(false)
   const [registrationState, retryRegistrationCheck] = useExistingRegistrations(participant)
   const freshHackathonForm = () => ({
     ...initialHackathonForm,
@@ -238,9 +237,6 @@ export function HackathonRegisterPage({ participant, capacity, refreshCapacity }
   const [whatsappPromptOpen, setWhatsappPromptOpen] = useState(false)
   const [instructionsPromptOpen, setInstructionsPromptOpen] = useState(true)
   const teamNameRef = useRef(null)
-  const collegeClosed = capacityRejected || (capacity.status === 'ready' && !capacity.collegeOpen)
-  const collegeBlocked = form.participantCategory === 'College' && (collegeClosed || capacity.status !== 'ready' || form.members.length > capacity.remaining)
-  useEffect(() => { if (capacity.collegeOpen) setCapacityRejected(false) }, [capacity])
 
   if (registrationState.status === 'loading') return <main id="main"><section className="account-loading"><span className="account-spinner" aria-hidden="true"></span><p>Checking hackathon registration…</p></section></main>
   if (registrationState.status === 'error') return <RegistrationEligibilityError message={registrationState.error} onRetry={retryRegistrationCheck} />
@@ -248,7 +244,6 @@ export function HackathonRegisterPage({ participant, capacity, refreshCapacity }
 
   const updateField = (event) => {
     const { name, value, type, checked } = event.target
-    if (name === 'participantCategory' && value === 'College' && (collegeClosed || capacity.status !== 'ready')) return
     if (name === 'participantCategory') setError('')
     setForm((current) => ({ ...current, [name]: type === 'checkbox' ? checked : value }))
     setFieldErrors((current) => {
@@ -295,11 +290,6 @@ export function HackathonRegisterPage({ participant, capacity, refreshCapacity }
   const submit = async (event) => {
     event.preventDefault()
     if (submitting) return
-    if (!capacity.open || collegeBlocked) {
-      setError(collegeClosed ? 'Registrations concluded for colleges.' : 'Your whole college team must fit within the remaining places.')
-      refreshCapacity()
-      return
-    }
     const validationErrors = validateHackathonForm(form)
     if (Object.keys(validationErrors).length) {
       setFieldErrors(validationErrors)
@@ -316,10 +306,6 @@ export function HackathonRegisterPage({ participant, capacity, refreshCapacity }
       setSubmitted(true)
       setWhatsappPromptOpen(true)
     } catch (submitError) {
-      if (submitError.details?.code === 'HACKATHON_CAPACITY') {
-        setCapacityRejected(submitError.details.capacity?.collegeOpen === false)
-        refreshCapacity()
-      }
       const serverErrors = submitError instanceof ApiError && submitError.details?.fields && typeof submitError.details.fields === 'object' ? submitError.details.fields : {}
       setFieldErrors(serverErrors)
       setError(submitError.message || 'Network error. Check your connection and try again.')
@@ -333,13 +319,12 @@ export function HackathonRegisterPage({ participant, capacity, refreshCapacity }
     <section className="page-header hackathon-register-header"><div className="container"><a className="back-link" href={PATHS.register}>← All registrations</a><p className="eyebrow">Day 2 · Hackathon</p><h1 className="section-heading">Create your team</h1><p className="panel-theme-line">Agriculture <span>•</span> Healthcare <span>•</span> Education</p><p className="section-lede">Register one team of 2 to 4 internal or external school or college students. The captain completes this form for everyone.</p></div></section>
     <section id="registration-form" className="section"><div className="container register-layout">
       <form id="register-form" className="sectioned-form hackathon-register-form" noValidate hidden={submitted} onSubmit={submit}>
-        {capacity.status === 'error' ? <p role="alert">Registration availability could not be checked. <button type="button" onClick={refreshCapacity}>Try again</button></p> : form.participantCategory === 'College' && !collegeClosed && <p role="status">{capacity.remaining} college places remaining.</p>}
         <div className="hackathon-rules-banner"><strong>Before you apply</strong><p>Read the hackathon instructions carefully. Make sure every student meets the eligibility criteria before submitting the team.</p><ul>{HACKATHON_REGISTRATION_RULES.map((rule) => <li key={rule}>{rule}</li>)}</ul></div>
 
         <fieldset className="form-section"><legend><span>01</span> Team Setup</legend>
           <div className="team-setup-grid">
             <div className="form-field"><label htmlFor="hackathon-team-name">Team Name *</label><input ref={teamNameRef} id="hackathon-team-name" name="teamName" type="text" maxLength="100" autoComplete="off" required value={form.teamName} onChange={updateField} aria-invalid={Boolean(fieldErrors.teamName)} aria-describedby={fieldErrors.teamName ? 'hackathon-team-name-error' : 'hackathon-team-name-hint'} /><p className="field-hint" id="hackathon-team-name-hint">Team names must be unique.</p><FieldError id="hackathon-team-name-error" message={fieldErrors.teamName} /></div>
-            <div className="form-field"><span className="form-legend">Student Category *</span><StudentCategoryOptions value={form.participantCategory} onChange={updateField} collegeClosed={collegeClosed} checking={capacity.status !== 'ready'} error={fieldErrors.participantCategory} /><FieldError id="hackathon-category-error" message={fieldErrors.participantCategory} /></div>
+            <div className="form-field"><span className="form-legend">Student Category *</span><StudentCategoryOptions value={form.participantCategory} onChange={updateField} error={fieldErrors.participantCategory} /><FieldError id="hackathon-category-error" message={fieldErrors.participantCategory} /></div>
           </div>
         </fieldset>
 
@@ -374,7 +359,7 @@ export function HackathonRegisterPage({ participant, capacity, refreshCapacity }
           <label className={`confirmation-check${fieldErrors.rulesAccepted ? ' has-error' : ''}`}><input type="checkbox" name="rulesAccepted" checked={form.rulesAccepted} onChange={updateField} required /><span>Every listed student has agreed to participate and meets the hackathon criteria. *</span></label><FieldError id="hackathon-rules-error" message={fieldErrors.rulesAccepted} />
           <label className="confirmation-check"><input type="checkbox" name="updatesOptIn" checked={form.updatesOptIn} onChange={updateField} /><span>I agree to receive official hackathon updates.</span></label>
         </fieldset>
-        <div className="form-submit-row"><button type="submit" className="btn btn-primary" disabled={submitting || !capacity.open || collegeBlocked} aria-busy={submitting}>{submitting ? 'Creating team…' : <>Submit Team Registration <span aria-hidden="true">→</span></>}</button><p className={`form-error${error ? ' is-visible' : ''}`} role="alert" aria-live="polite">{error}</p></div>
+        <div className="form-submit-row"><button type="submit" className="btn btn-primary" disabled={submitting} aria-busy={submitting}>{submitting ? 'Creating team…' : <>Submit Team Registration <span aria-hidden="true">→</span></>}</button><p className={`form-error${error ? ' is-visible' : ''}`} role="alert" aria-live="polite">{error}</p></div>
       </form>
       <div className={`confirmation-panel hackathon-confirmation-panel${submitted ? ' is-visible' : ''}`} role="status" aria-live="polite" tabIndex={submitted ? -1 : undefined}><span className="stamp">Team Registration Received</span><h2>Your team is registered.</h2><p>Keep the team code for future reference. The complete registration is available in My registrations.</p>{confirmation && <dl className="confirmation-summary"><dt>Team</dt><dd>{confirmation.teamName}</dd><dt>Team code</dt><dd>{confirmation.teamCode}</dd><dt>Category</dt><dd>{confirmation.participantCategory}</dd><dt>Team size</dt><dd>{confirmation.members.length} students</dd><dt>Entry</dt><dd>{confirmation.sectorTrack} · {confirmation.solutionType}</dd></dl>}<div className="confirmation-actions"><a className="btn whatsapp-join-button" href={whatsappGroups.hackathon} target="_blank" rel="noopener noreferrer">Join WhatsApp Group <span aria-hidden="true">↗</span></a><a className="btn instagram-follow-button" href={instagramProfileUrl} target="_blank" rel="noopener noreferrer">Follow on Instagram <span aria-hidden="true">↗</span></a><a className="btn btn-primary" href={PATHS.myRegistration}>View My Registration <span aria-hidden="true">→</span></a><a className="btn btn-outline" href={PATHS.register}>Back to Registrations</a></div></div>
     </div></section>
