@@ -1,4 +1,4 @@
-export const PUBLIC_STUDENT_LIMIT = 1196
+export const PUBLIC_STUDENT_LIMIT = 1296
 export const STUDENT_COUNT_SQL = `SELECT COUNT(*) FROM hackathon_team_members m
   JOIN hackathon_teams t ON t.id = m.team_id WHERE t.submitted_at IS NOT NULL`
 

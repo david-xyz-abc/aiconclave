@@ -64,14 +64,14 @@ function fixture(students) {
 }
 
 test('whole team fits exactly at public limit', async () => {
-  const f = fixture(1192)
+  const f = fixture(1292)
   assert.equal((await f.submit(4)).status, 201)
-  assert.deepEqual(await getHackathonCapacity(f.db), { students: 1196, limit: 1196, remaining: 0, open: false })
+  assert.deepEqual(await getHackathonCapacity(f.db), { students: 1296, limit: 1296, remaining: 0, open: false })
   f.sql.close()
 })
 
 test('oversized team rejected without members, claims, team or email; smaller team fits', async () => {
-  const f = fixture(1193)
+  const f = fixture(1293)
   const before = f.sql.prepare('SELECT COUNT(*) AS n FROM hackathon_teams').get().n
   const response = await f.submit(4)
   assert.equal(response.status, 409)
@@ -84,26 +84,26 @@ test('oversized team rejected without members, claims, team or email; smaller te
 })
 
 test('concurrent submissions cannot both claim final places', async () => {
-  const f = fixture(1192)
+  const f = fixture(1292)
   const responses = await Promise.all([f.submit(4), f.submit(4)])
   assert.deepEqual(responses.map(r => r.status).sort(), [201, 409])
-  assert.equal((await getHackathonCapacity(f.db)).students, 1196)
+  assert.equal((await getHackathonCapacity(f.db)).students, 1296)
   f.sql.close()
 })
 
 test('one remaining place closes public registration; drafts do not consume places', async () => {
-  const f = fixture(1195)
+  const f = fixture(1295)
   f.seedTeam(4, false)
   assert.equal((await getHackathonCapacity(f.db)).open, false)
   assert.equal((await f.submit(2)).status, 409)
   const response = await onRequestGet({ env: { DB: f.db } })
   assert.equal(response.headers.get('cache-control'), 'no-store')
-  assert.equal((await response.json()).hackathon.students, 1195)
+  assert.equal((await response.json()).hackathon.students, 1295)
   f.sql.close()
 })
 
 test('hard limit blocks member additions, draft submission and moving draft members', () => {
-  const f = fixture(1198)
+  const f = fixture(1298)
   const team = f.seedTeam(2)
   assert.throws(() => f.addMember(team, 3), /hackathon_capacity_exceeded/)
   const draft = f.seedTeam(2, false)
