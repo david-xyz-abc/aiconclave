@@ -108,6 +108,7 @@ function AttendanceDesk({ onLogout, user }) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [editingAttendance, setEditingAttendance] = useState(false);
+  const [changingLead, setChangingLead] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   useEffect(() => {
@@ -161,7 +162,7 @@ function AttendanceDesk({ onLogout, user }) {
   );
   const attendanceMarked = Boolean(team?.attendance_marked);
   const leadPresent = Boolean(team?.members?.some((member) => member.id === team.lead_member_id && member.present));
-  const canSaveAttendance = leadPresent && presentCount >= 2;
+  const canSaveAttendance = leadPresent && presentCount >= 2 && !changingLead;
   function updateMember(memberId, present) {
     setTeam((current) => ({
       ...current,
@@ -211,11 +212,14 @@ function AttendanceDesk({ onLogout, user }) {
     } finally { setExporting(false); }
   }
   async function changeLead(event) {
+    if (!canEdit || saving || changingLead || (attendanceMarked && !editingAttendance)) return;
     const memberId = Number(event.target.value);
     if (!memberId) return;
+    setChangingLead(true);
+    setShowConfirmDialog(false);
     setError("");
     try {
-      const data = await attendanceApi.changeLead(team.id, memberId);
+      const data = await attendanceApi.changeLead(team.id, memberId, editingAttendance);
       setTeam((current) => current?.id === data.team.id ? {
         ...data.team,
         members: data.team.members.map((member) => ({ ...member, present: current.members.find((draft) => draft.id === member.id)?.present ?? member.present })),
@@ -233,6 +237,7 @@ function AttendanceDesk({ onLogout, user }) {
       setError(e.message);
       if (isUnauthorized(e)) onLogout();
     }
+    finally { setChangingLead(false); }
   }
   return (
     <div className="attendance-shell">
@@ -329,7 +334,7 @@ function AttendanceDesk({ onLogout, user }) {
                       <select
                         value={team.lead_member_id || ""}
                         onChange={changeLead}
-                        disabled={!canEdit}
+                        disabled={!canEdit || saving || changingLead || (attendanceMarked && !editingAttendance)}
                       >
                         {team.members.map((member) => (
                           <option value={member.id} key={member.id}>

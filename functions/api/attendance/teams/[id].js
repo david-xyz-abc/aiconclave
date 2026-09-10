@@ -50,7 +50,8 @@ export async function onRequestPatch(context) {
   try {
     const member = await context.env.DB.prepare("SELECT id FROM hackathon_team_members WHERE id = ? AND team_id = ?").bind(memberId, id).first();
     if (!member) return attendanceJson({ ok: false, error: "That member is not part of this team." }, 400);
-    await context.env.DB.prepare("UPDATE hackathon_teams SET attendance_lead_member_id = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ? AND submitted_at IS NOT NULL").bind(memberId, id).run();
+    const result = await context.env.DB.prepare("UPDATE hackathon_teams SET attendance_lead_member_id = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ? AND submitted_at IS NOT NULL AND (? = 1 OR NOT EXISTS (SELECT 1 FROM hackathon_attendance WHERE team_id = ?))").bind(memberId, id, body.editingAttendance === true ? 1 : 0, id).run();
+    if (!result.meta.changes) return attendanceJson({ ok: false, error: "Attendance is already marked. Click Edit before changing the team lead." }, 409);
     const team = await loadTeam(context.env.DB, id, new Date().toISOString().slice(0, 10));
     return attendanceJson({ ok: true, team });
   } catch { return attendanceJson({ ok: false, error: "Could not update the team lead." }, 500); }

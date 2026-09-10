@@ -75,10 +75,10 @@ export const attendanceApi = {
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ date, attendance }),
   }),
-  changeLead: (id, memberId) => requestJson(`/api/attendance/teams/${encodeURIComponent(id)}`, {
+  changeLead: (id, memberId, editingAttendance = false) => requestJson(`/api/attendance/teams/${encodeURIComponent(id)}`, {
     method: "PATCH",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ leadMemberId: memberId }),
+    body: JSON.stringify({ leadMemberId: memberId, editingAttendance }),
   }),
   exportData: () => requestJson("/api/attendance/export"),
 };
