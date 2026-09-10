@@ -13,7 +13,7 @@ export function useHackathonCapacity() {
       pending = true
       try {
         const data = await registrationApi.capacity()
-        if (!data.hackathon || typeof data.hackathon.open !== 'boolean') throw new Error('Registration status is unavailable.')
+        if (!data.hackathon || typeof data.hackathon.open !== 'boolean' || typeof data.hackathon.collegeOpen !== 'boolean') throw new Error('Registration status is unavailable.')
         if (active) setCapacity({ ...data.hackathon, status: 'ready' })
       } catch {
         if (active) setCapacity({ status: 'error', open: false })

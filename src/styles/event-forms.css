@@ -120,6 +120,22 @@
   transform: translateY(-2px);
 }
 
+.radio-option.is-disabled,
+.radio-option.is-disabled:hover,
+.radio-option.is-disabled:has(input:checked) {
+  background: #e5e5e5;
+  color: #666;
+  border-color: #ccc;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.radio-option.is-disabled input {
+  cursor: not-allowed;
+  accent-color: #777;
+}
+
 .radio-option input,
 .confirmation-check input {
   flex: 0 0 auto;
@@ -677,4 +693,3 @@
 .form-error.is-visible {
   display: block;
 }
-
