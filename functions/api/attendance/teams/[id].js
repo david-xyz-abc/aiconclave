@@ -25,11 +25,15 @@ export async function onRequestPost(context) {
   const date = validDate(body?.date); const attendance = Array.isArray(body?.attendance) ? body.attendance : [];
   if (!date || !attendance.length || attendance.length > 20 || attendance.some((item) => !validId(item?.memberId))) return attendanceJson({ ok: false, error: "A valid date and member attendance list are required." }, 400);
   const memberIds = attendance.map((item) => validId(item.memberId));
+  if (new Set(memberIds).size !== memberIds.length || attendance.some((item) => typeof item.present !== "boolean")) return attendanceJson({ ok: false, error: "Provide each member once with a valid attendance status." }, 400);
   const existing = await context.env.DB.prepare(`SELECT id FROM hackathon_team_members WHERE team_id = ? AND id IN (${memberIds.map(() => "?").join(",")})`).bind(id, ...memberIds).all();
   if ((existing.results || []).length !== new Set(memberIds).size) return attendanceJson({ ok: false, error: "One or more members do not belong to this team." }, 400);
   try {
     const currentTeam = await loadTeam(context.env.DB, id, date);
     if (!currentTeam) return attendanceJson({ ok: false, error: "Team not found." }, 404);
+    if (attendance.filter((item) => item.present === true).length < 2) {
+      return attendanceJson({ ok: false, error: "At least two team members must be present to mark attendance." }, 400);
+    }
     if (!attendance.some((item) => Number(item.memberId) === Number(currentTeam.lead_member_id) && item.present === true)) {
       return attendanceJson({ ok: false, error: "The team lead must be present. Select a present member as team lead before saving attendance." }, 400);
     }

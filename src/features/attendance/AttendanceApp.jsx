@@ -161,6 +161,7 @@ function AttendanceDesk({ onLogout, user }) {
   );
   const attendanceMarked = Boolean(team?.attendance_marked);
   const leadPresent = Boolean(team?.members?.some((member) => member.id === team.lead_member_id && member.present));
+  const canSaveAttendance = leadPresent && presentCount >= 2;
   function updateMember(memberId, present) {
     setTeam((current) => ({
       ...current,
@@ -171,9 +172,9 @@ function AttendanceDesk({ onLogout, user }) {
     setMessage("");
     setShowConfirmDialog(false);
   }
-  function requestSaveAttendance() { if (leadPresent) setShowConfirmDialog(true); }
+  function requestSaveAttendance() { if (canSaveAttendance) setShowConfirmDialog(true); }
   async function saveAttendance() {
-    if (!leadPresent) return;
+    if (!canSaveAttendance) return;
     setShowConfirmDialog(false);
     setSaving(true);
     setError("");
@@ -384,6 +385,9 @@ function AttendanceDesk({ onLogout, user }) {
                     {message}
                   </p>
                 )}
+                {canEdit && (!attendanceMarked || editingAttendance) && presentCount < 2 && (
+                  <p className="form-error">At least two team members must be present.</p>
+                )}
                 {canEdit && (!attendanceMarked || editingAttendance) && !leadPresent && (
                   <p className="form-error">The team lead must be present. If absent, select a present member as team lead.</p>
                 )}
@@ -401,7 +405,7 @@ function AttendanceDesk({ onLogout, user }) {
                 ) : canEdit ? (
                   <button
                     className="button button-primary attendance-save"
-                    disabled={saving || !leadPresent}
+                    disabled={saving || !canSaveAttendance}
                     onClick={requestSaveAttendance}
                   >
                     {saving ? "Saving attendance…" : attendanceMarked ? "Save changes" : "Mark attendance"}
