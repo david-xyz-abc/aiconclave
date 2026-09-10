@@ -162,12 +162,19 @@ function AttendanceDesk({ onLogout, user }) {
   );
   const attendanceMarked = Boolean(team?.attendance_marked);
   const leadPresent = Boolean(team?.members?.some((member) => member.id === team.lead_member_id && member.present));
-  const canSaveAttendance = leadPresent && presentCount >= 2 && !changingLead;
+  const mealsComplete = Boolean(team?.members?.every((member) => !member.present || ['Veg', 'Non-Veg'].includes(member.meal_preference)));
+  const controlsLocked = !canEdit || saving || changingLead || (attendanceMarked && !editingAttendance);
+  const canSaveAttendance = leadPresent && presentCount >= 2 && mealsComplete && !changingLead && !saving;
+  function updateMeal(memberId, mealPreference) {
+    if (controlsLocked) return;
+    setTeam((current) => ({ ...current, members: current.members.map((member) => member.id === memberId ? { ...member, meal_preference: mealPreference } : member) }));
+    setShowConfirmDialog(false);
+  }
   function updateMember(memberId, present) {
     setTeam((current) => ({
       ...current,
       members: current.members.map((member) =>
-        member.id === memberId ? { ...member, present } : member,
+        member.id === memberId ? { ...member, present, meal_preference: present ? member.meal_preference : null } : member,
       ),
     }));
     setMessage("");
@@ -187,6 +194,7 @@ function AttendanceDesk({ onLogout, user }) {
         team.members.map((member) => ({
           memberId: member.id,
           present: Boolean(member.present),
+          mealPreference: member.present ? member.meal_preference : null,
         })),
       );
       setTeam(data.team);
@@ -222,7 +230,10 @@ function AttendanceDesk({ onLogout, user }) {
       const data = await attendanceApi.changeLead(team.id, memberId, editingAttendance);
       setTeam((current) => current?.id === data.team.id ? {
         ...data.team,
-        members: data.team.members.map((member) => ({ ...member, present: current.members.find((draft) => draft.id === member.id)?.present ?? member.present })),
+        members: data.team.members.map((member) => {
+          const draft = current.members.find((item) => item.id === member.id);
+          return draft ? { ...member, present: draft.present, meal_preference: draft.meal_preference } : member;
+        }),
       } : current);
       setShowConfirmDialog(false);
       setTeams((current) =>
@@ -317,7 +328,7 @@ function AttendanceDesk({ onLogout, user }) {
                     </p>
                     <h2>{team.team_name}</h2>
                     <p>
-                      {team.participant_category} · {team.sector_track} ·{" "}
+                      {team.participant_category} · {team.solution_type || 'Not specified'} · {team.sector_track} ·{" "}
                       {team.member_count} members
                     </p>
                   </div>
@@ -350,13 +361,14 @@ function AttendanceDesk({ onLogout, user }) {
                 </div>
                 <div className="attendance-members">
                   {team.members.map((member) => (
-                    <label
+                    <div
                       className={`attendance-member${member.present ? " is-present" : ""}`}
                       key={member.id}
                     >
+                      <label className="attendance-member-selection">
                       <input
                         type="checkbox"
-                        disabled={!canEdit || (attendanceMarked && !editingAttendance)}
+                        disabled={controlsLocked}
                         checked={Boolean(member.present)}
                         onChange={(event) =>
                           updateMember(member.id, event.target.checked)
@@ -377,13 +389,30 @@ function AttendanceDesk({ onLogout, user }) {
                       <span className="attendance-member-state">
                         {member.present ? "Present" : "Absent"}
                       </span>
-                    </label>
+                      </label>
+                      {Boolean(member.present) && (
+                        <div className="attendance-meal" role="group" aria-label={`Meal for ${member.full_name}`}>
+                          <span>Meal</span>
+                          {['Veg', 'Non-Veg'].map((choice) => (
+                            <button key={choice} type="button" disabled={controlsLocked}
+                              aria-pressed={member.meal_preference === choice}
+                              onClick={() => updateMeal(member.id, choice)}>
+                              {choice === 'Non-Veg' ? 'Non-veg' : choice}
+                            </button>
+                          ))}
+                          {!member.meal_preference && controlsLocked && <small>Not recorded</small>}
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
                 {error && (
                   <p className="form-error attendance-error" role="alert">
                     {error}
                   </p>
+                )}
+                {!controlsLocked && !mealsComplete && (
+                  <p className="attendance-error">Choose a meal for each present member.</p>
                 )}
                 {message && (
                   <p className="attendance-success" role="status">

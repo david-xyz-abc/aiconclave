@@ -186,6 +186,7 @@ CREATE TABLE IF NOT EXISTS hackathon_attendance (
   member_id INTEGER NOT NULL,
   attendance_date TEXT NOT NULL CHECK (length(attendance_date) = 10),
   present INTEGER NOT NULL DEFAULT 0 CHECK (present IN (0, 1)),
+  meal_preference TEXT CHECK (meal_preference IS NULL OR (present = 1 AND meal_preference IN ('Veg', 'Non-Veg'))),
   marked_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
   marked_by TEXT NOT NULL DEFAULT 'attendance-desk',
   FOREIGN KEY (team_id) REFERENCES hackathon_teams(id) ON DELETE CASCADE,

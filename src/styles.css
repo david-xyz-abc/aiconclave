@@ -298,7 +298,16 @@ td a { text-decoration-thickness: 1px; text-underline-offset: .2em; }
 .attendance-lead-control label { display: grid; gap: .4rem; color: var(--muted); font: 600 .63rem/1.2 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
 .attendance-lead-control p { margin: 0; color: var(--muted); font-size: .76rem; }
 .attendance-members { display: grid; gap: .6rem; margin-top: 1.25rem; }
-.attendance-member { display: grid; grid-template-columns: 1.5rem minmax(0, 1fr) auto; align-items: center; gap: .8rem; min-height: 4.3rem; padding: .75rem 1rem; border: 1px solid var(--line); background: #fff; cursor: pointer; }
+.attendance-member { display: grid; gap: .8rem; min-height: 4.3rem; padding: .75rem 1rem; border: 1px solid var(--line); background: #fff; }
+.attendance-member-selection { display: grid; grid-template-columns: 1.5rem minmax(0, 1fr) auto; align-items: center; gap: .8rem; cursor: pointer; }
+.attendance-member-selection:has(input:disabled) { cursor: default; }
+.attendance-member input:focus-visible + .attendance-check { outline: 2px solid var(--text); outline-offset: 3px; }
+.attendance-meal { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; padding-left: 2.3rem; font: 500 .72rem/1.4 var(--mono); }
+.attendance-meal > span { margin-right: .25rem; color: var(--muted); }
+.attendance-meal button { min-height: 2rem; padding: .35rem .65rem; border: 1px solid var(--line-strong); background: #fff; color: var(--text); font: inherit; }
+.attendance-meal button[aria-pressed="true"] { background: var(--text); color: #fff; border-color: var(--text); }
+.attendance-meal button:disabled { cursor: default; }
+.attendance-meal small { color: var(--muted); }
 .attendance-member:hover { border-color: var(--line-strong); }
 .attendance-member:has(input:disabled) { cursor: default; opacity: .62; }
 .attendance-member:has(input:disabled):hover { border-color: var(--line); }
