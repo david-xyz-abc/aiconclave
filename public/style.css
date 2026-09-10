@@ -1,0 +1,34 @@
+:root { color-scheme: light; --ink:#141414; --muted:#61615c; --line:#c9c9c1; --paper:#f7f7f3; --red:#ed2024; font-family:Arial,sans-serif; color:var(--ink); background:var(--paper); }
+* { box-sizing:border-box; }
+[hidden] { display:none !important; }
+body { margin:0; border-top:4px solid var(--red); }
+header { display:flex; justify-content:space-between; align-items:center; min-height:80px; padding:16px 5%; border-bottom:1px solid var(--line); }
+.brand { display:flex; gap:14px; align-items:center; font:700 13px monospace; letter-spacing:1px; }
+.logo { display:grid; place-items:center; width:36px; height:36px; background:var(--red); color:white; letter-spacing:0; }
+main { max-width:1120px; margin:64px auto; padding:0 24px; }
+h1 { margin:0; font:600 clamp(36px,6vw,64px)/1.1 monospace; letter-spacing:-2px; }
+.heading { display:flex; justify-content:space-between; align-items:center; gap:24px; }
+button,input { font:inherit; min-height:44px; border:1px solid var(--ink); border-radius:0; }
+button { padding:10px 20px; background:transparent; color:var(--ink); cursor:pointer; }
+button:hover:not(:disabled) { background:var(--ink); color:white; }
+button:disabled { opacity:.55; cursor:wait; }
+:focus-visible { outline:3px solid var(--red); outline-offset:4px; }
+.status,.note { color:var(--muted); font-size:14px; line-height:1.5; }
+.status { min-height:21px; margin:24px 0; }
+.counts { display:grid; grid-template-columns:1fr 1fr; margin:0; border:1px solid var(--line); background:white; }
+.counts>div { padding:40px; }
+.counts>div+div { border-left:1px solid var(--line); }
+dt { color:var(--muted); font-size:16px; }
+dd { margin:0; font-variant-numeric:tabular-nums; }
+.counts dd { margin-top:24px; font:600 clamp(64px,12vw,128px)/1 monospace; }
+.summary { margin:24px 0; padding:24px 0; border-bottom:1px solid var(--line); }
+.summary>div { display:flex; justify-content:space-between; gap:20px; padding:10px 0; }
+.summary dd { font:600 20px monospace; }
+.signin { max-width:420px; margin:80px auto; }
+form { margin-top:40px; }
+label { display:grid; gap:10px; margin-bottom:24px; font-size:14px; }
+input { width:100%; padding:12px; background:white; color:var(--ink); }
+.primary { width:100%; background:var(--ink); color:white; }
+.error { color:#a01418; line-height:1.5; }
+.error:empty { display:none; }
+@media(max-width:520px) { main { margin:40px auto; } .counts>div { padding:24px 16px; } .brand { font-size:11px; } header { padding:16px; } }

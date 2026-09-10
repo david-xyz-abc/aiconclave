@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f7f3">
+  <title>Food · AI Conclave 2026</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" type="module"></script>
+</head>
+<body>
+  <header><div class="brand"><span class="logo">AC</span> AI CONCLAVE 2026</div><button id="logout" hidden>Log out</button></header>
+  <main>
+    <section id="signin" class="signin" aria-labelledby="login-title">
+      <h1 id="login-title">Food</h1>
+      <form id="login-form">
+        <label>Username<input name="username" autocomplete="username" required maxlength="80"></label>
+        <label>Password<input name="password" type="password" autocomplete="current-password" required maxlength="512"></label>
+        <p id="login-error" class="error" role="alert"></p>
+        <button id="login-button" class="primary">Sign in</button>
+      </form>
+    </section>
+    <section id="dashboard" hidden aria-labelledby="title">
+      <div class="heading"><h1 id="title" tabindex="-1">Food</h1><button id="refresh">Refresh</button></div>
+      <p class="status" id="status" role="status">Loading…</p>
+      <p id="data-error" class="error" role="alert"></p>
+      <dl class="counts">
+        <div><dt>Veg</dt><dd id="veg">—</dd></div>
+        <div><dt>Non-veg</dt><dd id="nonVeg">—</dd></div>
+      </dl>
+      <dl class="summary">
+        <div><dt>Present participants</dt><dd id="present">—</dd></div>
+        <div><dt>Meal not recorded</dt><dd id="unrecorded">—</dd></div>
+      </dl>
+      <p class="note">Present participants only · Updates every 30 seconds</p>
+    </section>
+  </main>
+</body>
+</html>
