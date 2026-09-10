@@ -66,7 +66,7 @@ function fixture(students) {
 test('whole team fits exactly at public limit', async () => {
   const f = fixture(1292)
   assert.equal((await f.submit(4)).status, 201)
-  assert.deepEqual(await getHackathonCapacity(f.db), { students: 1296, category: 'College', limit: 1296, remaining: 0, open: true, collegeOpen: false, schoolOpen: true })
+  assert.deepEqual(await getHackathonCapacity(f.db), { students: 1296, category: 'All', limit: 1296, remaining: 0, open: true, collegeOpen: false, schoolOpen: true })
   f.sql.close()
 })
 
@@ -119,10 +119,10 @@ test('capacity failure never reports registrations open', async () => {
   assert.equal((await response.json()).ok, false)
 })
 
-test('schools remain unlimited past the college hard limit and do not consume college places', async () => {
+test('schools count toward the total but remain unlimited beyond the limit', async () => {
   const f = fixture(1300)
   for (let i = 0; i < 5; i++) assert.equal((await f.submit(4, 'School')).status, 201)
-  assert.equal((await getHackathonCapacity(f.db)).students, 1300)
+  assert.equal((await getHackathonCapacity(f.db)).students, 1320)
   assert.equal((await getHackathonCapacity(f.db)).schoolOpen, true)
   const tampered = await f.submit(4, 'College')
   assert.equal(tampered.status, 409)
@@ -130,12 +130,12 @@ test('schools remain unlimited past the college hard limit and do not consume co
   f.sql.close()
 })
 
-test('school members do not reduce college capacity below the public cutoff', async () => {
+test('school members count toward closing colleges at the public cutoff', async () => {
   const f = fixture(1292)
   f.seedTeam(4, true, 'School')
-  f.seedTeam(4, true, 'School')
-  assert.equal((await getHackathonCapacity(f.db)).remaining, 4)
-  assert.equal((await f.submit(4, 'College')).status, 201)
+  assert.equal((await getHackathonCapacity(f.db)).remaining, 0)
+  assert.equal((await getHackathonCapacity(f.db)).collegeOpen, false)
+  assert.equal((await f.submit(4, 'College')).status, 409)
   assert.equal((await f.submit(4, 'School')).status, 201)
   f.sql.close()
 })
@@ -145,19 +145,27 @@ test('school-to-college recategorization cannot bypass the hard limit', () => {
   const school = f.seedTeam(3, true, 'School')
   assert.throws(() => f.sql.prepare("UPDATE hackathon_teams SET participant_category = 'College' WHERE id = ?").run(school), /hackathon_capacity_exceeded/)
   assert.equal(f.sql.prepare('SELECT participant_category FROM hackathon_teams WHERE id = ?').get(school).participant_category, 'School')
-  const fits = f.seedTeam(2, true, 'School')
-  f.sql.prepare("UPDATE hackathon_teams SET participant_category = 'College' WHERE id = ?").run(fits)
+  const fits = 1
   const draftSchool = f.seedTeam(4, false, 'School')
   f.sql.prepare('UPDATE hackathon_teams SET submitted_at = ? WHERE id = ?').run('2026-09-01', draftSchool)
   assert.throws(() => f.sql.prepare("UPDATE hackathon_team_members SET team_id = ?, member_order = 3, role = 'Member' WHERE team_id = ? AND member_order = 2").run(fits, school), /hackathon_capacity_exceeded/)
   f.sql.close()
 })
 
-test('concurrent college and school submissions allocate only college places', async () => {
+test('concurrent college and school submissions share the count while schools remain open', async () => {
   const f = fixture(1292)
   const responses = await Promise.all([f.submit(4, 'College'), f.submit(4, 'School'), f.submit(4, 'College')])
   assert.equal(responses[1].status, 201)
-  assert.deepEqual([responses[0].status, responses[2].status].sort(), [201, 409])
-  assert.equal((await getHackathonCapacity(f.db)).students, 1296)
+  const acceptedColleges = [responses[0], responses[2]].filter(r => r.status === 201).length
+  assert.ok(acceptedColleges <= 1)
+  assert.ok([responses[0], responses[2]].every(r => [201, 409].includes(r.status)))
+  assert.equal((await getHackathonCapacity(f.db)).students, 1296 + acceptedColleges * 4)
+  f.sql.close()
+})
+
+test('school-to-college recategorization at the hard limit does not double count members', () => {
+  const f = fixture(1298)
+  const school = f.seedTeam(2, true, 'School')
+  f.sql.prepare("UPDATE hackathon_teams SET participant_category = 'College' WHERE id = ?").run(school)
   f.sql.close()
 })
