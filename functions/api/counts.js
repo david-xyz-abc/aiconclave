@@ -46,9 +46,9 @@ export async function onRequest({ request, env }) {
     password = decoded.slice(separator + 1);
   } catch { return json({ error: 'Invalid username or password.' }, 401); }
   try {
-    // Reuse the existing viewer account without granting any new permissions.
+    // Dedicated food account: no attendance or registration permissions.
     const user = await env.DB.prepare(`SELECT password_hash, password_salt, password_iterations
-      FROM admin_users WHERE username = ? AND username = 'user1' AND attendance_access = 'read'`).bind(username).first();
+      FROM admin_users WHERE username = ? AND username = 'fooduser' AND attendance_access = 'none'`).bind(username).first();
     if (!user || !await passwordMatches(password, user)) return json({ error: 'Invalid username or password.' }, 401);
     const counts = await env.DB.prepare(COUNTS_SQL).first();
     return json({ counts, updatedAt: new Date().toISOString() });

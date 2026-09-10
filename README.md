@@ -6,7 +6,7 @@ Shows Veg, Non-veg, present participants and unrecorded meal preferences. Each p
 
 ## Access
 
-Sign in using the existing `user1` account and its current database password. Only that attendance read-only account is accepted. Credentials are held in browser memory, never local/session storage, and checked on each HTTPS request. Reloading requires sign-in again. Password changes/revocation take effect at the next refresh. This project issues no sessions and performs no database writes. Never log Authorization headers. Set an edge rate limit on `/api/counts` before public deployment.
+Sign in using the dedicated `fooduser` account and its database password. This account has no attendance or registration access. Other dashboard accounts are not accepted here. Credentials are held in browser memory, never local/session storage, and checked on each HTTPS request. Reloading requires sign-in again. Password changes/revocation take effect at the next refresh. This project issues no sessions and performs no database writes. Never log Authorization headers. Set an edge rate limit on `/api/counts` before public deployment.
 
 ## Run and deploy
 

@@ -48,13 +48,13 @@ test('viewer password is verified; only SELECT queries and totals are returned',
   const bits = await crypto.subtle.deriveBits({name:'PBKDF2',salt:new TextEncoder().encode(salt),iterations:1000,hash:'SHA-256'},key,256);
   const hash = Buffer.from(bits).toString('hex');
   db.exec('CREATE TABLE admin_users(username TEXT, attendance_access TEXT, password_hash TEXT, password_salt TEXT, password_iterations INTEGER)');
-  for (const [username,access] of [['user1','read'],['admin','write'],['owner','none']]) db.prepare('INSERT INTO admin_users VALUES(?,?,?,?,?)').run(username,access,hash,salt,1000);
+  for (const [username,access] of [['fooduser','none'],['user1','read'],['admin','write'],['owner','none']]) db.prepare('INSERT INTO admin_users VALUES(?,?,?,?,?)').run(username,access,hash,salt,1000);
   const env = { DB:{ prepare(sql) {
     assert.match(sql.trim(), /^SELECT/);
     if (sql === COUNTS_SQL) return {first:async()=>({present:2,veg:1,nonVeg:1,unrecorded:0})};
     return {bind:(...args)=>({first:async()=>db.prepare(sql).get(...args)})};
   } } };
-  for (const [credentials,status] of [['user1:test-password',200],['user1:wrong',401],['admin:test-password',401],['owner:test-password',401]]) {
+  for (const [credentials,status] of [['fooduser:test-password',200],['fooduser:wrong',401],['user1:test-password',401],['admin:test-password',401],['owner:test-password',401]]) {
     const response = await onRequest({request:new Request('https://food.example/api/counts',{headers:{authorization:'Basic '+btoa(credentials)}}),env});
     assert.equal(response.status,status);
     if(status===200) assert.deepEqual(Object.keys(await response.json()).sort(),['counts','updatedAt']);
