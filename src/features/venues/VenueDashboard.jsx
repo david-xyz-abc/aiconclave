@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { attendanceApi, venuesApi, isUnauthorized } from '../../services/dashboardApi.js';
-import { BrandLockup } from '../../components/common/BrandLockup.jsx';
+import { OperationsHeader } from '../../components/layout/OperationsHeader.jsx';
 
 const menus = [['finder', 'Venue Finder'], ['allocate', 'Manual Allocation'], ['rooms', 'Rooms & Tables']];
 function status(team) {
@@ -66,41 +66,77 @@ export function VenueDashboard({ user, onLogout }) {
     finally { setSaving(false); }
   }
   function changeMenu(value) { setMenu(value); setQuery(''); setSelectedId(null); setTableId(''); setMessage(''); }
+  const selectedTables = currentRoom ? data.tables.filter(t => t.id === currentRoom.id) : [];
+  const showTeams = menu === 'allocate' || query.trim();
+  const shortStatus = team => team.table_id ? `${team.room_name} · Table ${String(team.table_number).padStart(2, '0')}` : !team.attendance_marked ? 'Not checked in' : !team.project_mode ? 'Project mode needed' : 'Awaiting allocation';
   return <div className="attendance-app">
-    <header className="attendance-topbar"><BrandLockup /><div className="attendance-topbar-actions">
-      <a className="button button-quiet" href="/attendance">Attendance</a>
-      <a className="button button-quiet" href="/">Operations</a>
-      <button className="button button-quiet" onClick={async () => { await attendanceApi.logout().catch(() => {}); onLogout(); }}>Log out</button>
-    </div></header>
+    <OperationsHeader active="venues" onLogout={async () => { await attendanceApi.logout().catch(() => {}); onLogout(); }} />
     <main className="venue-main">
-      <div className="venue-heading"><div><p className="eyebrow">Hackathon · Staff</p><h1>Room Allocation</h1><p>Find a team’s venue, resolve waiting teams, and check every table.</p></div>
-        <button className="button button-quiet" onClick={() => reload.current?.()}>Refresh availability</button></div>
-      <nav className="venue-menus" aria-label="Staff venue menus">{menus.map(([id,label]) => <button key={id} className={menu === id ? 'active' : ''} aria-current={menu === id ? 'page' : undefined} onClick={() => changeMenu(id)}>{label}{id === 'allocate' && <span>{waiting.length}</span>}</button>)}</nav>
-      <div className="venue-summary"><span><strong>{data.teams.filter(t => t.table_id).length}</strong> teams allocated</span><span><strong>{waiting.length}</strong> awaiting allocation</span><span><strong>{data.tables.filter(t => !t.team_id).length}</strong> free tables</span><small>{updated ? `Updated ${updated} · refreshes every 10 seconds` : 'Loading availability…'}</small></div>
-      {error && <p className="form-error" role="alert">{error}</p>}
-      {message && <p className="attendance-success" role="status">{message}</p>}
-      {loading ? <p role="status">Loading venues…</p> : menu === 'rooms' ? <>
-        <label className="venue-field">Block<select value={block} onChange={e => { setBlock(e.target.value); setRoomId(''); }}><option value="">All blocks</option>{['RS','R','CC','D'].map(b => <option key={b}>{b}</option>)}</select></label>
-        <div className="venue-workspace"><section className="venue-room-list" aria-label="Rooms">{rooms.map(room => {
-          const tables = data.tables.filter(t => t.id === room.id), occupied = tables.filter(t => t.team_id).length;
-          return <button key={room.id} className={`venue-room-card ${roomId === String(room.id) ? 'selected' : ''}`} onClick={() => setRoomId(String(room.id))} aria-pressed={roomId === String(room.id)}>
-            <strong>{room.name}</strong><span>{room.project_mode}</span><span>{room.sector} · {room.solution_type}</span><span>{room.seats} seats per table</span><b>{occupied}/{tables.length} occupied · {tables.length-occupied} free</b>
-          </button>;
-        })}</section><section className="venue-detail" aria-label="Room tables">{currentRoom ? <><h2>{currentRoom.name}</h2><p>{currentRoom.project_mode} · {currentRoom.sector} · {currentRoom.solution_type} · {currentRoom.seats} seats per table</p><div className="venue-table-grid">{data.tables.filter(t => t.id === currentRoom.id).map(table => <article key={table.table_id} className={`venue-table ${table.team_id ? 'occupied' : 'free'}`}><strong>Table {String(table.table_number).padStart(2,'0')}</strong><span>{table.team_id ? 'Occupied' : 'Free'}</span>{table.team_id && <><b>{table.team_name}</b><small>{table.team_code}</small></>}</article>)}</div></> : <p>Select a room to view its tables and assigned teams.</p>}</section></div>
+      <div className="venue-heading">
+        <div><h1>Room allocation</h1><p>Team locations and table availability</p></div>
+        <button className="ops-secondary" title={updated ? `Last updated ${updated}. Refreshes automatically.` : 'Refresh availability'} onClick={() => reload.current?.()}>Refresh</button>
+      </div>
+      <nav className="venue-menus" aria-label="Staff venue menus">
+        {menus.map(([id,label]) => <button key={id} aria-current={menu === id ? 'page' : undefined} onClick={() => changeMenu(id)}>{label}{id === 'allocate' && waiting.length > 0 && <span aria-label={`${waiting.length} waiting`}>{waiting.length}</span>}</button>)}
+      </nav>
+      <div className="venue-summary" aria-label="Allocation totals">
+        <span><strong>{data.teams.filter(t => t.table_id).length}</strong> allocated</span>
+        <span><strong>{waiting.length}</strong> waiting</span>
+        <span><strong>{data.tables.filter(t => !t.team_id).length}</strong> free tables</span>
+      </div>
+      {error && <p className="ops-notice error" role="alert">{error}</p>}
+      {message && <p className="ops-notice success" role="status">{message}</p>}
+      {loading ? <div className="venue-empty" role="status">Loading venues…</div> : menu === 'rooms' ? <>
+        <div className="venue-toolbar"><label className="venue-field">Block<select value={block} onChange={e => { setBlock(e.target.value); setRoomId(''); }}><option value="">All blocks</option>{['RS','R','CC','D'].map(b => <option key={b}>{b}</option>)}</select></label><span className="venue-result-count">{rooms.length} rooms</span></div>
+        <div className={`venue-workspace ${currentRoom ? 'detail-open' : ''}`}>
+          <section className="venue-room-list" aria-label="Rooms">
+            {rooms.map(room => {
+              const tables = data.tables.filter(t => t.id === room.id), occupied = tables.filter(t => t.team_id).length;
+              return <button key={room.id} className="venue-list-row" onClick={() => setRoomId(String(room.id))} aria-pressed={roomId === String(room.id)}>
+                <span className="venue-row-main"><strong>{room.name}</strong><small>{room.sector} · {room.solution_type}</small><small>{room.project_mode} · {room.seats} seats</small></span>
+                <span className="venue-row-end"><b>{tables.length-occupied} free</b><small>{tables.length} tables</small></span>
+              </button>;
+            })}
+          </section>
+          <section className="venue-detail" aria-label="Room tables">
+            {currentRoom ? <>
+              <button className="venue-back" onClick={() => setRoomId('')}>← All rooms</button>
+              <div className="venue-detail-heading"><h2>{currentRoom.name}</h2><span className="venue-tag">{currentRoom.block} block</span></div>
+              <p className="venue-detail-meta">{currentRoom.sector} · {currentRoom.solution_type}<br />{currentRoom.project_mode} · {currentRoom.seats} seats per table</p>
+              <table className="venue-tables"><caption className="sr-only">Tables in {currentRoom.name}</caption><thead><tr><th scope="col">Table</th><th scope="col">Team</th><th scope="col">Status</th></tr></thead><tbody>
+                {selectedTables.map(table => <tr key={table.table_id}><th scope="row">{String(table.table_number).padStart(2,'0')}</th><td>{table.team_id ? <><strong>{table.team_name}</strong><small>{table.team_code}</small></> : <span className="venue-muted">—</span>}</td><td><span className={`venue-tag ${table.team_id ? '' : 'available'}`}>{table.team_id ? 'Occupied' : 'Free'}</span></td></tr>)}
+              </tbody></table>
+            </> : <div className="venue-empty"><h2>Select a room</h2><p>View its tables and assigned teams.</p></div>}
+          </section>
+        </div>
       </> : <>
-        <label className="venue-field">Search team name or code<input value={query} onChange={e => setQuery(e.target.value)} placeholder="e.g. Git-R-Done or AIC26-H-03FF1331" /></label>
-        {menu === 'allocate' && <label className="venue-field">Allocation status<select value={allocationFilter} onChange={e => setAllocationFilter(e.target.value)}><option value="all">All checked-in teams</option><option value="waiting">Awaiting allocation</option><option value="assigned">Already allocated</option></select></label>}
-        <div className="venue-workspace"><section className="venue-team-list" aria-label={menu === 'allocate' ? 'Checked-in teams' : 'Search results'}>
-          {menu === 'finder' && !query.trim() ? <p>Enter a team name or code to find its room and table.</p> : matches.length ? matches.map(team => <button key={team.team_id} className={`venue-room-card ${selectedId === team.team_id ? 'selected' : ''}`} onClick={() => { setSelectedId(team.team_id); setTableId(''); setMessage(''); }} aria-pressed={selectedId === team.team_id}><strong>{team.team_name}</strong><small>{team.team_code}</small><span>{status(team)}</span></button>) : <p>{menu === 'allocate' && !query ? 'No teams match this allocation status.' : 'No matching teams found.'}</p>}
-        </section><section className="venue-detail" aria-label="Team allocation">{selected ? <>
-          <p className="eyebrow">{selected.team_code}</p><h2>{selected.team_name}</h2><p>{selected.sector_track} · {selected.solution_type} · {selected.present_count} present</p><p>{selected.project_mode || 'Project mode not recorded'}</p><div className="venue-result" role="status">{status(selected)}</div>
-          {!selected.attendance_marked || !selected.project_mode || selected.present_count < 2 || !selected.lead_present ? <a className="button button-quiet" href="/attendance">Open attendance desk</a> : (menu === 'finder' ? (canEdit || !selected.table_id) && <button className="button" onClick={() => { setMenu('allocate'); setAllocationFilter('all'); setQuery(''); setTableId(''); }}>{selected.table_id ? 'Reallocate team' : 'Open Manual Allocation'}</button> : canEdit ? <>
-            <label className="venue-field">Compatible free room and table<select value={tableId} disabled={saving} onChange={e => setTableId(e.target.value)}><option value="">Select a table…</option>{free.map(t => <option key={t.table_id} value={t.table_id}>{t.name} · Table {String(t.table_number).padStart(2,'0')} · {t.seats} seats</option>)}</select></label>
-            {!free.length && <p>{selected.table_id ? 'No compatible free tables. The current assignment is retained.' : 'No compatible free tables. The team remains on the waiting list.'}</p>}
-            {selected.table_id && <p>The current table is released only when the new assignment succeeds.</p>}
-            <button className="button" disabled={saving || !free.some(t => String(t.table_id) === tableId)} onClick={assign}>{saving ? 'Saving assignment…' : selected.table_id ? 'Reallocate room and table' : 'Assign room and table'}</button>
-          </> : <p>Your account can view allocations. An attendance editor can assign a table.</p>)}
-        </> : <p>Select a team to view its allocation details.</p>}</section></div>
+        <div className="venue-toolbar">
+          <label className="venue-field venue-search-field">Search team name or code<input value={query} onChange={e => { setQuery(e.target.value); setSelectedId(null); setTableId(''); }} placeholder="Team name or code" /></label>
+          {menu === 'allocate' && <label className="venue-field">Allocation status<select value={allocationFilter} onChange={e => { setAllocationFilter(e.target.value); setSelectedId(null); setTableId(''); }}><option value="all">All checked-in teams</option><option value="waiting">Awaiting allocation</option><option value="assigned">Already allocated</option></select></label>}
+        </div>
+        {showTeams ? <div className={`venue-workspace ${selected ? 'detail-open' : ''}`}>
+          <section className="venue-team-list" aria-label={menu === 'allocate' ? 'Checked-in teams' : 'Search results'}>
+            <div className="venue-list-heading">{matches.length} {matches.length === 1 ? 'team' : 'teams'}</div>
+            {matches.length ? matches.map(team => <button key={team.team_id} className="venue-list-row" onClick={() => { setSelectedId(team.team_id); setTableId(''); setMessage(''); }} aria-pressed={selectedId === team.team_id}>
+              <span className="venue-row-main"><strong>{team.team_name}</strong><small>{team.team_code}</small><span className={`venue-row-status ${team.table_id ? 'assigned' : ''}`}>{shortStatus(team)}</span></span><span aria-hidden="true" className="venue-row-arrow">›</span>
+            </button>) : <p className="venue-list-empty">{menu === 'allocate' && !query ? 'No teams match this status.' : 'No matching teams.'}</p>}
+          </section>
+          <section className="venue-detail" aria-label="Team allocation">
+            {selected ? <>
+              <button className="venue-back" onClick={() => setSelectedId(null)}>← Back to teams</button>
+              <p className="venue-team-code">{selected.team_code}</p><h2>{selected.team_name}</h2>
+              <p className="venue-detail-meta">{selected.sector_track} · {selected.solution_type} · {selected.present_count} present<br />{selected.project_mode || 'Project mode not recorded'}</p>
+              <div className={`venue-result ${selected.table_id ? 'is-assigned' : ''}`} role="status">
+                {selected.table_id ? <><span>Assigned venue</span><strong>{selected.room_name} <span>·</span> Table {String(selected.table_number).padStart(2,'0')}</strong><small>{selected.block} block</small></> : status(selected)}
+              </div>
+              {!selected.attendance_marked || !selected.project_mode || selected.present_count < 2 || !selected.lead_present ? <a className="ops-primary" href="/attendance">Open attendance desk</a> : menu === 'finder' ? (canEdit || !selected.table_id) && <button className="ops-secondary" onClick={() => { setMenu('allocate'); setAllocationFilter('all'); setQuery(''); setTableId(''); }}>{selected.table_id ? 'Reallocate team' : 'Open Manual Allocation'}</button> : canEdit ? <div className="venue-assignment-form">
+                <label className="venue-field">Compatible free room and table<select value={tableId} disabled={saving} onChange={e => setTableId(e.target.value)}><option value="">Choose a table</option>{free.map(t => <option key={t.table_id} value={t.table_id}>{t.name} · Table {String(t.table_number).padStart(2,'0')} · {t.seats} seats</option>)}</select></label>
+                {!free.length && <p className="venue-help">{selected.table_id ? 'No matching tables available. The current assignment is retained.' : 'No matching tables available. The team remains on the waiting list.'}</p>}
+                <button className="ops-primary" disabled={saving || !free.some(t => String(t.table_id) === tableId)} onClick={assign}>{saving ? 'Saving…' : selected.table_id ? 'Reallocate room and table' : 'Assign room and table'}</button>
+              </div> : <p className="venue-help">An attendance editor can change this assignment.</p>}
+            </> : <div className="venue-empty"><h2>Select a team</h2><p>View its venue and allocation options.</p></div>}
+          </section>
+        </div> : <div className="venue-search-empty"><p>Find a team’s room and table.</p><small>Search by team name or registration code.</small></div>}
       </>}
     </main>
   </div>;

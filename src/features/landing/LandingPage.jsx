@@ -2,25 +2,24 @@ import { BrandLockup } from "../../components/common/BrandLockup.jsx";
 
 export function LandingPage() {
   return (
-    <main className="portal-shell">
-      <div className="portal-grid" aria-hidden="true" />
-      <header className="portal-topbar"><BrandLockup /></header>
-      <section className="portal-hero">
-        <p className="eyebrow">AI Conclave 2026</p>
+    <main className="ops-landing">
+      <header><BrandLockup /></header>
+      <section className="ops-landing-heading">
         <h1>Operations</h1>
+        <p>Choose your workspace.</p>
       </section>
-      <section className="portal-choices" aria-label="Operations">
-        <a className="portal-choice portal-choice-admin" href="/login">
-          <span className="portal-choice-number">01</span>
+      <section className="ops-workspaces" aria-label="Operations">
+        <a href="/login">
           <strong>Admin <span aria-hidden="true">→</span></strong>
+          <p>Registrations, reports and event overview.</p>
         </a>
-        <a className="portal-choice portal-choice-attendance" href="/attendance">
-          <span className="portal-choice-number">02</span>
+        <a href="/attendance">
           <strong>Attendance <span aria-hidden="true">→</span></strong>
+          <p>Check in teams and assign their venues.</p>
         </a>
-        <a className="portal-choice" href="/attendance/venues">
-          <span className="portal-choice-number">03</span>
+        <a href="/attendance/venues">
           <strong>Staff venues <span aria-hidden="true">→</span></strong>
+          <p>Find teams, manage allocations and view rooms.</p>
         </a>
       </section>
     </main>
