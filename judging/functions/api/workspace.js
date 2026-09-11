@@ -10,7 +10,9 @@ import {
 export async function loadWorkspace(db) {
   const results = await db.batch([
     db.prepare("SELECT revision FROM judging_state WHERE id=1"),
-    db.prepare("SELECT * FROM judging_judges ORDER BY lower(name), id"),
+    db.prepare(
+      "SELECT j.*, u.username AS login_username FROM judging_judges j LEFT JOIN judging_users u ON u.judge_id=j.id ORDER BY lower(j.name), j.id",
+    ),
     db.prepare(
       `SELECT r.*, o.position FROM venue_rooms r JOIN judging_room_order o ON o.room_id=r.id ORDER BY o.position, r.id`,
     ),
@@ -22,6 +24,9 @@ export async function loadWorkspace(db) {
     db.prepare(
       "SELECT * FROM judging_assignments ORDER BY judge_id, visit_order",
     ),
+    db.prepare(
+      "SELECT team_id, judge_id, status, revision FROM judging_evaluations",
+    ),
   ]);
   return {
     revision: results[0].results[0].revision,
@@ -29,6 +34,7 @@ export async function loadWorkspace(db) {
     rooms: results[2].results,
     teams: results[3].results,
     assignments: results[4].results,
+    evaluations: results[5].results,
   };
 }
 export async function onRequestGet(context) {
@@ -73,6 +79,25 @@ export async function onRequestPost(context) {
       actor = auth.session.username;
     const judge = data.judges.find((j) => j.id === body.judgeId);
     let details = {};
+    if (
+      ["assign", "release"].includes(body.action) &&
+      data.evaluations.some(
+        (e) => e.judge_id === body.judgeId && e.status === "submitted",
+      )
+    )
+      return fail(
+        "This judge has submitted evaluations. Reopen them in Emergency before changing the route.",
+        409,
+      );
+    if (
+      body.action === "deleteJudge" &&
+      data.evaluations.some((e) => e.judge_id === body.judgeId)
+    )
+      return fail(
+        "Judges with evaluation records must be retained for the audit history.",
+        409,
+      );
+
     if (body.action === "addJudges") {
       const names = body.names;
       if (
@@ -180,6 +205,20 @@ export async function onRequestPost(context) {
       const assigned = data.assignments.filter((a) => a.judge_id === judge.id);
       if (body.action === "deleteJudge" && assigned.length)
         return fail("Release the judge’s teams before removing the judge.");
+      if (body.action === "deleteJudge") {
+        statements.push(
+          db
+            .prepare(
+              "DELETE FROM judging_sessions WHERE user_id IN (SELECT id FROM judging_users WHERE judge_id=?)",
+            )
+            .bind(judge.id),
+        );
+        statements.push(
+          db
+            .prepare("DELETE FROM judging_users WHERE judge_id=?")
+            .bind(judge.id),
+        );
+      }
       statements.push(
         body.action === "release"
           ? db

@@ -44,10 +44,11 @@ export async function onRequest(context) {
   const password = typeof body?.password === "string" ? body.password : "";
   if (!username || username.length > 80 || !password || password.length > 1024)
     return json({ ok: false, error: "Enter your username and password." }, 400);
+  const role = body.role === "judge" ? "judge" : "venue_admin";
   const user = await env.DB.prepare(
-    "SELECT * FROM judging_users WHERE username=? AND role='venue_admin'",
+    "SELECT * FROM judging_users WHERE username=? AND role=? AND (role='venue_admin' OR judge_id IS NOT NULL)",
   )
-    .bind(username)
+    .bind(username, role)
     .first();
   const invalid = () =>
     json({ ok: false, error: "Invalid username or password." }, 401);

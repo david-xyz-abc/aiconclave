@@ -718,3 +718,237 @@ tr.selected {
     padding: 24px;
   }
 }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.judge-main {
+  max-width: 1050px;
+}
+.judge-team-list {
+  display: grid;
+  gap: 14px;
+}
+.judge-team {
+  padding: 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  text-align: left;
+}
+.judge-team strong {
+  font-size: 18px;
+  font-weight: 600;
+}
+.judge-team p {
+  margin-top: 5px;
+  color: var(--muted);
+  font-weight: 400;
+}
+.badge.complete {
+  background: #ecf8f1;
+  color: #18704b;
+}
+.team-context {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+  padding: 18px 22px;
+  margin-bottom: 22px;
+}
+.team-context span {
+  overflow-wrap: anywhere;
+}
+.team-context small {
+  margin: 0 0 5px;
+}
+.evaluation-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 22px;
+  color: var(--muted);
+}
+.evaluation-steps [aria-current] {
+  color: var(--blue);
+  font-weight: 600;
+}
+.evaluation-form {
+  padding: 28px;
+}
+.evaluation-form > p {
+  margin: 8px 0 20px;
+}
+.evaluation-form fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.award-options {
+  display: grid;
+  gap: 12px;
+  margin-top: 22px;
+}
+.award-option {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.award-option:has(input:checked) {
+  border-color: #7597c7;
+  background: #f0f5fd;
+}
+.award-option input {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  min-height: 0;
+  margin: 2px 0 0;
+  accent-color: var(--blue);
+}
+.award-option strong {
+  font-weight: 500;
+  font-size: 15px;
+}
+.award-option small {
+  font-size: 13px;
+  margin-top: 5px;
+}
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.form-actions > small {
+  margin-right: auto;
+}
+.criterion {
+  padding: 24px 0;
+  border-bottom: 1px solid var(--line);
+}
+.criterion h3 {
+  font-size: 17px;
+}
+.criterion p {
+  color: var(--muted);
+  margin: 8px 0 16px;
+  max-width: 78ch;
+}
+.score-buttons {
+  display: flex;
+  gap: 10px;
+}
+.score-buttons button {
+  width: 48px;
+  min-height: 46px;
+  font-size: 17px;
+}
+.score-buttons button[aria-pressed="true"] {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+}
+.score-total {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 18px 0;
+  font-weight: 600;
+}
+.score-total strong {
+  font-size: 23px;
+  margin-left: auto;
+}
+.score-total small {
+  width: 100%;
+  text-align: right;
+}
+.score-review {
+  margin: 16px 0 24px;
+}
+.score-review > div {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.score-review dd {
+  margin: 0;
+  font-weight: 500;
+}
+.review-heading {
+  margin-top: 24px;
+}
+.history-entry {
+  border-top: 1px solid var(--line);
+  padding: 12px 0;
+}
+.history-entry summary {
+  cursor: pointer;
+  font-size: 13px;
+}
+.history-entry p {
+  font-size: 13px;
+  margin-top: 8px;
+  color: var(--muted);
+}
+.emergency-search {
+  padding-top: 20px;
+}
+@media (max-width: 600px) {
+  .judge-team {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+    padding: 18px;
+  }
+  .team-context {
+    grid-template-columns: 1fr 1fr;
+    padding: 16px;
+    gap: 14px;
+  }
+  .evaluation-form {
+    padding: 18px;
+  }
+  .evaluation-steps {
+    gap: 12px;
+    font-size: 12px;
+  }
+  .score-buttons {
+    gap: 6px;
+  }
+  .score-buttons button {
+    width: calc((100% - 30px) / 6);
+    padding: 8px 0;
+  }
+  .form-actions {
+    justify-content: stretch;
+  }
+  .form-actions button {
+    flex: 1;
+  }
+  .award-option {
+    padding: 14px;
+  }
+}

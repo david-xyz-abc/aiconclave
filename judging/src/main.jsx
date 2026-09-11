@@ -9,27 +9,10 @@ import {
   judgeRoute,
 } from "../shared/assignments.js";
 import "./styles.css";
-async function api(path, body) {
-  const response = await fetch(
-    "/api/" + path,
-    body
-      ? {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(body),
-        }
-      : undefined,
-  );
-  const data = await response.json();
-  if (!response.ok || !data.ok) {
-    const error = new Error(
-      data.error || "Please sign in with a venue staff account.",
-    );
-    error.status = response.status;
-    throw error;
-  }
-  return data;
-}
+import { api } from "./client.js";
+import { JudgeApp } from "./JudgeApp.jsx";
+import { Emergency } from "./Emergency.jsx";
+import { JudgeAccount } from "./JudgeAccount.jsx";
 function Brand() {
   return (
     <a className="brand" href="/" aria-label="Judging operations home">
@@ -39,7 +22,7 @@ function Brand() {
     </a>
   );
 }
-function Login({ onLogin }) {
+function Login({ onLogin, judge = false }) {
   const [username, setUsername] = useState(""),
     [password, setPassword] = useState(""),
     [busy, setBusy] = useState(false),
@@ -49,7 +32,11 @@ function Login({ onLogin }) {
     setBusy(true);
     setError("");
     try {
-      const data = await api("auth", { username, password });
+      const data = await api("auth", {
+        username,
+        password,
+        role: judge ? "judge" : "venue_admin",
+      });
       onLogin(data.user);
     } catch (e) {
       setError(e.message);
@@ -61,8 +48,12 @@ function Login({ onLogin }) {
     <main className="login">
       <section className="login-card">
         <Brand />
-        <h1>Venue team sign in</h1>
-        <p>Manage judges and their assigned teams.</p>
+        <h1>{judge ? "Judge sign in" : "Venue team sign in"}</h1>
+        <p>
+          {judge
+            ? "Use the individual login ID and password provided by the venue team."
+            : "Manage judges and their assigned teams."}
+        </p>
         <form onSubmit={submit}>
           <label>
             Username
@@ -431,7 +422,7 @@ function Assignments({ data, save, busy }) {
     </>
   );
 }
-function Judges({ data, save, busy }) {
+function Judges({ data, save, busy, refresh }) {
   const [id, setId] = useState(""),
     [name, setName] = useState(""),
     [side, setSide] = useState(SIDES[0]),
@@ -580,6 +571,12 @@ function Judges({ data, save, busy }) {
                 <p className="muted">No teams assigned yet.</p>
               )}
             </div>
+            <JudgeAccount
+              key={judge.id}
+              judge={judge}
+              revision={data.revision}
+              onSaved={refresh}
+            />
             <button
               className="danger"
               disabled={busy}
@@ -814,6 +811,7 @@ function Workspace({ user, onLogout }) {
                 ["assign", "Assign teams"],
                 ["judges", "Judges"],
                 ["rooms", "Room order"],
+                ["emergency", "Emergency"],
               ].map(([key, label]) => (
                 <button
                   key={key}
@@ -830,7 +828,9 @@ function Workspace({ user, onLogout }) {
             {tab === "assign" ? (
               <Assignments data={data} save={save} busy={busy} />
             ) : tab === "judges" ? (
-              <Judges data={data} save={save} busy={busy} />
+              <Judges data={data} save={save} busy={busy} refresh={refresh} />
+            ) : tab === "emergency" ? (
+              <Emergency />
             ) : (
               <RoomOrder data={data} save={save} busy={busy} />
             )}
@@ -844,46 +844,29 @@ function Workspace({ user, onLogout }) {
     </>
   );
 }
-function EntryPage({ judges = false }) {
+function EntryPage() {
   return (
     <main className="entry">
       <section className="entry-content">
         <Brand />
-        <h1>{judges ? "Judge sign in" : "Judging portal"}</h1>
-        <p>
-          {judges
-            ? "Individual judge accounts will be available once the judge list is confirmed."
-            : "Choose your workspace to continue."}
-        </p>
-        {judges ? (
-          <div className="card pending">
-            <h2>Judge accounts coming soon</h2>
-            <p>
-              Each judge will receive their own ID and password from the venue
-              team.
-            </p>
-            <a className="back-link" href="/">
-              ← Back to login options
-            </a>
-          </div>
-        ) : (
-          <div className="entry-options">
-            <a className="card entry-option" href="/judges/login">
-              <h2>
-                Judge login <span aria-hidden="true">→</span>
-              </h2>
-              <p>Access your assigned teams and evaluations.</p>
-              <small>Accounts coming soon</small>
-            </a>
-            <a className="card entry-option" href="/team/login">
-              <h2>
-                Venue team login <span aria-hidden="true">→</span>
-              </h2>
-              <p>Manage judges, team assignments, and room routes.</p>
-              <small>Venue team access</small>
-            </a>
-          </div>
-        )}
+        <h1>Judging portal</h1>
+        <p>Choose your workspace to continue.</p>
+        <div className="entry-options">
+          <a className="card entry-option" href="/judges/login">
+            <h2>
+              Judge login <span aria-hidden="true">→</span>
+            </h2>
+            <p>Access your assigned teams and evaluations.</p>
+            <small>Individual judge access</small>
+          </a>
+          <a className="card entry-option" href="/team/login">
+            <h2>
+              Venue team login <span aria-hidden="true">→</span>
+            </h2>
+            <p>Manage judges, team assignments, and room routes.</p>
+            <small>Venue team access</small>
+          </a>
+        </div>
       </section>
     </main>
   );
@@ -892,8 +875,10 @@ function App() {
   const [user, setUser] = useState(null),
     [loading, setLoading] = useState(true);
   const path = window.location.pathname.replace(/\/+$/, "") || "/";
+  const judge = path === "/judges/login" || path === "/judges";
+  const team = path === "/team/login" || path === "/team";
   useEffect(() => {
-    if (!path.startsWith("/team")) {
+    if (!judge && !team) {
       setLoading(false);
       return;
     }
@@ -902,13 +887,14 @@ function App() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
-  if (path === "/judges/login") return <EntryPage judges />;
-  if (path !== "/team/login" && path !== "/team") return <EntryPage />;
+  if (!judge && !team) return <EntryPage />;
   if (loading) return <div className="empty">Loading…</div>;
-  return user ? (
-    <Workspace user={user} onLogout={() => setUser(null)} />
+  if (!user || user.role !== (judge ? "judge" : "venue_admin"))
+    return <Login judge={judge} onLogin={setUser} />;
+  return judge ? (
+    <JudgeApp user={user} onLogout={() => setUser(null)} />
   ) : (
-    <Login onLogin={setUser} />
+    <Workspace user={user} onLogout={() => setUser(null)} />
   );
 }
 createRoot(document.getElementById("root")).render(<App />);

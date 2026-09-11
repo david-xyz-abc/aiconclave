@@ -15,6 +15,12 @@ export function judgingFixture(access = "write") {
       "utf8",
     ),
   );
+  f.sqlite.exec(
+    readFileSync(
+      new URL("../db/migrations/0023_judge_evaluations.sql", import.meta.url),
+      "utf8",
+    ),
+  );
   f.sqlite
     .prepare(
       "INSERT INTO judging_users(id,username,password_hash,password_salt,password_iterations,role) VALUES (?,?,?,?,?,?)",
