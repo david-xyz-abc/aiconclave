@@ -70,10 +70,10 @@ export const attendanceApi = {
   logout: () => requestJson("/api/attendance/auth", { method: "DELETE" }),
   teams: (query = "", date = new Date().toISOString().slice(0, 10)) => requestJson(`/api/attendance/teams?q=${encodeURIComponent(query)}&date=${encodeURIComponent(date)}`),
   team: (id, date) => requestJson(`/api/attendance/teams/${encodeURIComponent(id)}?date=${encodeURIComponent(date)}`),
-  saveAttendance: (id, date, attendance) => requestJson(`/api/attendance/teams/${encodeURIComponent(id)}`, {
+  saveAttendance: (id, date, attendance, projectMode) => requestJson(`/api/attendance/teams/${encodeURIComponent(id)}`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ date, attendance }),
+    body: JSON.stringify({ date, attendance, projectMode }),
   }),
   changeLead: (id, memberId, editingAttendance = false) => requestJson(`/api/attendance/teams/${encodeURIComponent(id)}`, {
     method: "PATCH",
@@ -86,3 +86,8 @@ export const attendanceApi = {
 export function isUnauthorized(error) {
   return error instanceof DashboardApiError && error.status === 401;
 }
+
+export const venuesApi = {
+  load: () => requestJson('/api/attendance/venues'),
+  assign: (teamId, tableId) => requestJson('/api/attendance/venues', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ teamId, tableId }) }),
+};

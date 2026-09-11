@@ -1,0 +1,45 @@
+.venue-main { max-width: var(--container); margin: auto; padding: 2.5rem 2rem; }
+.venue-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 2rem; }
+.venue-heading h1 { font-size: clamp(1.8rem, 4vw, 3rem); }
+.venue-heading p { color: var(--muted); }
+.venue-menus { display: flex; gap: .5rem; border-bottom: 1px solid var(--line-strong); padding-bottom: .75rem; flex-wrap: wrap; }
+.venue-menus button { min-height: 48px; padding: .8rem 1rem; background: var(--surface); color: var(--text); border: 1px solid var(--line); }
+.venue-menus button.active { background: var(--text); color: var(--base); }
+.venue-menus span { display: inline-block; margin-left: .6rem; font-family: var(--mono); }
+.venue-summary { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem 2rem; padding: 1.25rem 0; margin-bottom: 1rem; border-bottom: 1px solid var(--line); }
+.venue-summary small { color: var(--muted); }
+.venue-field { display: grid; gap: .5rem; margin: 1rem 0; max-width: 620px; font-weight: 500; }
+.venue-field input, .venue-field select, .venue-attendance-panel select { width: 100%; min-height: 48px; padding: .7rem; border: 1px solid var(--line-strong); background: var(--base); color: var(--text); border-radius: 0; }
+.venue-workspace { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(0, 1.65fr); gap: 1.5rem; align-items: start; }
+.venue-room-list, .venue-team-list { display: grid; gap: .75rem; max-height: 70vh; overflow-y: auto; padding: 3px; }
+.venue-room-card { display: grid; gap: .4rem; width: 100%; padding: 1.1rem; text-align: left; background: var(--base); border: 1px solid var(--line-strong); color: var(--text); overflow-wrap: anywhere; }
+.venue-room-card:hover { background: var(--surface); }
+.venue-room-card.selected { border: 2px solid var(--text); padding: calc(1.1rem - 1px); background: var(--surface); }
+.venue-room-card strong { font-size: 1.1rem; }
+.venue-room-card small { font-family: var(--mono); }
+.venue-detail { padding: 1.5rem; border: 1px solid var(--line-strong); background: var(--base); min-height: 260px; overflow-wrap: anywhere; }
+.venue-detail h2 { font-size: 1.65rem; }
+.venue-result { padding: 1.25rem; background: var(--surface); border-left: 4px solid var(--signal); margin: 1.5rem 0; font-weight: 600; font-size: 1.1rem; }
+.venue-table-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(165px,1fr)); gap: .75rem; margin-top: 1.5rem; }
+.venue-table { display: flex; flex-direction: column; align-items: start; gap: .6rem; padding: 1rem; border: 1px solid var(--line-strong); min-height: 120px; }
+.venue-table.free { border-top: 4px solid var(--green); }
+.venue-table.occupied { border-top: 4px solid var(--text); background: var(--surface); }
+.venue-table span { font-family: var(--mono); font-size: .75rem; }
+.venue-attendance-panel { padding: 1.25rem; margin: 1rem 0; border: 1px solid var(--line-strong); background: var(--surface); }
+.venue-attendance-panel label { display: block; font-weight: 600; margin-bottom: .65rem; }
+.venue-attendance-panel p { margin-bottom: 0; }
+.venue-attendance-panel small { display: block; margin-top: .65rem; }
+.venue-mode-toggle { border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: .75rem; }
+.venue-mode-toggle legend { font-weight: 600; margin-bottom: .75rem; }
+.venue-mode-toggle label { display: flex; align-items: center; gap: .6rem; padding: .75rem; border: 1px solid var(--line-strong); min-height: 48px; background: var(--base); cursor: pointer; }
+.venue-mode-toggle label:has(input:checked) { outline: 2px solid var(--text); }
+.venue-mode-toggle:disabled label { cursor: default; }
+@media (max-width: 760px) {
+ .venue-main { padding: 1.5rem 1rem; }
+ .venue-heading { align-items: start; flex-direction: column; }
+ .venue-workspace { grid-template-columns: 1fr; }
+ .venue-room-list, .venue-team-list { max-height: 38vh; }
+ .venue-menus button { flex: 1 1 140px; }
+ .venue-detail { padding: 1rem; }
+ .attendance-topbar-actions { flex-wrap: wrap; }
+}

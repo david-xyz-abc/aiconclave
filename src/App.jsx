@@ -1,3 +1,4 @@
+import "./features/venues/venues.css";
 import { useCallback, useEffect, useState } from "react";
 import { LoginPage } from "./features/auth/LoginPage.jsx";
 import { Dashboard } from "./features/dashboard/Dashboard.jsx";
@@ -35,7 +36,7 @@ export default function App() {
   }, [clearSession, pathname]);
 
   if (pathname === "/") return <LandingPage />;
-  if (pathname === "/attendance" || pathname.startsWith("/attendance/")) return <AttendanceApp />;
+  if (pathname === "/attendance" || pathname.startsWith("/attendance/")) return <AttendanceApp venues={pathname === "/attendance/venues"} />;
 
   if (session.loading)
     return <div className="loading-screen">Loading dashboard…</div>;

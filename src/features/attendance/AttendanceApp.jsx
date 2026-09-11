@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { VenueDashboard } from "../venues/VenueDashboard.jsx";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BrandLockup } from "../../components/common/BrandLockup.jsx";
 import { attendanceApi, isUnauthorized } from "../../services/dashboardApi.js";
 import { downloadAttendanceWorkbook } from "../../services/registrationExport.js";
@@ -96,6 +97,7 @@ function TeamRow({ team, selected, onSelect }) {
 }
 
 function AttendanceDesk({ onLogout, user }) {
+  const venuePanel = useRef(null);
   const canEdit = user?.attendanceAccess === "write";
   const [query, setQuery] = useState("");
   const [teams, setTeams] = useState([]);
@@ -164,7 +166,7 @@ function AttendanceDesk({ onLogout, user }) {
   const leadPresent = Boolean(team?.members?.some((member) => member.id === team.lead_member_id && member.present));
   const mealsComplete = Boolean(team?.members?.every((member) => !member.present || ['Veg', 'Non-Veg'].includes(member.meal_preference)));
   const controlsLocked = !canEdit || saving || changingLead || (attendanceMarked && !editingAttendance);
-  const canSaveAttendance = leadPresent && presentCount >= 2 && mealsComplete && !changingLead && !saving;
+  const canSaveAttendance = Boolean(team?.allocation?.project_mode) && leadPresent && presentCount >= 2 && mealsComplete && !changingLead && !saving;
   function updateMeal(memberId, mealPreference) {
     if (controlsLocked) return;
     setTeam((current) => ({ ...current, members: current.members.map((member) => member.id === memberId ? { ...member, meal_preference: mealPreference } : member) }));
@@ -196,11 +198,14 @@ function AttendanceDesk({ onLogout, user }) {
           present: Boolean(member.present),
           mealPreference: member.present ? member.meal_preference : null,
         })),
+        team.allocation?.project_mode,
       );
       setTeam(data.team);
+      setTeams(current => current.map(item => item.id === data.team.id ? { ...item, present_count: data.team.members.filter(member => member.present).length } : item));
       setEditingAttendance(false);
       setShowConfirmDialog(false);
       setMessage("");
+      requestAnimationFrame(() => venuePanel.current?.scrollIntoView({ block: 'nearest' }));
     } catch (e) {
       setError(e.message);
       if (isUnauthorized(e)) onLogout();
@@ -255,6 +260,7 @@ function AttendanceDesk({ onLogout, user }) {
       <header className="attendance-topbar">
         <BrandLockup />
         <div className="attendance-topbar-actions">
+          <a className="button button-quiet" href="/attendance/venues">Staff venues</a>
           <button className="attendance-export-button" type="button" onClick={exportAttendance} disabled={exporting}>
             {exporting ? "Preparing…" : "Excel"}<span aria-hidden="true">↓</span>
           </button>
@@ -338,6 +344,18 @@ function AttendanceDesk({ onLogout, user }) {
                       : `${presentCount}/${team.member_count} present`}
                   </span>
                 </div>
+                <section className="venue-attendance-panel" ref={venuePanel}>
+                  <fieldset className="venue-mode-toggle" disabled={controlsLocked}>
+                    <legend>Project mode — ask the team</legend>
+                    {['Prepared', 'Starting from scratch'].map(mode => <label key={mode}>
+                      <input type="radio" name="project-mode" value={mode} checked={team.allocation?.project_mode === mode}
+                        onChange={() => { setTeam(current => ({ ...current, allocation: { ...current.allocation, project_mode: mode } })); setShowConfirmDialog(false); }} />
+                      <span>{mode}</span>
+                    </label>)}
+                  </fieldset>
+                  <p role="status">{team.allocation?.table_id ? `${team.allocation.block} block · ${team.allocation.room_name} · Table ${String(team.allocation.table_number).padStart(2, '0')}` : attendanceMarked ? (team.allocation?.project_mode ? 'Awaiting allocation — staff can assign a compatible table in Manual Allocation.' : 'Project mode not recorded. Edit attendance to select it and allocate a table.') : 'A matching room and table will be assigned when attendance is saved.'}</p>
+                  {editingAttendance && <small>Saving rechecks allocation using the selected mode and members present.</small>}
+                </section>
                 <div className="attendance-controls">
                   <div className="attendance-lead-control">
                     <label>
@@ -473,7 +491,7 @@ function AttendanceDesk({ onLogout, user }) {
   );
 }
 
-export function AttendanceApp() {
+export function AttendanceApp({ venues = false }) {
   const [session, setSession] = useState({
     loading: true,
     authenticated: false,
@@ -492,6 +510,7 @@ export function AttendanceApp() {
       onLogin={(user) => setSession({ loading: false, authenticated: true, user })}
       />
     );
+  if (venues) return <VenueDashboard user={session.user} onLogout={() => setSession({ loading: false, authenticated: false, user: null })} />;
   return (
     <AttendanceDesk
       user={session.user}

@@ -18,6 +18,10 @@ export function LandingPage() {
           <span className="portal-choice-number">02</span>
           <strong>Attendance <span aria-hidden="true">→</span></strong>
         </a>
+        <a className="portal-choice" href="/attendance/venues">
+          <span className="portal-choice-number">03</span>
+          <strong>Staff venues <span aria-hidden="true">→</span></strong>
+        </a>
       </section>
     </main>
   );
