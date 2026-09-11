@@ -1,11 +1,11 @@
 # Dashboard-only Cloudflare Pages + D1 configuration.
-name = "aiconclave-dashboard"
+name = "aiconclave-dashboard-alpha"
 compatibility_date = "2026-08-15"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = "dist"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "aiconclave-registrations"
-database_id = "cfc0669f-3de7-4429-ab54-686e966bb56b"
+database_name = "aiconclave-registrations-alpha"
+database_id = "2cef820f-583b-4e9a-9a2c-c2b72f0a48a7"
 migrations_dir = "db/migrations"

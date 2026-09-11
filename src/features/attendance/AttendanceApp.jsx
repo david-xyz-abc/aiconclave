@@ -32,7 +32,7 @@ function AttendanceLogin({ onLogin }) {
         <BrandLockup />
         <div className="auth-copy">
           <p className="eyebrow">Attendance</p>
-          <h1 id="attendance-login-heading">Sign in</h1>
+          <h1 id="attendance-login-heading">Attendance</h1>
         </div>
         <form className="auth-form" onSubmit={submit}>
           <label>

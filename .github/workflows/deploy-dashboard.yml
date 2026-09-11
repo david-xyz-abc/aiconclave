@@ -1,13 +1,13 @@
-name: Deploy dashboard
+name: Deploy alpha dashboard
 
 on:
   push:
     branches:
-      - dashboard-dev
+      - dashboard-dev-alpha
   workflow_dispatch:
 
 concurrency:
-  group: dashboard-development
+  group: dashboard-alpha
   cancel-in-progress: true
 
 jobs:
@@ -39,7 +39,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           wranglerVersion: "4.38.0"
-          command: d1 migrations apply aiconclave-registrations --remote
+          command: d1 migrations apply aiconclave-registrations-alpha --remote
 
       - name: Deploy dashboard Pages project
         uses: cloudflare/wrangler-action@v3
@@ -47,4 +47,4 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           wranglerVersion: "4.38.0"
-          command: pages deploy dist --project-name=aiconclave-dashboard --branch=dashboard-dev --commit-dirty=true
+          command: pages deploy dist --project-name=aiconclave-dashboard-alpha --branch=dashboard-dev-alpha --commit-dirty=true

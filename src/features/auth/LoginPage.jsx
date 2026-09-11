@@ -26,7 +26,7 @@ export function LoginPage({ onLogin }) {
     <main className="auth-shell">
       <section className="auth-panel" aria-labelledby="login-heading">
         <BrandLockup />
-        <div className="auth-copy"><p className="eyebrow">Admin access</p><h1 id="login-heading">Registrations</h1></div>
+        <div className="auth-copy"><p className="eyebrow">Admin access</p><h1 id="login-heading">Admin</h1></div>
         <form className="auth-form" onSubmit={submit}>
           <label>
             Username

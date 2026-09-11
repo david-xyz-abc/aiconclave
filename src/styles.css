@@ -321,8 +321,6 @@ td a { text-decoration-thickness: 1px; text-underline-offset: .2em; }
 .attendance-member-state { color: var(--muted); font: 600 .62rem/1.2 var(--mono); letter-spacing: .06em; text-transform: uppercase; }
 .attendance-member.is-present .attendance-member-state { color: #a30f0f; }
 .attendance-save { width: 100%; margin-top: 1.25rem; }
-.attendance-save-confirm { display: inline-flex; align-items: center; justify-content: space-between; gap: 1rem; width: 100%; min-height: 2.75rem; border: 1px solid var(--green); background: var(--green); color: #fff; font: 500 .72rem/1 var(--mono); letter-spacing: .04em; text-transform: uppercase; }
-.attendance-save-confirm:hover:not(:disabled) { background: #0f5a36; }
 .attendance-dialog-backdrop { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 1.5rem; background: rgba(10,10,10,.48); }
 .attendance-dialog { width: min(100%, 440px); padding: 1.5rem; border: 1px solid var(--text); border-top: 5px solid var(--signal); background: var(--base); box-shadow: 10px 10px 0 rgba(10,10,10,.18); }
 .attendance-dialog h2 { font-size: clamp(1.7rem, 4vw, 2.5rem); }

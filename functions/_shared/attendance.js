@@ -1,6 +1,5 @@
-import { constantTimeEqual, hashPassword, isSameOrigin, newToken, parseCookies, readJsonBody, sessionCookie, sha256 } from "./auth.js";
+import { constantTimeEqual, hashPassword, isSameOrigin, newToken, parseCookies, readJsonBody, sha256 } from "./auth.js";
 
-const DEFAULT_ATTENDANCE_PASSWORD = "aiconclaveattend754#";
 const ATTENDANCE_COOKIE = "__Host-aiconclave_attendance_session";
 const ATTENDANCE_TTL_SECONDS = 60 * 60 * 12;
 
