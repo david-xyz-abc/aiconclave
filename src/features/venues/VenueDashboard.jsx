@@ -18,7 +18,6 @@ export function VenueDashboard({ user, onLogout }) {
   const [menu, setMenu] = useState('finder');
   const [data, setData] = useState({ teams: [], tables: [] });
   const [query, setQuery] = useState('');
-  const [allocationFilter, setAllocationFilter] = useState('all');
   const [selectedId, setSelectedId] = useState(null);
   const [tableId, setTableId] = useState('');
   const [block, setBlock] = useState('');
@@ -49,7 +48,7 @@ export function VenueDashboard({ user, onLogout }) {
   const canEdit = user?.attendanceAccess === 'write';
   const waiting = data.teams.filter(team => team.attendance_marked && !team.table_id);
   const selected = data.teams.find(team => team.team_id === selectedId);
-  const matches = data.teams.filter(team => menu !== 'allocate' || (team.attendance_marked && (allocationFilter === 'all' || (allocationFilter === 'assigned' ? team.table_id : !team.table_id))))
+  const matches = data.teams.filter(team => menu !== 'allocate' || team.attendance_marked)
     .filter(team => `${team.team_name} ${team.team_code}`.toLowerCase().includes(query.trim().toLowerCase()));
   const free = selected ? data.tables.filter(table => compatible(selected, table)) : [];
   const rooms = [...new Map(data.tables.map(table => [table.id, table])).values()].filter(room => !block || room.block === block);
@@ -112,14 +111,13 @@ export function VenueDashboard({ user, onLogout }) {
       </> : <>
         <div className="venue-toolbar">
           <label className="venue-field venue-search-field">Search team name or code<input value={query} onChange={e => { setQuery(e.target.value); setSelectedId(null); setTableId(''); }} placeholder="Team name or code" /></label>
-          {menu === 'allocate' && <label className="venue-field">Allocation status<select value={allocationFilter} onChange={e => { setAllocationFilter(e.target.value); setSelectedId(null); setTableId(''); }}><option value="all">All checked-in teams</option><option value="waiting">Awaiting allocation</option><option value="assigned">Already allocated</option></select></label>}
         </div>
         {showTeams ? <div className={`venue-workspace ${selected ? 'detail-open' : ''}`}>
           <section className="venue-team-list" aria-label={menu === 'allocate' ? 'Checked-in teams' : 'Search results'}>
             <div className="venue-list-heading">{matches.length} {matches.length === 1 ? 'team' : 'teams'}</div>
             {matches.length ? matches.map(team => <button key={team.team_id} className="venue-list-row" onClick={() => { setSelectedId(team.team_id); setTableId(''); setMessage(''); }} aria-pressed={selectedId === team.team_id}>
               <span className="venue-row-main"><strong>{team.team_name}</strong><small>{team.team_code}</small><span className={`venue-row-status ${team.table_id ? 'assigned' : ''}`}>{shortStatus(team)}</span></span><span aria-hidden="true" className="venue-row-arrow">›</span>
-            </button>) : <p className="venue-list-empty">{menu === 'allocate' && !query ? 'No teams match this status.' : 'No matching teams.'}</p>}
+            </button>) : <p className="venue-list-empty">{menu === 'allocate' && !query ? 'No teams have checked in yet.' : 'No matching teams.'}</p>}
           </section>
           <section className="venue-detail" aria-label="Team allocation">
             {selected ? <>
@@ -129,7 +127,7 @@ export function VenueDashboard({ user, onLogout }) {
               <div className={`venue-result ${selected.table_id ? 'is-assigned' : ''}`} role="status">
                 {selected.table_id ? <><span>Assigned venue</span><strong>{selected.room_name} <span>·</span> Table {String(selected.table_number).padStart(2,'0')}</strong><small>{selected.block} block</small></> : status(selected)}
               </div>
-              {!selected.attendance_marked || !selected.project_mode || selected.present_count < 2 || !selected.lead_present ? <a className="ops-primary" href="/attendance">Open attendance desk</a> : menu === 'finder' ? (canEdit || !selected.table_id) && <button className="ops-secondary" onClick={() => { setMenu('allocate'); setAllocationFilter('all'); setQuery(''); setTableId(''); }}>{selected.table_id ? 'Reallocate team' : 'Open Manual Allocation'}</button> : canEdit ? <div className="venue-assignment-form">
+              {!selected.attendance_marked || !selected.project_mode || selected.present_count < 2 || !selected.lead_present ? <a className="ops-primary" href="/attendance">Open attendance desk</a> : menu === 'finder' ? (canEdit || !selected.table_id) && <button className="ops-secondary" onClick={() => { setMenu('allocate'); setQuery(''); setTableId(''); }}>{selected.table_id ? 'Reallocate team' : 'Open Manual Allocation'}</button> : canEdit ? <div className="venue-assignment-form">
                 <label className="venue-field">Compatible free room and table<select value={tableId} disabled={saving} onChange={e => setTableId(e.target.value)}><option value="">Choose a table</option>{free.map(t => <option key={t.table_id} value={t.table_id}>{t.name} · Table {String(t.table_number).padStart(2,'0')} · {t.seats} seats</option>)}</select></label>
                 {!free.length && <p className="venue-help">{selected.table_id ? 'No matching tables available. The current assignment is retained.' : 'No matching tables available. The team remains on the waiting list.'}</p>}
                 <button className="ops-primary" disabled={saving || !free.some(t => String(t.table_id) === tableId)} onClick={assign}>{saving ? 'Saving…' : selected.table_id ? 'Reallocate room and table' : 'Assign room and table'}</button>
