@@ -9,3 +9,5 @@ This is a one-time snapshot of production schema and records from 11 September 2
 Deployment, migrations and the local Vite API proxy target alpha only. Do not change these to production when testing. Existing account passwords are copied. No public registration forms, email sender or food website are deployed here. Production email delivery rows are inert in this dashboard; do not attach a mail-sending worker to this database.
 
 Database exports must remain outside the repository and deployment output.
+
+CI tests, builds and deploys alpha only. The existing GitHub token lacks D1 migration permissions. If a future change needs a migration, apply it explicitly using authorized Wrangler access: `wrangler d1 migrations apply aiconclave-registrations-alpha --remote`, before deploying that change. The initial clone has all current migrations applied.

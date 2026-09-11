@@ -10,6 +10,6 @@ test('alpha config, local proxy and deployment target alpha only', () => {
   assert.match(read('vite.config.js'), /https:\/\/aiconclave-dashboard-alpha\.pages\.dev/);
   const workflow = read('.github/workflows/deploy-dashboard.yml');
   assert.match(workflow, /--project-name=aiconclave-dashboard-alpha --branch=dashboard-dev-alpha/);
-  assert.match(workflow, /d1 migrations apply aiconclave-registrations-alpha --remote/);
+  assert.doesNotMatch(workflow, /d1 migrations apply/);
   assert.doesNotMatch(config, /cfc0669f-3de7-4429-ab54-686e966bb56b/);
 });
