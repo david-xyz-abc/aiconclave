@@ -11,6 +11,8 @@ import { HACKATHON_REGISTRATION_OPEN, blankTeamMember, hackathonChallengeAreas, 
 
 const HACKATHON_REGISTRATION_RULES = [
   'Teams must include 2 to 4 school or college students.',
+  'SCHOOL CATEGORY - If a team registered under the School Category contains even one college student, the team will be disqualified from the Hackathon event.',
+  'COLLEGE CATEGORY - The team may consist entirely of college students or a combination of school and college students, subject to the overall team size requirement of 2 to 4 students.',
   'The five-hour session is open to internal and external students.',
   'Each team must select one sector: Agriculture, Education or Healthcare.',
   'Technical and non-technical solutions are accepted.',
