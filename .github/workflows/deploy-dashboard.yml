@@ -38,7 +38,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          wranglerVersion: "4.38.0"
+          wranglerVersion: "4.125.0"
           command: d1 migrations apply aiconclave-registrations-alpha --remote
 
       - name: Deploy dashboard Pages project
@@ -46,5 +46,5 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          wranglerVersion: "4.38.0"
+          wranglerVersion: "4.125.0"
           command: pages deploy dist --project-name=aiconclave-dashboard-alpha --branch=dashboard-dev-alpha --commit-dirty=true
