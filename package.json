@@ -9,7 +9,9 @@
     "dev:vite": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test"
+    "test": "node --test",
+    "build:judging": "vite build --config judging/vite.config.js",
+    "dev:judging": "vite --config judging/vite.config.js"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",

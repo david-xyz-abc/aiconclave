@@ -1,0 +1,40 @@
+name: Deploy judging admin
+on:
+  push:
+    branches: [dashboard-dev-alpha]
+    paths:
+      - "judging/**"
+      - "functions/_shared/auth.js"
+      - "functions/_shared/attendance.js"
+      - "functions/_middleware.js"
+      - "test/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/deploy-judging.yml"
+  workflow_dispatch:
+concurrency:
+  group: judging-alpha
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build:judging
+      - name: Deploy separate judging website
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4.125.0"
+          workingDirectory: judging
+          command: pages deploy dist --project-name=aiconclave-judging-alpha --branch=dashboard-dev-alpha --commit-dirty=true

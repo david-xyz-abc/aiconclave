@@ -1,0 +1,10 @@
+name = "aiconclave-judging-alpha"
+compatibility_date = "2026-09-11"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "dist"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "aiconclave-registrations-alpha"
+database_id = "2cef820f-583b-4e9a-9a2c-c2b72f0a48a7"
+migrations_dir = "../db/migrations"
