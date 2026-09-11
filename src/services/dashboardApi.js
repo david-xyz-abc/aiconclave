@@ -88,6 +88,7 @@ export function isUnauthorized(error) {
 }
 
 export const venuesApi = {
+  reallocate: (teamId, tableId, currentTableId) => requestJson('/api/attendance/venues', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ teamId, tableId, currentTableId }) }),
   load: () => requestJson('/api/attendance/venues'),
   assign: (teamId, tableId) => requestJson('/api/attendance/venues', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ teamId, tableId }) }),
 };

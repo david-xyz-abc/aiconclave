@@ -7,10 +7,47 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fixture, context } from './venueFixture.js';
 import { onRequestPost as attendance } from '../functions/api/attendance/teams/[id].js';
-import { onRequestPost as manual, onRequestGet, MANUAL_SQL } from '../functions/api/attendance/venues.js';
+import { onRequestPost as manual, onRequestPatch as reallocate, onRequestGet, MANUAL_SQL, REALLOCATE_SQL } from '../functions/api/attendance/venues.js';
 import { CLAIM_SQL } from '../functions/_shared/allocation.js';
 
 const payload = (count = 3, projectMode = 'Prepared') => ({ date: '2026-09-16', projectMode, attendance: [11,12,13].map((memberId,i) => ({ memberId, present: i < count, mealPreference: 'Veg' })) });
+
+test('reallocation atomically moves an assigned team and rejects stale staff requests', async () => {
+ const f=fixture();
+ try {
+  await attendance(context(f.DB,payload()));
+  const old=f.sqlite.prepare('SELECT table_id FROM venue_allocations WHERE team_id=1').get().table_id;
+  const candidates=f.sqlite.prepare("SELECT vt.id FROM venue_tables vt JOIN venue_rooms r ON vt.room_id=r.id WHERE r.project_mode='Prepared' AND r.sector='Agriculture' AND r.solution_type='Technical' AND r.seats=3 AND vt.id<>? ORDER BY vt.id").all(old);
+  const request={teamId:1,currentTableId:old,tableId:candidates[0].id};
+  assert.equal((await reallocate(context(f.DB,request,'PATCH'))).status,200);
+  assert.equal(f.sqlite.prepare('SELECT table_id FROM venue_allocations WHERE team_id=1').get().table_id,candidates[0].id);
+  assert.equal(f.sqlite.prepare('SELECT COUNT(*) AS n FROM venue_allocations WHERE table_id=?').get(old).n,0);
+  assert.equal((await reallocate(context(f.DB,{...request,tableId:candidates[1].id},'PATCH'))).status,409);
+  assert.equal(f.sqlite.prepare('SELECT table_id FROM venue_allocations WHERE team_id=1').get().table_id,candidates[0].id);
+  await attendance(context(f.DB,payload()));
+  assert.equal(f.sqlite.prepare('SELECT table_id FROM venue_allocations WHERE team_id=1').get().table_id,candidates[0].id);
+ } finally { f.sqlite.close(); }
+});
+
+test('failed reallocation retains the old table for incompatible, occupied and invalid targets', async () => {
+ const f=fixture();
+ try {
+  await attendance(context(f.DB,payload()));
+  const old=f.sqlite.prepare('SELECT table_id FROM venue_allocations WHERE team_id=1').get().table_id;
+  const free=f.sqlite.prepare('SELECT id FROM venue_tables WHERE room_id=(SELECT room_id FROM venue_tables WHERE id=?) AND id<>? LIMIT 1').get(old,old).id;
+  f.sqlite.exec("INSERT INTO hackathon_teams (id,submitted_at) VALUES (2,'2026-09-11')");
+  f.sqlite.prepare("INSERT INTO venue_allocations VALUES (2,?,'other-staff','now')").run(free);
+  for(const tableId of [free,99999,old,1]) {
+   assert.equal((await reallocate(context(f.DB,{teamId:1,currentTableId:old,tableId},'PATCH'))).status,409);
+   assert.equal(f.sqlite.prepare('SELECT table_id FROM venue_allocations WHERE team_id=1').get().table_id,old);
+  }
+  const ctx=context(f.DB,{teamId:1,currentTableId:old,tableId:free},'PATCH');
+  ctx.request.headers.delete('origin');assert.equal((await reallocate(ctx)).status,403);
+  ctx.request.headers.delete('cookie');assert.equal((await reallocate(ctx)).status,401);
+  assert.equal((await reallocate(context(f.DB,{teamId:1,tableId:free},'PATCH'))).status,400);
+ } finally {f.sqlite.close();}
+ const read=fixture('read');try {assert.equal((await reallocate(context(read.DB,{teamId:1,currentTableId:1,tableId:2},'PATCH'))).status,403);}finally{read.sqlite.close();}
+});
 
 test('plan has 53 rooms, 565 tables, seven large rooms, and uniform seating', () => {
  const f = fixture();
@@ -101,12 +138,16 @@ test('three real concurrent SQLite connections cannot double-book automatic or m
    INSERT INTO venue_rooms VALUES (1,'Prepared','Agriculture','Technical',3);
    CREATE TABLE venue_tables (id INTEGER,room_id INTEGER,table_number INTEGER);
    INSERT INTO venue_tables VALUES (1,1,1),(2,1,2);
-   CREATE TABLE venue_allocations (team_id INTEGER PRIMARY KEY, table_id INTEGER UNIQUE, assigned_by TEXT);`);
+   CREATE TABLE venue_allocations (team_id INTEGER PRIMARY KEY, table_id INTEGER UNIQUE, assigned_by TEXT, assigned_at TEXT);`);
   const race=sql=>Promise.all([1,2,3].map(id=>new Promise((resolve,reject)=>{
-   const worker=new Worker(`const {workerData,parentPort}=require('node:worker_threads'); const {DatabaseSync}=require('node:sqlite'); const db=new DatabaseSync(workerData.path); db.exec('PRAGMA busy_timeout=5000'); const r=db.prepare(workerData.sql).run(...workerData.args); db.close(); parentPort.postMessage(Number(r.changes));`,{eval:true,workerData:{path,sql,args:sql===CLAIM_SQL?['staff',id]:['staff',id,1]}});
+   const args=sql===CLAIM_SQL?['staff',id]:sql===REALLOCATE_SQL?[3,'staff',id,db.prepare('SELECT table_id FROM venue_allocations WHERE team_id=?').get(id)?.table_id || 99,3,3,3]:['staff',id,1];
+   const worker=new Worker(`const {workerData,parentPort}=require('node:worker_threads'); const {DatabaseSync}=require('node:sqlite'); const db=new DatabaseSync(workerData.path); db.exec('PRAGMA busy_timeout=5000'); const r=db.prepare(workerData.sql).run(...workerData.args); db.close(); parentPort.postMessage(Number(r.changes));`,{eval:true,workerData:{path,sql,args}});
    worker.on('message',resolve);worker.on('error',reject);worker.on('exit',code=>{if(code)reject(new Error(`Worker exit ${code}`));});
   })));
   assert.equal((await race(CLAIM_SQL)).reduce((a,b)=>a+b),2);
+  assert.equal(db.prepare('SELECT COUNT(DISTINCT table_id) AS n FROM venue_allocations').get().n,2);
+  db.exec('INSERT INTO venue_tables VALUES (3,1,3)');
+  assert.equal((await race(REALLOCATE_SQL)).reduce((a,b)=>a+b),1);
   assert.equal(db.prepare('SELECT COUNT(DISTINCT table_id) AS n FROM venue_allocations').get().n,2);
   db.exec('DELETE FROM venue_allocations');
   assert.equal((await race(MANUAL_SQL)).reduce((a,b)=>a+b),1);
