@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
-import { fixture } from "./venueFixture.js";
+import { createHash } from "node:crypto";
+import { fixture, context as attendanceContext } from "./venueFixture.js";
 export function judgingFixture(access = "write") {
   const f = fixture(access);
   f.sqlite.exec(
@@ -8,6 +9,29 @@ export function judgingFixture(access = "write") {
       "utf8",
     ),
   );
+  f.sqlite.exec(
+    readFileSync(
+      new URL("../db/migrations/0022_judging_auth.sql", import.meta.url),
+      "utf8",
+    ),
+  );
+  f.sqlite
+    .prepare(
+      "INSERT INTO judging_users(id,username,password_hash,password_salt,password_iterations,role) VALUES (?,?,?,?,?,?)",
+    )
+    .run(
+      "test-user",
+      "staff",
+      "unused",
+      "unused",
+      100000,
+      access === "write" ? "venue_admin" : "judge",
+    );
+  f.sqlite
+    .prepare(
+      "INSERT INTO judging_sessions VALUES (?, 'test-user', datetime('now','+1 hour'))",
+    )
+    .run(createHash("sha256").update("test").digest("hex"));
   for (let id = 1; id <= 8; id++) {
     if (id > 1) {
       f.sqlite
@@ -60,4 +84,12 @@ export function judgingFixture(access = "write") {
       .run(i + 1, tables[idx].id),
   );
   return f;
+}
+
+export function judgingContext(...args) {
+  const ctx = attendanceContext(...args);
+  const headers = new Headers(ctx.request.headers);
+  headers.set("cookie", "__Host-aiconclave_judging_session=test");
+  ctx.request = new Request(ctx.request, { headers });
+  return ctx;
 }

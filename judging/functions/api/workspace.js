@@ -1,7 +1,4 @@
-import {
-  requireAttendanceAdmin,
-  attendanceJson as json,
-} from "../../../functions/_shared/attendance.js";
+import { requireVenueAdmin, json } from "../_shared/auth.js";
 import { isSameOrigin, readJsonBody } from "../../../functions/_shared/auth.js";
 import {
   SIDES,
@@ -35,7 +32,7 @@ export async function loadWorkspace(db) {
   };
 }
 export async function onRequestGet(context) {
-  const auth = await requireAttendanceAdmin(context);
+  const auth = await requireVenueAdmin(context);
   if (auth.response) return auth.response;
   try {
     return json({ ok: true, ...(await loadWorkspace(context.env.DB)) });
@@ -52,7 +49,7 @@ export async function onRequestGet(context) {
 const fail = (message, status = 400) =>
   json({ ok: false, error: message }, status);
 export async function onRequestPost(context) {
-  const auth = await requireAttendanceAdmin(context);
+  const auth = await requireVenueAdmin(context);
   if (auth.response) return auth.response;
   if (!isSameOrigin(context.request))
     return fail("Request origin could not be verified.", 403);

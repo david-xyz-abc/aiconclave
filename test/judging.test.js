@@ -1,7 +1,7 @@
 import { judgingFixture } from "./judgingFixture.js";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { context } from "./venueFixture.js";
+import { judgingContext as context } from "./judgingFixture.js";
 import {
   onRequestGet,
   onRequestPost,

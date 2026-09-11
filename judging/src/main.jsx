@@ -92,7 +92,9 @@ function Login({ onLogin }) {
             {busy ? "Signing in…" : "Sign in"}
           </button>
         </form>
-        <small>Use a staff account with attendance management access.</small>
+        <a className="back-link" href="/">
+          ← Back to login options
+        </a>
       </section>
     </main>
   );
@@ -762,10 +764,10 @@ function Workspace({ user, onLogout }) {
             {message}
           </div>
         )}
-        {user.attendanceAccess !== "write" ? (
+        {user.role !== "venue_admin" ? (
           <div className="card empty">
-            This dashboard requires attendance management access. Sign in with a
-            venue staff account.
+            This dashboard requires venue team access. Sign in with a venue
+            staff account.
           </div>
         ) : !data ? (
           <div className="card empty">
@@ -842,15 +844,66 @@ function Workspace({ user, onLogout }) {
     </>
   );
 }
+function EntryPage({ judges = false }) {
+  return (
+    <main className="entry">
+      <section className="entry-content">
+        <Brand />
+        <h1>{judges ? "Judge sign in" : "Judging portal"}</h1>
+        <p>
+          {judges
+            ? "Individual judge accounts will be available once the judge list is confirmed."
+            : "Choose your workspace to continue."}
+        </p>
+        {judges ? (
+          <div className="card pending">
+            <h2>Judge accounts coming soon</h2>
+            <p>
+              Each judge will receive their own ID and password from the venue
+              team.
+            </p>
+            <a className="back-link" href="/">
+              ← Back to login options
+            </a>
+          </div>
+        ) : (
+          <div className="entry-options">
+            <a className="card entry-option" href="/judges/login">
+              <h2>
+                Judge login <span aria-hidden="true">→</span>
+              </h2>
+              <p>Access your assigned teams and evaluations.</p>
+              <small>Accounts coming soon</small>
+            </a>
+            <a className="card entry-option" href="/team/login">
+              <h2>
+                Venue team login <span aria-hidden="true">→</span>
+              </h2>
+              <p>Manage judges, team assignments, and room routes.</p>
+              <small>Venue team access</small>
+            </a>
+          </div>
+        )}
+      </section>
+    </main>
+  );
+}
 function App() {
   const [user, setUser] = useState(null),
     [loading, setLoading] = useState(true);
+  const path = window.location.pathname.replace(/\/+$/, "") || "/";
   useEffect(() => {
+    if (!path.startsWith("/team")) {
+      setLoading(false);
+      return;
+    }
     api("auth")
       .then((d) => setUser(d.user))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+  if (path === "/judges/login") return <EntryPage judges />;
+  if (path !== "/team/login" && path !== "/team") return <EntryPage />;
   if (loading) return <div className="empty">Loading…</div>;
   return user ? (
     <Workspace user={user} onLogout={() => setUser(null)} />
