@@ -19,7 +19,7 @@ export function HomePage() {
                 <a className="btn btn-primary" href={PATHS.register}>Register Now <span className="btn-arrow" aria-hidden="true">→</span></a>
                 <a className="btn btn-outline" href={PATHS.schedule}>View Schedule</a>
               </div>
-              {capacity.status === 'ready' && !capacity.collegeOpen && <p role="status">Registrations concluded for colleges. School registration remains open.</p>}
+              {capacity.status === 'ready' && !capacity.collegeOpen && <p role="status">Hackathon registrations are closed.</p>}
               <div className="hero-perforation"></div>
               <div className="hero-strip">
                 <div className="hero-strip-item"><span className="hero-strip-label">Dates</span><span className="hero-strip-value">15–16 September 2026</span></div>

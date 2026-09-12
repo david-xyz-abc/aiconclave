@@ -243,6 +243,7 @@ export function HackathonRegisterPage({ participant, capacity, refreshCapacity }
   if (registrationState.status === 'loading') return <main id="main"><section className="account-loading"><span className="account-spinner" aria-hidden="true"></span><p>Checking hackathon registration…</p></section></main>
   if (registrationState.status === 'error') return <RegistrationEligibilityError message={registrationState.error} onRetry={retryRegistrationCheck} />
   if (hasEventRegistration(registrationState.registrations, 'hackathon')) return <AlreadyRegisteredPage eventName="Hackathon" />
+  if (!submitted && capacity.status === 'ready' && !capacity.open) return <HackathonRegistrationClosedPage />
 
   const updateField = (event) => {
     const { name, value, type, checked } = event.target
@@ -308,6 +309,7 @@ export function HackathonRegisterPage({ participant, capacity, refreshCapacity }
       setSubmitted(true)
       setWhatsappPromptOpen(true)
     } catch (submitError) {
+      if (submitError.details?.code === 'REGISTRATION_CAPACITY') refreshCapacity()
       const serverErrors = submitError instanceof ApiError && submitError.details?.fields && typeof submitError.details.fields === 'object' ? submitError.details.fields : {}
       setFieldErrors(serverErrors)
       setError(submitError.message || 'Network error. Check your connection and try again.')

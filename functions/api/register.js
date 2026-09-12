@@ -1,3 +1,4 @@
+import { getHackathonCapacity } from '../_lib/capacity.js'
 import { isSameOrigin, json, readJsonBody } from '../_lib/http.js'
 import { enforceParticipantRegistrationLimit } from '../_lib/rateLimit.js'
 import { queueRegistrationEmail } from '../_lib/registrationEmail.js'
@@ -194,6 +195,9 @@ export async function onRequestPost(context) {
     if (Object.keys(fields).length) return json({ ok: false, error: 'Please review the highlighted fields.', fields }, 400)
 
     try {
+      const capacity = await getHackathonCapacity(db)
+      if (members.length > capacity.remaining) return json({ ok: false, code: 'REGISTRATION_CAPACITY', error: capacity.open ? 'There are not enough places remaining for this team.' : 'Hackathon registration is closed.' }, 409)
+
       const existingTeam = await db.prepare('SELECT id FROM hackathon_teams WHERE team_name_key = ? OR captain_account_id = ? LIMIT 1').bind(nameKey, participant.id).first()
       if (existingTeam) return json({ ok: false, error: 'This team name is already in use, or you have already registered a team.', fields: { teamName: 'Choose another team name, or open My registrations to view your existing team.' } }, 409)
 
@@ -230,6 +234,7 @@ export async function onRequestPost(context) {
     } catch (error) {
       console.error(JSON.stringify({ event: 'hackathon_registration_insert_failed', reason: error instanceof Error ? error.message : 'unknown' }))
       const reason = error instanceof Error ? error.message : ''
+      if (reason.includes('hackathon_capacity_exceeded')) return json({ ok: false, code: 'REGISTRATION_CAPACITY', error: 'There are not enough places remaining for this team. No partial registration was saved.' }, 409)
       if (reason.includes('hackathon_teams.team_name_key')) return json({ ok: false, error: 'That team name is already registered.', fields: { teamName: 'Choose a different team name.' } }, 409)
       if (reason.includes('hackathon_teams.captain_account_id')) return json({ ok: false, error: 'You have already registered a hackathon team.' }, 409)
       if (reason.includes('hackathon_member_claims.email_key')) return json({ ok: false, error: 'One of these students is already registered in another team.', fields: { members: 'Every student can belong to only one submitted team.' } }, 409)

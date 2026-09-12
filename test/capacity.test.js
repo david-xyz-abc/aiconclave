@@ -64,39 +64,64 @@ function fixture(students) {
 }
 
 
-test('both categories register beyond former public and hard limits', async () => {
-  const f = fixture(1400)
-  for (const category of ['College', 'School']) {
-    for (const size of [2, 3, 4]) assert.equal((await f.submit(size, category)).status, 201)
-  }
-  const capacity = await getHackathonCapacity(f.db)
-  assert.equal(capacity.students, 1418)
-  assert.equal(capacity.limit, null)
-  assert.equal(capacity.unlimited, true)
-  assert.equal(capacity.collegeOpen, true)
-  assert.equal(capacity.schoolOpen, true)
+test('school and college share a hard limit of 1990 participants', async () => {
+  const f = fixture(1986)
+  assert.equal((await f.submit(2, 'College')).status, 201)
+  assert.equal((await f.submit(2, 'School')).status, 201)
   const response = await onRequestGet({ env: { DB: f.db } })
-  assert.equal(response.headers.get('cache-control'), 'no-store')
-  assert.equal((await response.json()).hackathon.open, true)
+  const { hackathon } = await response.json()
+  assert.equal(hackathon.students, 1990)
+  assert.equal(hackathon.limit, 1990)
+  assert.equal(hackathon.remaining, 0)
+  assert.equal(hackathon.open, false)
+  assert.equal(hackathon.schoolOpen, false)
+  assert.equal(hackathon.collegeOpen, false)
+  assert.equal((await f.submit(2)).status, 409)
   f.sql.close()
 })
 
-test('concurrent teams all succeed across the former cutoff', async () => {
-  const f = fixture(1294)
-  const responses = await Promise.all([f.submit(4), f.submit(4, 'School'), f.submit(4)])
-  assert.deepEqual(responses.map(r => r.status), [201, 201, 201])
-  assert.equal((await getHackathonCapacity(f.db)).students, 1306)
+test('an oversized team is rejected without saving a team, members, claims or email', async () => {
+  const f = fixture(1987)
+  const counts = () => ['hackathon_teams', 'hackathon_team_members', 'hackathon_member_claims', 'registration_email_deliveries'].map(table => f.sql.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get().n)
+  const before = counts()
+  assert.equal((await f.submit(4)).status, 409)
+  assert.deepEqual(counts(), before)
+  assert.equal((await f.submit(3)).status, 201)
   f.sql.close()
 })
 
-test('database capacity guards are removed for member additions and draft submission', () => {
-  const f = fixture(1400)
+test('concurrent final teams cannot overbook or leave a partial registration', async () => {
+  const f = fixture(1988)
+  const responses = await Promise.all([f.submit(2, 'School'), f.submit(2, 'College')])
+  assert.deepEqual(responses.map(r => r.status).sort(), [201, 409])
+  assert.equal((await getHackathonCapacity(f.db)).students, 1990)
+  assert.equal(f.sql.prepare('SELECT COUNT(*) AS n FROM registration_email_deliveries').get().n, 1)
+  f.sql.close()
+})
+
+test('one remaining place closes registration because teams need at least two', async () => {
+  const f = fixture(1989)
+  assert.equal((await getHackathonCapacity(f.db)).open, false)
+  assert.equal((await f.submit(2)).status, 409)
+  f.sql.close()
+})
+
+test('database guards cover older clients, member moves and draft submissions', async () => {
+  const f = fixture(1988)
+  const draft = f.seedTeam(3, false)
+  assert.throws(() => f.sql.prepare('UPDATE hackathon_teams SET submitted_at = ? WHERE id = ?').run('2026-09-13', draft), /hackathon_capacity_exceeded/)
   const team = f.seedTeam(2)
-  f.addMember(team, 3)
-  const draft = f.seedTeam(2, false)
-  f.sql.prepare('UPDATE hackathon_teams SET submitted_at = ? WHERE id = ?').run('2026-09-10', draft)
-  const school = f.seedTeam(2, true, 'School')
-  f.sql.prepare("UPDATE hackathon_teams SET participant_category = 'College' WHERE id = ?").run(school)
-  assert.equal(f.sql.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE type = 'trigger' AND name LIKE 'hackathon_capacity_%'").get().n, 0)
+  assert.throws(() => f.addMember(team, 3), /hackathon_capacity_exceeded/)
+  assert.throws(() => f.sql.prepare('UPDATE hackathon_team_members SET team_id = ?, member_order = 3 WHERE team_id = ? AND member_order = 3').run(team, draft), /hackathon_capacity_exceeded/)
+  assert.equal((f.sql.prepare('SELECT submitted_at FROM hackathon_teams WHERE id = ?').get(draft)).submitted_at, null)
+  f.sql.close()
+})
+
+test('database batch rolls back all members if an older client exceeds capacity', async () => {
+  const f = fixture(1988)
+  const team = f.seedTeam(0)
+  const insert = order => f.db.prepare(`INSERT INTO hackathon_team_members (team_id, member_order, role, full_name, email, email_key, phone, institution, year_or_grade) VALUES (?, ?, ?, 'Test', ?, ?, '+919876543210', 'Test', '2')`).bind(team, order, order === 1 ? 'Captain' : 'Member', `batch${order}@test.example`, `batch${order}@test.example`)
+  await assert.rejects(f.db.batch([insert(1), insert(2), insert(3)]), /hackathon_capacity_exceeded/)
+  assert.equal((await getHackathonCapacity(f.db)).students, 1988)
   f.sql.close()
 })
