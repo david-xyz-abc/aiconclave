@@ -327,6 +327,12 @@ function AttendanceDesk({ onLogout, user }) {
                         <dt>Sector</dt>
                         <dd>{team.sector_track || 'Not specified'}</dd>
                       </div>
+                      {team.allocation?.table_id && (
+                        <div className="checkin-classification checkin-seat" role="status">
+                          <dt>Room &amp; table</dt>
+                          <dd>{team.allocation.room_name} · Table {String(team.allocation.table_number).padStart(2, '0')}</dd>
+                        </div>
+                      )}
                     </dl>
                   </div>
                   <span className="attendance-status">
@@ -344,13 +350,7 @@ function AttendanceDesk({ onLogout, user }) {
                       <span>{mode}</span>
                     </label>)}
                   </fieldset>
-                  {team.allocation?.table_id ? (
-                    <div className="checkin-seat" role="status">
-                      <span className="checkin-seat-label">Assigned room &amp; table</span>
-                      <strong>{team.allocation.room_name} · Table {String(team.allocation.table_number).padStart(2, '0')}</strong>
-                      <span>{team.allocation.block} block</span>
-                    </div>
-                  ) : (
+                  {!team.allocation?.table_id && (
                     <p role="status">{attendanceMarked ? (team.allocation?.project_mode ? 'Awaiting allocation — staff can assign a compatible table in Manual Allocation.' : 'Project mode not recorded. Edit check-in to select it and allocate a table.') : 'A matching room and table will be assigned when check-in is saved.'}</p>
                   )}
                   {editingAttendance && <small>Saving rechecks allocation using the selected mode and members present.</small>}
