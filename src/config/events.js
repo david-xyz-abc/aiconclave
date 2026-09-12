@@ -2,7 +2,7 @@ export const PANEL_EVENT = Object.freeze({
   name: 'Panel Discussion',
   day: 'Day 1',
   date: '15 September 2026',
-  time: '10:00 AM',
+  time: '10:15 AM',
 })
 
 export const HACKATHON_EVENT = Object.freeze({

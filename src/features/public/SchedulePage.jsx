@@ -4,18 +4,33 @@ import { HACKATHON_EVENT, PANEL_EVENT } from '../../config/events.js'
 function ScheduleTable({ day }) {
   const rows = day === 1
     ? [
-        ['9:00 AM', 'Registration', 'Participant check-in'],
-        ['9:30 AM', 'Inauguration', 'Inauguration by Shri Dean Kuriakose'],
-        ['10:00 AM', 'Panel Discussions', 'AI Across Sectors: Agriculture, Healthcare & Education'],
-        ['12:30 PM', 'Lunch Break', 'Morning panel sessions conclude'],
-        ['1:30 PM', 'Workshop Registration', 'Registration for afternoon industry workshops'],
-        ['2:00 PM – 4:40 PM', 'Industry Workshops', 'Parallel workshops open to internal and external students'],
+        ['9:00 AM', 'Registration', 'Panel discussion registration and participant check-in.'],
+        ['9:30 AM – 10:05 AM', 'Inauguration', ''],
+        ['9:30 AM', 'Welcome Address', 'Dr. Lillykutty Jacob'],
+        ['9:35 AM', 'Presidential Address', 'V. Rev. Fr. Boby Alex Mannamplackal'],
+        ['9:40 AM', 'Inaugural Address', 'Mr. Francis George'],
+        ['9:45 AM', 'Lamp Lighting', 'Ceremonial lamp lighting.'],
+        ['9:50 AM', 'Keynote Address', 'Mr. Sebastian M. J.'],
+        ['9:55 AM', 'Felicitation', 'Rev. Fr. Dr. Roy Abraham'],
+        ['10:00 AM', 'Vote of Thanks', 'Mr. Binumon Joseph'],
+        ['10:15 AM', 'Panel Discussion', 'AI Across Sectors: Agriculture, Healthcare & Education.'],
+        ['12:30 PM', 'Lunch Break', 'Morning panel sessions conclude.'],
+        ['1:15 PM', 'Workshop Students Verification', 'Participant registration verification for afternoon industry workshops.'],
+        ['2:00 PM – 4:40 PM', 'Industry Workshops', 'Parallel workshops open to internal and external students.'],
       ]
     : [
-        ['8:30 AM', 'Registration', 'Hackathon registration and team verification'],
-        ['9:30 AM – 2:30 PM', 'Hackathon', 'Technical and Non-Technical tracks for school & college students. Prize pool ₹1,00,000'],
-        ['2:30 PM – 4:30 PM', 'Project Evaluation', 'Project presentation and assessment by external evaluators'],
-        ['5:00 PM', 'Closing Ceremony', 'Closing ceremony and announcement of results'],
+        ['8:30 AM', 'Registration', 'Hackathon registration and team verification.'],
+        ['8:45 AM', 'Flashmob', 'Flashmob performance.'],
+        ['9:30 AM – 2:30 PM', 'Hackathon', 'Technical and non-technical tracks for school and college students. Prize pool ₹1,00,000.'],
+        ['2:30 PM – 4:30 PM', 'Project Evaluation', 'Project presentation and assessment by external evaluators.'],
+        ['4:00 PM – 5:00 PM', 'Cultural Program', 'Band performance.'],
+        ['5:00 PM – 5:45 PM', 'Closing Ceremony', ''],
+        ['5:00 PM', 'Welcome Address', 'Ms. Shreya Eby'],
+        ['5:05 PM', 'Presidential Address', 'V. Rev. Fr. Boby Alex Mannamplackal'],
+        ['5:10 PM', 'Keynote Address', 'Mr. Sabu Mathew K M'],
+        ['5:15 PM', 'Prize Distribution', ''],
+        ['5:35 PM', 'Vote of Thanks', 'Mr. Midhun P Mathew'],
+        ['5:45 PM', 'National Anthem', ''],
       ]
   return <table className="schedule-table"><caption>Day {day} schedule</caption><thead><tr><th scope="col">Time</th><th scope="col">Event</th><th scope="col">Details</th></tr></thead><tbody>{rows.map(([time, event, details]) => <tr key={`${time}-${event}`}><td className="schedule-time mono-figure">{time}</td><td className="schedule-event">{event}</td><td className="schedule-desc">{details}</td></tr>)}</tbody></table>
 }
