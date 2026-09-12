@@ -4,7 +4,7 @@ import { isSameOrigin, readJsonBody } from '../../_shared/auth.js';
 export async function onRequestGet(context) {
   const auth = await requireAttendanceSession(context);
   if (auth.response) return auth.response;
-  if (!['read', 'write'].includes(auth.session.attendance_access)) return attendanceJson({ ok: false, error: 'Attendance access required.' }, 403);
+  if (!['read', 'write'].includes(auth.session.attendance_access)) return attendanceJson({ ok: false, error: 'Check-in access required.' }, 403);
   try {
     const results = await context.env.DB.batch([
       context.env.DB.prepare(`SELECT q.*, a.table_id, r.name AS room_name, r.block, vt.table_number
@@ -61,7 +61,7 @@ export async function onRequestPost(context) {
   if (![body?.teamId, body?.tableId].every(n => Number.isSafeInteger(n) && n > 0)) return attendanceJson({ ok: false, error: 'Select a team and table.' }, 400);
   try {
     const result = await context.env.DB.prepare(MANUAL_SQL).bind(auth.session.username || 'staff', body.teamId, body.tableId).run();
-    if (!result.meta.changes) return attendanceJson({ ok: false, error: 'Allocation changed or this table is not compatible. Refresh and select an available table. Attendance and project mode must be recorded first.' }, 409);
+    if (!result.meta.changes) return attendanceJson({ ok: false, error: 'Allocation changed or this table is not compatible. Refresh and select an available table. Check-in and project mode must be recorded first.' }, 409);
     return attendanceJson({ ok: true });
   } catch { return attendanceJson({ ok: false, error: 'Could not assign the table. Refresh availability and retry.' }, 500); }
 }

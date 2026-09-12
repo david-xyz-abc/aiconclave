@@ -4,10 +4,10 @@ import { OperationsHeader } from '../../components/layout/OperationsHeader.jsx';
 
 const menus = [['finder', 'Venue Finder'], ['allocate', 'Manual Allocation'], ['rooms', 'Rooms & Tables']];
 function status(team) {
-  if (!team.attendance_marked) return 'Attendance not marked — direct the team to the attendance desk.';
+  if (!team.attendance_marked) return 'Not checked in — direct the team to the check-in desk.';
   if (team.table_id) return `${team.block} block · ${team.room_name} · Table ${String(team.table_number).padStart(2, '0')}`;
-  if (!team.project_mode) return 'Project mode missing — edit attendance to record it.';
-  if (team.present_count < 2 || !team.lead_present) return 'Attendance needs correction — at least two members and the team lead must be present.';
+  if (!team.project_mode) return 'Project mode missing — edit check-in to record it.';
+  if (team.present_count < 2 || !team.lead_present) return 'Check-in needs correction — at least two members and the team lead must be present.';
   return 'Awaiting allocation';
 }
 function compatible(team, table) {
@@ -127,11 +127,11 @@ export function VenueDashboard({ user, onLogout }) {
               <div className={`venue-result ${selected.table_id ? 'is-assigned' : ''}`} role="status">
                 {selected.table_id ? <><span>Assigned venue</span><strong>{selected.room_name} <span>·</span> Table {String(selected.table_number).padStart(2,'0')}</strong><small>{selected.block} block</small></> : status(selected)}
               </div>
-              {!selected.attendance_marked || !selected.project_mode || selected.present_count < 2 || !selected.lead_present ? <a className="ops-primary" href="/attendance">Open attendance desk</a> : menu === 'finder' ? (canEdit || !selected.table_id) && <button className="ops-secondary" onClick={() => { setMenu('allocate'); setQuery(''); setTableId(''); }}>{selected.table_id ? 'Reallocate team' : 'Open Manual Allocation'}</button> : canEdit ? <div className="venue-assignment-form">
+              {!selected.attendance_marked || !selected.project_mode || selected.present_count < 2 || !selected.lead_present ? <a className="ops-primary" href="/attendance">Open check-in desk</a> : menu === 'finder' ? (canEdit || !selected.table_id) && <button className="ops-secondary" onClick={() => { setMenu('allocate'); setQuery(''); setTableId(''); }}>{selected.table_id ? 'Reallocate team' : 'Open Manual Allocation'}</button> : canEdit ? <div className="venue-assignment-form">
                 <label className="venue-field">Compatible free room and table<select value={tableId} disabled={saving} onChange={e => setTableId(e.target.value)}><option value="">Choose a table</option>{free.map(t => <option key={t.table_id} value={t.table_id}>{t.name} · Table {String(t.table_number).padStart(2,'0')} · {t.seats} seats</option>)}</select></label>
                 {!free.length && <p className="venue-help">{selected.table_id ? 'No matching tables available. The current assignment is retained.' : 'No matching tables available. The team remains on the waiting list.'}</p>}
                 <button className="ops-primary" disabled={saving || !free.some(t => String(t.table_id) === tableId)} onClick={assign}>{saving ? 'Saving…' : selected.table_id ? 'Reallocate room and table' : 'Assign room and table'}</button>
-              </div> : <p className="venue-help">An attendance editor can change this assignment.</p>}
+              </div> : <p className="venue-help">A check-in editor can change this assignment.</p>}
             </> : <div className="venue-empty"><h2>Select a team</h2><p>View its venue and allocation options.</p></div>}
           </section>
         </div> : <div className="venue-search-empty"><p>Find a team’s room and table.</p><small>Search by team name or registration code.</small></div>}

@@ -34,7 +34,7 @@ function AttendanceLogin({ onLogin }) {
         <BrandLockup />
         <div className="auth-copy">
           <h1 id="attendance-login-heading">Staff sign in</h1>
-          <p>Access attendance and room allocation.</p>
+          <p>Access check-in and room allocation.</p>
         </div>
         <form className="auth-form" onSubmit={submit}>
           <label>
@@ -259,7 +259,7 @@ function AttendanceDesk({ onLogout, user }) {
         <div className="attendance-heading">
           <div>
             <p className="eyebrow">Hackathon</p>
-            <h1>Attendance</h1>
+            <h1>Check in</h1>
           </div>
         </div>
         <div className={`attendance-workspace ${selectedId ? "detail-open" : ""}`}>
@@ -314,10 +314,20 @@ function AttendanceDesk({ onLogout, user }) {
                         `TEAM-${String(team.id).padStart(4, "0")}`}
                     </p>
                     <h2>{team.team_name}</h2>
-                    <p>
-                      {team.participant_category} · {team.solution_type || 'Not specified'} · {team.sector_track} ·{" "}
+                    <p className="checkin-team-meta">
+                      {team.participant_category} ·{" "}
                       {team.member_count} members
                     </p>
+                    <dl className="checkin-classifications">
+                      <div className="checkin-classification" data-kind={team.solution_type}>
+                        <dt>Solution type</dt>
+                        <dd>{team.solution_type || 'Not specified'}</dd>
+                      </div>
+                      <div className="checkin-classification" data-kind={team.sector_track}>
+                        <dt>Sector</dt>
+                        <dd>{team.sector_track || 'Not specified'}</dd>
+                      </div>
+                    </dl>
                   </div>
                   <span className="attendance-status">
                     {presentCount === team.member_count
@@ -334,7 +344,7 @@ function AttendanceDesk({ onLogout, user }) {
                       <span>{mode}</span>
                     </label>)}
                   </fieldset>
-                  <p role="status">{team.allocation?.table_id ? `${team.allocation.block} block · ${team.allocation.room_name} · Table ${String(team.allocation.table_number).padStart(2, '0')}` : attendanceMarked ? (team.allocation?.project_mode ? 'Awaiting allocation — staff can assign a compatible table in Manual Allocation.' : 'Project mode not recorded. Edit attendance to select it and allocate a table.') : 'A matching room and table will be assigned when attendance is saved.'}</p>
+                  <p role="status">{team.allocation?.table_id ? `${team.allocation.block} block · ${team.allocation.room_name} · Table ${String(team.allocation.table_number).padStart(2, '0')}` : attendanceMarked ? (team.allocation?.project_mode ? 'Awaiting allocation — staff can assign a compatible table in Manual Allocation.' : 'Project mode not recorded. Edit check-in to select it and allocate a table.') : 'A matching room and table will be assigned when check-in is saved.'}</p>
                   {editingAttendance && <small>Saving rechecks allocation using the selected mode and members present.</small>}
                 </section>
                 <div className="attendance-controls">
@@ -426,7 +436,7 @@ function AttendanceDesk({ onLogout, user }) {
                 )}
                 {attendanceMarked && !editingAttendance ? (
                   <div className="attendance-locked-bar">
-                    <span>Attendance marked</span>
+                    <span>Checked in</span>
                     {canEdit && <button
                       type="button"
                       className="attendance-edit-button"
@@ -441,7 +451,7 @@ function AttendanceDesk({ onLogout, user }) {
                     disabled={saving || !canSaveAttendance}
                     onClick={requestSaveAttendance}
                   >
-                    {saving ? "Saving attendance…" : attendanceMarked ? "Save changes" : "Mark attendance"}
+                    {saving ? "Saving check-in…" : attendanceMarked ? "Save changes" : "Check in team"}
                     <span aria-hidden="true">→</span>
                   </button>
                 ) : null}
@@ -462,7 +472,7 @@ function AttendanceDesk({ onLogout, user }) {
         <div className="attendance-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowConfirmDialog(false); }}>
           <section className="attendance-dialog" role="dialog" aria-modal="true" aria-labelledby="attendance-dialog-title">
             <p className="eyebrow">Confirm</p>
-            <h2 id="attendance-dialog-title">Mark attendance?</h2>
+            <h2 id="attendance-dialog-title">Check in this team?</h2>
             <p>{team?.team_name} · {date}</p>
             <div className="attendance-dialog-actions"><button type="button" className="button button-quiet" onClick={() => setShowConfirmDialog(false)}>Cancel</button><button type="button" className="button button-primary" onClick={saveAttendance}>Confirm</button></div>
           </section>

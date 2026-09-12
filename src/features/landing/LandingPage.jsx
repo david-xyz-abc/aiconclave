@@ -14,7 +14,7 @@ export function LandingPage() {
           <p>Registrations, reports and event overview.</p>
         </a>
         <a href="/attendance">
-          <strong>Attendance <span aria-hidden="true">→</span></strong>
+          <strong>Check in <span aria-hidden="true">→</span></strong>
           <p>Check in teams and assign their venues.</p>
         </a>
         <a href="/attendance/venues">
