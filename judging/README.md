@@ -26,3 +26,5 @@ The venue **Emergency** tab lists evaluations and their history. Reopening requi
 The **Judges** tab creates or resets an individual login ID and password for each roster entry. Resetting credentials revokes that judge’s active sessions. No judge accounts are seeded automatically.
 
 The landing page offers Judge and Venue team login. Venue team sign-in is at `/team/login`; `/judges/login` accepts individual judge credentials. Judge roster entries do not create accounts. Venue account provisioning is performed separately from source migrations.
+
+Table capacity comes from `venue_tables.seats` after migration 0024. Larger tables are eligible for smaller teams; judging routes still follow room/table order. The room overview displays the range of table capacities instead of a uniform room size.

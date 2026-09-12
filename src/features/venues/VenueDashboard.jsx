@@ -2,6 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { attendanceApi, venuesApi, isUnauthorized } from '../../services/dashboardApi.js';
 import { OperationsHeader } from '../../components/layout/OperationsHeader.jsx';
 
+function seatSummary(tables) {
+  return [2,3,4].map(seats => ({ seats, count: tables.filter(t => t.seats === seats).length })).filter(t => t.count).map(t => `${t.count} × ${t.seats}-seat`).join(' · ');
+}
+
 const menus = [['finder', 'Venue Finder'], ['allocate', 'Manual Allocation'], ['rooms', 'Rooms & Tables']];
 function status(team) {
   if (!team.attendance_marked) return 'Not checked in — direct the team to the check-in desk.';
@@ -11,7 +15,7 @@ function status(team) {
   return 'Awaiting allocation';
 }
 function compatible(team, table) {
-  return !table.team_id && team.project_mode === table.project_mode && team.sector_track === table.sector && team.solution_type === table.solution_type && team.present_count === table.seats;
+  return !table.team_id && team.project_mode === table.project_mode && team.sector_track === table.sector && team.solution_type === table.solution_type && team.present_count <= table.seats;
 }
 
 export function VenueDashboard({ user, onLogout }) {
@@ -50,7 +54,7 @@ export function VenueDashboard({ user, onLogout }) {
   const selected = data.teams.find(team => team.team_id === selectedId);
   const matches = data.teams.filter(team => menu !== 'allocate' || team.attendance_marked)
     .filter(team => `${team.team_name} ${team.team_code}`.toLowerCase().includes(query.trim().toLowerCase()));
-  const free = selected ? data.tables.filter(table => compatible(selected, table)) : [];
+  const free = selected ? data.tables.filter(table => compatible(selected, table)).sort((a,b) => a.seats-b.seats || a.id-b.id || a.table_number-b.table_number) : [];
   const rooms = [...new Map(data.tables.map(table => [table.id, table])).values()].filter(room => !block || room.block === block);
   const currentRoom = rooms.find(room => String(room.id) === roomId);
   async function assign() {
@@ -92,7 +96,7 @@ export function VenueDashboard({ user, onLogout }) {
             {rooms.map(room => {
               const tables = data.tables.filter(t => t.id === room.id), occupied = tables.filter(t => t.team_id).length;
               return <button key={room.id} className="venue-list-row" onClick={() => setRoomId(String(room.id))} aria-pressed={roomId === String(room.id)}>
-                <span className="venue-row-main"><strong>{room.name}</strong><small>{room.sector} · {room.solution_type}</small><small>{room.project_mode} · {room.seats} seats</small></span>
+                <span className="venue-row-main"><strong>{room.name}</strong><small>{room.sector} · {room.solution_type}</small><small>{room.project_mode} · {seatSummary(tables)}</small></span>
                 <span className="venue-row-end"><b>{tables.length-occupied} free</b><small>{tables.length} tables</small></span>
               </button>;
             })}
@@ -101,9 +105,9 @@ export function VenueDashboard({ user, onLogout }) {
             {currentRoom ? <>
               <button className="venue-back" onClick={() => setRoomId('')}>← All rooms</button>
               <div className="venue-detail-heading"><h2>{currentRoom.name}</h2><span className="venue-tag">{currentRoom.block} block</span></div>
-              <p className="venue-detail-meta">{currentRoom.sector} · {currentRoom.solution_type}<br />{currentRoom.project_mode} · {currentRoom.seats} seats per table</p>
-              <table className="venue-tables"><caption className="sr-only">Tables in {currentRoom.name}</caption><thead><tr><th scope="col">Table</th><th scope="col">Team</th><th scope="col">Status</th></tr></thead><tbody>
-                {selectedTables.map(table => <tr key={table.table_id}><th scope="row">{String(table.table_number).padStart(2,'0')}</th><td>{table.team_id ? <><strong>{table.team_name}</strong><small>{table.team_code}</small></> : <span className="venue-muted">—</span>}</td><td><span className={`venue-tag ${table.team_id ? '' : 'available'}`}>{table.team_id ? 'Occupied' : 'Free'}</span></td></tr>)}
+              <p className="venue-detail-meta">{currentRoom.sector} · {currentRoom.solution_type}<br />{currentRoom.project_mode} · {seatSummary(selectedTables)}</p>
+              <table className="venue-tables"><caption className="sr-only">Tables in {currentRoom.name}</caption><thead><tr><th scope="col">Table</th><th scope="col">Seats</th><th scope="col">Team</th><th scope="col">Status</th></tr></thead><tbody>
+                {selectedTables.map(table => <tr key={table.table_id}><th scope="row">{String(table.table_number).padStart(2,'0')}</th><td>{table.seats}</td><td>{table.team_id ? <><strong>{table.team_name}</strong><small>{table.team_code}</small></> : <span className="venue-muted">—</span>}</td><td><span className={`venue-tag ${table.team_id ? '' : 'available'}`}>{table.team_id ? 'Occupied' : 'Free'}</span></td></tr>)}
               </tbody></table>
             </> : <div className="venue-empty"><h2>Select a room</h2><p>View its tables and assigned teams.</p></div>}
           </section>

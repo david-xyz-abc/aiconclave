@@ -9,6 +9,7 @@ export function orderedTeams(data, filters) {
         team.attendance_marked &&
         team.lead_present &&
         team.present_count >= 2 &&
+        team.table_seats >= team.present_count &&
         team.solution_type === filters.solution_type &&
         (!filters.sector || team.sector_track === filters.sector) &&
         (!filters.mode || team.project_mode === filters.mode),

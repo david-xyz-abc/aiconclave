@@ -296,3 +296,21 @@ test("sector and preparation filters exclude incompatible teams from ranges", as
   assert.equal(previewAssignment(d, id, filters, 1, 6).teams.length, 6);
   assert.ok(previewAssignment(d, id, filters, 1, 7).error);
 });
+
+
+test('judges can follow mixed-capacity tables in table order; insufficient capacity flags review', async () => {
+ const f=judgingFixture(), id=await add(f);
+ try {
+  f.sqlite.exec('UPDATE venue_tables SET seats=4 WHERE id IN (SELECT table_id FROM venue_allocations WHERE team_id IN (1,3))');
+  const data=await loadWorkspace(f.DB);
+  assert.deepEqual(previewAssignment(data,id,filters,1,3).teams.map(t=>t.table_seats),[4,3,4]);
+  assert.equal((await post(f,{action:'assign',judgeId:id,filters,startTeamId:1,count:3})).status,200);
+  let current=await loadWorkspace(f.DB);
+  assert.equal(judgeRoute(current,current.judges.find(j=>j.id===id)).needsReview,false);
+  const revision=current.revision;
+  f.sqlite.exec('UPDATE venue_tables SET seats=2 WHERE id=(SELECT table_id FROM venue_allocations WHERE team_id=2)');
+  current=await loadWorkspace(f.DB);
+  assert.ok(current.revision>revision);
+  assert.equal(judgeRoute(current,current.judges.find(j=>j.id===id)).needsReview,true);
+ }finally{f.sqlite.close();}
+});
