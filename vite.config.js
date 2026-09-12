@@ -2,7 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 const dashboardApiTarget =
-  process.env.DASHBOARD_API_TARGET || "https://aiconclave-dashboard.pages.dev";
+  "https://aiconclave-dashboard.pages.dev";
 
 export default defineConfig({
   plugins: [react()],

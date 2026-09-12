@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { OperationsHeader } from "../../components/layout/OperationsHeader.jsx";
+import { VenueDashboard } from "../venues/VenueDashboard.jsx";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BrandLockup } from "../../components/common/BrandLockup.jsx";
 import { attendanceApi, isUnauthorized } from "../../services/dashboardApi.js";
 import { downloadAttendanceWorkbook } from "../../services/registrationExport.js";
@@ -31,8 +33,8 @@ function AttendanceLogin({ onLogin }) {
       >
         <BrandLockup />
         <div className="auth-copy">
-          <p className="eyebrow">Attendance</p>
-          <h1 id="attendance-login-heading">Sign in</h1>
+          <h1 id="attendance-login-heading">Staff sign in</h1>
+          <p>Access attendance and room allocation.</p>
         </div>
         <form className="auth-form" onSubmit={submit}>
           <label>
@@ -75,27 +77,22 @@ function TeamRow({ team, selected, onSelect }) {
       className={`attendance-team-row${selected ? " is-selected" : ""}`}
       onClick={() => onSelect(team.id)}
     >
-      <span className="attendance-team-id">
-        {team.team_code || `TEAM-${String(team.id).padStart(4, "0")}`}
-      </span>
       <span className="attendance-team-main">
         <strong>{team.team_name}</strong>
-        <small>Lead: {team.lead_name || "Not assigned"}</small>
+        <small>{team.team_code || `TEAM-${String(team.id).padStart(4, "0")}`}</small>
       </span>
       <span
         className={`attendance-count${team.present_count === team.member_count ? " is-complete" : ""}`}
       >
         {team.present_count}/{team.member_count}
-        <small>selected</small>
-      </span>
-      <span className="attendance-chevron" aria-hidden="true">
-        →
+        <small>present</small>
       </span>
     </button>
   );
 }
 
 function AttendanceDesk({ onLogout, user }) {
+  const venuePanel = useRef(null);
   const canEdit = user?.attendanceAccess === "write";
   const [query, setQuery] = useState("");
   const [teams, setTeams] = useState([]);
@@ -164,7 +161,7 @@ function AttendanceDesk({ onLogout, user }) {
   const leadPresent = Boolean(team?.members?.some((member) => member.id === team.lead_member_id && member.present));
   const mealsComplete = Boolean(team?.members?.every((member) => !member.present || ['Veg', 'Non-Veg'].includes(member.meal_preference)));
   const controlsLocked = !canEdit || saving || changingLead || (attendanceMarked && !editingAttendance);
-  const canSaveAttendance = leadPresent && presentCount >= 2 && mealsComplete && !changingLead && !saving;
+  const canSaveAttendance = Boolean(team?.allocation?.project_mode) && leadPresent && presentCount >= 2 && mealsComplete && !changingLead && !saving;
   function updateMeal(memberId, mealPreference) {
     if (controlsLocked) return;
     setTeam((current) => ({ ...current, members: current.members.map((member) => member.id === memberId ? { ...member, meal_preference: mealPreference } : member) }));
@@ -196,11 +193,14 @@ function AttendanceDesk({ onLogout, user }) {
           present: Boolean(member.present),
           mealPreference: member.present ? member.meal_preference : null,
         })),
+        team.allocation?.project_mode,
       );
       setTeam(data.team);
+      setTeams(current => current.map(item => item.id === data.team.id ? { ...item, present_count: data.team.members.filter(member => member.present).length } : item));
       setEditingAttendance(false);
       setShowConfirmDialog(false);
       setMessage("");
+      requestAnimationFrame(() => venuePanel.current?.scrollIntoView({ block: 'nearest' }));
     } catch (e) {
       setError(e.message);
       if (isUnauthorized(e)) onLogout();
@@ -252,23 +252,9 @@ function AttendanceDesk({ onLogout, user }) {
   }
   return (
     <div className="attendance-shell">
-      <header className="attendance-topbar">
-        <BrandLockup />
-        <div className="attendance-topbar-actions">
-          <button className="attendance-export-button" type="button" onClick={exportAttendance} disabled={exporting}>
-            {exporting ? "Preparing…" : "Excel"}<span aria-hidden="true">↓</span>
-          </button>
-          <button
-            className="button button-quiet"
-            onClick={async () => {
-              await attendanceApi.logout().catch(() => {});
-              onLogout();
-            }}
-          >
-            Log out
-          </button>
-        </div>
-      </header>
+      <OperationsHeader active="attendance" onLogout={async () => { await attendanceApi.logout().catch(() => {}); onLogout(); }}>
+        <button className="attendance-export-button" type="button" onClick={exportAttendance} disabled={exporting}>{exporting ? "Exporting…" : "Export Excel"}</button>
+      </OperationsHeader>
       <main className="attendance-main">
         <div className="attendance-heading">
           <div>
@@ -276,7 +262,7 @@ function AttendanceDesk({ onLogout, user }) {
             <h1>Attendance</h1>
           </div>
         </div>
-        <div className="attendance-workspace">
+        <div className={`attendance-workspace ${selectedId ? "detail-open" : ""}`}>
           <section
             className="attendance-team-directory"
             aria-labelledby="teams-heading"
@@ -292,7 +278,7 @@ function AttendanceDesk({ onLogout, user }) {
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search team name, lead, or team ID"
+                placeholder="Search name, lead or code"
               />
             </label>
             <div className="attendance-team-list">
@@ -313,6 +299,7 @@ function AttendanceDesk({ onLogout, user }) {
             </div>
           </section>
           <section className="attendance-detail" aria-live="polite">
+            {selectedId && <button className="venue-back" onClick={() => setSelectedId(null)}>← Back to teams</button>}
             {loadingTeam ? (
                 <div className="attendance-empty">
                 <span className="attendance-empty-number">…</span>
@@ -338,6 +325,18 @@ function AttendanceDesk({ onLogout, user }) {
                       : `${presentCount}/${team.member_count} present`}
                   </span>
                 </div>
+                <section className="venue-attendance-panel" ref={venuePanel}>
+                  <fieldset className="venue-mode-toggle" disabled={controlsLocked}>
+                    <legend>Project mode — ask the team</legend>
+                    {['Prepared', 'Starting from scratch'].map(mode => <label key={mode}>
+                      <input type="radio" name="project-mode" value={mode} checked={team.allocation?.project_mode === mode}
+                        onChange={() => { setTeam(current => ({ ...current, allocation: { ...current.allocation, project_mode: mode } })); setShowConfirmDialog(false); }} />
+                      <span>{mode}</span>
+                    </label>)}
+                  </fieldset>
+                  <p role="status">{team.allocation?.table_id ? `${team.allocation.block} block · ${team.allocation.room_name} · Table ${String(team.allocation.table_number).padStart(2, '0')}` : attendanceMarked ? (team.allocation?.project_mode ? 'Awaiting allocation — staff can assign a compatible table in Manual Allocation.' : 'Project mode not recorded. Edit attendance to select it and allocate a table.') : 'A matching room and table will be assigned when attendance is saved.'}</p>
+                  {editingAttendance && <small>Saving rechecks allocation using the selected mode and members present.</small>}
+                </section>
                 <div className="attendance-controls">
                   <div className="attendance-lead-control">
                     <label>
@@ -422,7 +421,7 @@ function AttendanceDesk({ onLogout, user }) {
                 {canEdit && (!attendanceMarked || editingAttendance) && presentCount < 2 && (
                   <p className="form-error">At least two team members must be present.</p>
                 )}
-                {canEdit && (!attendanceMarked || editingAttendance) && !leadPresent && (
+                {canEdit && (!attendanceMarked || editingAttendance) && !leadPresent && presentCount >= 2 && (
                   <p className="form-error">The team lead must be present. If absent, select a present member as team lead.</p>
                 )}
                 {attendanceMarked && !editingAttendance ? (
@@ -473,7 +472,7 @@ function AttendanceDesk({ onLogout, user }) {
   );
 }
 
-export function AttendanceApp() {
+export function AttendanceApp({ venues = false }) {
   const [session, setSession] = useState({
     loading: true,
     authenticated: false,
@@ -492,6 +491,7 @@ export function AttendanceApp() {
       onLogin={(user) => setSession({ loading: false, authenticated: true, user })}
       />
     );
+  if (venues) return <VenueDashboard user={session.user} onLogout={() => setSession({ loading: false, authenticated: false, user: null })} />;
   return (
     <AttendanceDesk
       user={session.user}

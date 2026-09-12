@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { BrandLockup } from "../../components/common/BrandLockup.jsx";
+import { OperationsHeader } from "../../components/layout/OperationsHeader.jsx";
 import { DashboardNavigation } from "../../components/layout/DashboardNavigation.jsx";
 import { DIRECTORY_ROUTES } from "../../config/dashboard.js";
 import { useDashboardData } from "../../hooks/useDashboardData.js";
@@ -92,14 +92,9 @@ export function Dashboard({ user, route, onNavigate, onLogout }) {
   }
   return (
     <div className="dashboard-shell">
-      <header className="topbar">
-        <BrandLockup />
-        <div className="topbar-meta">
-          <button className="button button-quiet" onClick={logout}>
-            Log out
-          </button>
-        </div>
-      </header>
+      <OperationsHeader active="admin" onLogout={logout}>
+        <a href="/dashboard" aria-current="page">Admin</a>
+      </OperationsHeader>
       <main className="dashboard-main">
         <header className="dashboard-intro">
           <h1>
@@ -108,20 +103,7 @@ export function Dashboard({ user, route, onNavigate, onLogout }) {
         </header>
         <DashboardNavigation
           route={route}
-          counts={{
-            panel:
-              route.id === "panel" ? registrations.length : summary.panelTotal,
-            hackathon:
-              route.id === "hackathon"
-                ? registrations.length
-                : summary.hackathonTotal,
-          }}
           onNavigate={onNavigate}
-          onDownloadPanel={() => downloadExcel("workbook")}
-          panelDownloadDisabled={
-            route.id !== "panel" || loading || Boolean(exporting) || !registrations.length
-          }
-          panelDownloading={route.id === "panel" && exporting === "workbook"}
         />
         {route.id === "overview" ? (
           <OverviewPage

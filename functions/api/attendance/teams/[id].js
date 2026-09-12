@@ -1,3 +1,4 @@
+import { allocationStatements, getAllocation } from "../../../_shared/allocation.js";
 import { attendanceJson, requireAttendanceAdmin, requireAttendanceSession } from "../../../_shared/attendance.js";
 
 function validId(value) { const id = Number.parseInt(value, 10); return Number.isInteger(id) && id > 0 ? id : null; }
@@ -8,7 +9,7 @@ async function loadTeam(db, id, date) {
   if (!team) return null;
   const members = await db.prepare(`SELECT m.id, m.full_name, m.email, m.institution, m.role, a.meal_preference, CASE WHEN a.present = 1 THEN 1 ELSE 0 END AS present FROM hackathon_team_members m LEFT JOIN hackathon_attendance a ON a.id = (SELECT aa.id FROM hackathon_attendance aa WHERE aa.member_id = m.id AND aa.team_id = m.team_id ORDER BY aa.attendance_date DESC, aa.marked_at DESC, aa.id DESC LIMIT 1) WHERE m.team_id = ? ORDER BY m.member_order`).bind(id).all();
   const dates = await db.prepare("SELECT DISTINCT attendance_date FROM hackathon_attendance WHERE team_id = ? ORDER BY attendance_date DESC").bind(id).all();
-  return { ...team, member_count: (members.results || []).length, members: (members.results || []).map((member) => ({ ...member, meal_preference: member.present ? member.meal_preference ?? null : null })), attendance_dates: (dates.results || []).map((row) => row.attendance_date), attendance_marked: Boolean((dates.results || []).length) };
+  return { ...team, allocation: await getAllocation(db, id), member_count: (members.results || []).length, members: (members.results || []).map((member) => ({ ...member, meal_preference: member.present ? member.meal_preference ?? null : null })), attendance_dates: (dates.results || []).map((row) => row.attendance_date), attendance_marked: Boolean((dates.results || []).length) };
 }
 
 export async function onRequestGet(context) {
@@ -40,7 +41,9 @@ export async function onRequestPost(context) {
     if (attendance.some((item) => item.present && !['Veg', 'Non-Veg'].includes(item.mealPreference))) {
       return attendanceJson({ ok: false, error: "Choose Veg or Non-veg for each present member." }, 400);
     }
-    await context.env.DB.batch(attendance.map((item) => context.env.DB.prepare(`INSERT INTO hackathon_attendance (team_id, member_id, attendance_date, present, meal_preference, marked_by) VALUES (?, ?, ?, ?, ?, 'attendance-desk') ON CONFLICT(team_id, member_id, attendance_date) DO UPDATE SET present = excluded.present, meal_preference = excluded.meal_preference, marked_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), marked_by = excluded.marked_by`).bind(id, validId(item.memberId), date, item.present ? 1 : 0, item.present ? item.mealPreference : null)));
+    if (!['Prepared', 'Starting from scratch'].includes(body.projectMode)) return attendanceJson({ ok: false, error: "Select Prepared or Starting from scratch." }, 400);
+    if (currentTeam.member_count !== attendance.length) return attendanceJson({ ok: false, error: "Include every team member before saving." }, 400);
+    await context.env.DB.batch([...attendance.map((item) => context.env.DB.prepare(`INSERT INTO hackathon_attendance (team_id, member_id, attendance_date, present, meal_preference, marked_by) VALUES (?, ?, ?, ?, ?, 'attendance-desk') ON CONFLICT(team_id, member_id, attendance_date) DO UPDATE SET present = excluded.present, meal_preference = excluded.meal_preference, marked_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), marked_by = excluded.marked_by`).bind(id, validId(item.memberId), date, item.present ? 1 : 0, item.present ? item.mealPreference : null)), ...allocationStatements(context.env.DB, id, body.projectMode, auth.session.username)]);
     return attendanceJson({ ok: true, team: await loadTeam(context.env.DB, id, date), date });
   } catch { return attendanceJson({ ok: false, error: "Could not save attendance." }, 500); }
 }
