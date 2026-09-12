@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { api } from "./client.js";
-import { scoreTotal, CRITERIA, AWARDS } from "../shared/evaluation.js";
+import { scoreTotal, CRITERIA, nominationOptions } from "../shared/evaluation.js";
 export function Emergency() {
   const [data, setData] = useState(null),
     [selected, setSelected] = useState(null),
@@ -153,7 +153,7 @@ export function Emergency() {
               </dl>
               <h3>Nominations</h3>
               <ul>
-                {(AWARDS[selected.team_snapshot.sector_track] || [])
+                {nominationOptions(selected.team_snapshot.sector_track)
                   .filter((a) => selected.nominations.includes(a[0]))
                   .map((a) => (
                     <li key={a[0]}>{a[1]}</li>
@@ -205,7 +205,7 @@ export function Emergency() {
                   </p>
                   <small>
                     Nominations:{" "}
-                    {(AWARDS[h.next_snapshot.team_snapshot.sector_track] || [])
+                    {nominationOptions(h.next_snapshot.team_snapshot.sector_track)
                       .filter((a) => h.next_snapshot.nominations.includes(a[0]))
                       .map((a) => a[1])
                       .join(", ") || "None"}

@@ -116,7 +116,7 @@ test("judge sees only assigned teams with leader names; drafts survive reload an
   r = await f.evaluate({
     action: "nominations",
     revision: 0,
-    nominations: ["agri-impact", "agri-smart"],
+    nominations: ["agri-impact"],
   });
   assert.equal(r.status, 200);
   r = await f.evaluate({ action: "scores", revision: 1, scores: fullScores });
@@ -158,7 +158,7 @@ test("judge sees only assigned teams with leader names; drafts survive reload an
 });
 test("only venue admins can reopen; previous submission stays audited and judge must resubmit", async () => {
   const f = await setup();
-  await f.evaluate({ action: "nominations", revision: 0, nominations: [] });
+  await f.evaluate({ action: "nominations", revision: 0, nominations: ["none-of-the-above"] });
   await f.evaluate({ action: "scores", revision: 1, scores: fullScores });
   await f.evaluate({ action: "submit", revision: 2 });
   const body = {
@@ -262,7 +262,7 @@ test("unassigned teams, bad marks, sector nominations, missing scores and other 
     ).status,
     400,
   );
-  await f.evaluate({ action: "nominations", revision: 0, nominations: [] });
+  await f.evaluate({ action: "nominations", revision: 0, nominations: ["none-of-the-above"] });
   for (const scores of [
     { impact: 6 },
     { impact: -1 },
@@ -292,7 +292,7 @@ test("unassigned teams, bad marks, sector nominations, missing scores and other 
 });
 test("simultaneous submissions and stale score saves cannot overwrite a submitted result", async () => {
   const f = await setup();
-  await f.evaluate({ action: "nominations", revision: 0, nominations: [] });
+  await f.evaluate({ action: "nominations", revision: 0, nominations: ["none-of-the-above"] });
   await f.evaluate({ action: "scores", revision: 1, scores: fullScores });
   const results = await Promise.all([
     f.evaluate({ action: "submit", revision: 2 }),
@@ -322,12 +322,12 @@ test("all sector award sets have six unique options and valid nominations persis
     const r = await f.evaluate({
       action: "nominations",
       revision,
-      nominations: awards.map((a) => a[0]),
+      nominations: [awards[0][0]],
     });
     assert.equal(r.status, 200);
     assert.deepEqual(
       r.evaluation.nominations,
-      awards.map((a) => a[0]),
+      [awards[0][0]],
     );
   }
 });
@@ -356,4 +356,38 @@ test("credential reset revokes judge sessions and never records passwords in aud
       f.sqlite.prepare("SELECT * FROM judging_changes").all(),
     ).includes(password),
   );
+});
+
+test('exactly one explicit nomination is required; invalid saves leave the draft unchanged', async () => {
+  const f = await setup();
+  for (const nominations of [[], ['agri-impact', 'agri-smart'], ['none-of-the-above', 'agri-impact'], ['unknown'], null, 'agri-impact']) {
+    assert.equal((await f.evaluate({ action: 'nominations', revision: 0, nominations })).status, 400);
+  }
+  assert.equal(f.sqlite.prepare('SELECT COUNT(*) AS n FROM judging_evaluations').get().n, 0);
+  let r = await f.evaluate({ action: 'nominations', revision: 0, nominations: ['none-of-the-above'] });
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.evaluation.nominations, ['none-of-the-above']);
+  r = await f.evaluate({ action: 'nominations', revision: 1, nominations: ['agri-impact'] });
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.evaluation.nominations, ['agri-impact']);
+  await f.evaluate({ action: 'scores', revision: 2, scores: fullScores });
+  // Legacy drafts must explicitly choose again; do not silently reinterpret old data.
+  for (const nominations of [[], ['agri-impact', 'agri-smart']]) {
+    f.sqlite.prepare('UPDATE judging_evaluations SET nominations=? WHERE team_id=1').run(JSON.stringify(nominations));
+    assert.equal((await f.evaluate({ action: 'submit', revision: 3 })).status, 400);
+    assert.equal(f.sqlite.prepare('SELECT status FROM judging_evaluations WHERE team_id=1').get().status, 'draft');
+  }
+});
+
+test('None of the above is an explicit saved choice in every sector', async () => {
+  for (const sector of Object.keys(AWARDS)) {
+    const f = await setup();
+    f.sqlite.prepare('UPDATE hackathon_teams SET sector_track=? WHERE id=1').run(sector);
+    f.sqlite.prepare("UPDATE judging_judges SET sector_filter='' WHERE id=?").run(f.judge.id);
+    assert.equal((await f.evaluate({ action: 'nominations', revision: 0, nominations: ['none-of-the-above'] })).status, 200);
+    await f.evaluate({ action: 'scores', revision: 1, scores: fullScores });
+    const result = await f.evaluate({ action: 'submit', revision: 2 });
+    assert.equal(result.status, 200);
+    assert.deepEqual(result.evaluation.nominations, ['none-of-the-above']);
+  }
 });
