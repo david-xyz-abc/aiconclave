@@ -24,19 +24,19 @@ export async function onRequestPost(context) {
   const id = validId(context.params.id); if (!id) return attendanceJson({ ok: false, error: "Invalid team." }, 400);
   let body; try { body = await context.request.json(); } catch { return attendanceJson({ ok: false, error: "Invalid request." }, 400); }
   const date = validDate(body?.date); const attendance = Array.isArray(body?.attendance) ? body.attendance : [];
-  if (!date || !attendance.length || attendance.length > 20 || attendance.some((item) => !validId(item?.memberId))) return attendanceJson({ ok: false, error: "A valid date and member attendance list are required." }, 400);
+  if (!date || !attendance.length || attendance.length > 20 || attendance.some((item) => !validId(item?.memberId))) return attendanceJson({ ok: false, error: "A valid date and member check-in list are required." }, 400);
   const memberIds = attendance.map((item) => validId(item.memberId));
-  if (new Set(memberIds).size !== memberIds.length || attendance.some((item) => typeof item.present !== "boolean")) return attendanceJson({ ok: false, error: "Provide each member once with a valid attendance status." }, 400);
+  if (new Set(memberIds).size !== memberIds.length || attendance.some((item) => typeof item.present !== "boolean")) return attendanceJson({ ok: false, error: "Provide each member once with a valid check-in status." }, 400);
   const existing = await context.env.DB.prepare(`SELECT id FROM hackathon_team_members WHERE team_id = ? AND id IN (${memberIds.map(() => "?").join(",")})`).bind(id, ...memberIds).all();
   if ((existing.results || []).length !== new Set(memberIds).size) return attendanceJson({ ok: false, error: "One or more members do not belong to this team." }, 400);
   try {
     const currentTeam = await loadTeam(context.env.DB, id, date);
     if (!currentTeam) return attendanceJson({ ok: false, error: "Team not found." }, 404);
     if (attendance.filter((item) => item.present === true).length < 2) {
-      return attendanceJson({ ok: false, error: "At least two team members must be present to mark attendance." }, 400);
+      return attendanceJson({ ok: false, error: "At least two team members must be present to check in." }, 400);
     }
     if (!attendance.some((item) => Number(item.memberId) === Number(currentTeam.lead_member_id) && item.present === true)) {
-      return attendanceJson({ ok: false, error: "The team lead must be present. Select a present member as team lead before saving attendance." }, 400);
+      return attendanceJson({ ok: false, error: "The team lead must be present. Select a present member as team lead before saving check-in." }, 400);
     }
     if (attendance.some((item) => item.present && !['Veg', 'Non-Veg'].includes(item.mealPreference))) {
       return attendanceJson({ ok: false, error: "Choose Veg or Non-veg for each present member." }, 400);
@@ -45,7 +45,7 @@ export async function onRequestPost(context) {
     if (currentTeam.member_count !== attendance.length) return attendanceJson({ ok: false, error: "Include every team member before saving." }, 400);
     await context.env.DB.batch([...attendance.map((item) => context.env.DB.prepare(`INSERT INTO hackathon_attendance (team_id, member_id, attendance_date, present, meal_preference, marked_by) VALUES (?, ?, ?, ?, ?, 'attendance-desk') ON CONFLICT(team_id, member_id, attendance_date) DO UPDATE SET present = excluded.present, meal_preference = excluded.meal_preference, marked_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), marked_by = excluded.marked_by`).bind(id, validId(item.memberId), date, item.present ? 1 : 0, item.present ? item.mealPreference : null)), ...allocationStatements(context.env.DB, id, body.projectMode, auth.session.username)]);
     return attendanceJson({ ok: true, team: await loadTeam(context.env.DB, id, date), date });
-  } catch { return attendanceJson({ ok: false, error: "Could not save attendance." }, 500); }
+  } catch { return attendanceJson({ ok: false, error: "Could not save check-in." }, 500); }
 }
 
 export async function onRequestPatch(context) {
@@ -57,7 +57,7 @@ export async function onRequestPatch(context) {
     const member = await context.env.DB.prepare("SELECT id FROM hackathon_team_members WHERE id = ? AND team_id = ?").bind(memberId, id).first();
     if (!member) return attendanceJson({ ok: false, error: "That member is not part of this team." }, 400);
     const result = await context.env.DB.prepare("UPDATE hackathon_teams SET attendance_lead_member_id = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ? AND submitted_at IS NOT NULL AND (? = 1 OR NOT EXISTS (SELECT 1 FROM hackathon_attendance WHERE team_id = ?))").bind(memberId, id, body.editingAttendance === true ? 1 : 0, id).run();
-    if (!result.meta.changes) return attendanceJson({ ok: false, error: "Attendance is already marked. Click Edit before changing the team lead." }, 409);
+    if (!result.meta.changes) return attendanceJson({ ok: false, error: "Check-in is already recorded. Click Edit before changing the team lead." }, 409);
     const team = await loadTeam(context.env.DB, id, new Date().toISOString().slice(0, 10));
     return attendanceJson({ ok: true, team });
   } catch { return attendanceJson({ ok: false, error: "Could not update the team lead." }, 500); }

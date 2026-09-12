@@ -494,11 +494,11 @@ export async function createAttendanceWorkbook(teams) {
     if (!latest?.present) return null;
     return { teamId: team.id, teamCode: text(team.team_code), teamName: text(team.team_name), lead: text(team.lead_name), memberId: member.id, member: text(member.full_name), role: member.is_lead ? "Team lead" : "Team member", email: text(member.email), phone: text(member.phone), institution: text(member.institution), attendance: "Present" };
   })).filter(Boolean).map((row, index) => ({ index: index + 1, ...row }));
-  const attendanceColumns = [{ key: "index", header: "#", width: 8 }, { key: "teamId", header: "Team ID", width: 12 }, { key: "teamCode", header: "Team Code", width: 20 }, { key: "teamName", header: "Team Name", width: 28 }, { key: "lead", header: "Team Lead", width: 26 }, { key: "memberId", header: "Member ID", width: 14 }, { key: "member", header: "Participant", width: 26 }, { key: "role", header: "Role", width: 16 }, { key: "email", header: "Email", width: 32 }, { key: "phone", header: "Phone", width: 20 }, { key: "institution", header: "Institution", width: 36 }, { key: "attendance", header: "Attendance", width: 16 }];
+  const attendanceColumns = [{ key: "index", header: "#", width: 8 }, { key: "teamId", header: "Team ID", width: 12 }, { key: "teamCode", header: "Team Code", width: 20 }, { key: "teamName", header: "Team Name", width: 28 }, { key: "lead", header: "Team Lead", width: 26 }, { key: "memberId", header: "Member ID", width: 14 }, { key: "member", header: "Participant", width: 26 }, { key: "role", header: "Role", width: 16 }, { key: "email", header: "Email", width: 32 }, { key: "phone", header: "Phone", width: 20 }, { key: "institution", header: "Institution", width: 36 }, { key: "attendance", header: "Check-in", width: 16 }];
   if (!attendanceRows.length) throw new Error("There are no present students to export.");
-  const sheets = [createSheet("Attendance", "", "", attendanceColumns, attendanceRows, { plain: true })];
+  const sheets = [createSheet("Check-in", "", "", attendanceColumns, attendanceRows, { plain: true })];
   const { strToU8, zipSync } = await import("fflate");
-  return { bytes: packageWorkbook(sheets, zipSync, strToU8), filename: `ai-conclave-2026-attendance-${localDatePart(generatedAt)}.xlsx` };
+  return { bytes: packageWorkbook(sheets, zipSync, strToU8), filename: `ai-conclave-2026-check-in-${localDatePart(generatedAt)}.xlsx` };
 }
 
 function downloadBytes(bytes, filename) {

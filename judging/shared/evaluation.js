@@ -151,3 +151,12 @@ export function decodeEvaluation(row) {
     team_snapshot: JSON.parse(row.team_snapshot),
   };
 }
+
+export const NO_AWARD = "none-of-the-above";
+export function nominationOptions(sector) {
+  return [...(AWARDS[sector] || []), [NO_AWARD, "None of the above", "Do not nominate this team for an award."]];
+}
+export function validNominations(nominations, sector) {
+  return Boolean(AWARDS[sector]) && Array.isArray(nominations) && nominations.length === 1 &&
+    nominationOptions(sector).some(([id]) => id === nominations[0]);
+}

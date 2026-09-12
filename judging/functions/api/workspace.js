@@ -14,9 +14,11 @@ export async function loadWorkspace(db) {
       "SELECT j.*, u.username AS login_username FROM judging_judges j LEFT JOIN judging_users u ON u.judge_id=j.id ORDER BY lower(j.name), j.id",
     ),
     db.prepare(
-      `SELECT r.*, o.position FROM venue_rooms r JOIN judging_room_order o ON o.room_id=r.id ORDER BY o.position, r.id`,
+      `SELECT r.id, r.name, r.block, r.project_mode, r.sector, r.solution_type,
+        (SELECT MIN(seats) FROM venue_tables WHERE room_id=r.id) AS min_seats,
+        (SELECT MAX(seats) FROM venue_tables WHERE room_id=r.id) AS max_seats, o.position FROM venue_rooms r JOIN judging_room_order o ON o.room_id=r.id ORDER BY o.position, r.id`,
     ),
-    db.prepare(`SELECT q.*, a.table_id, vt.room_id, vt.table_number, r.name AS room_name, r.block,
+    db.prepare(`SELECT q.*, a.table_id, vt.room_id, vt.table_number, vt.seats AS table_seats, r.name AS room_name, r.block,
       j.judge_id, jj.name AS judge_name FROM venue_requirements q
       LEFT JOIN venue_allocations a ON a.team_id=q.team_id LEFT JOIN venue_tables vt ON vt.id=a.table_id
       LEFT JOIN venue_rooms r ON r.id=vt.room_id LEFT JOIN judging_assignments j ON j.team_id=q.team_id

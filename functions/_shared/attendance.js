@@ -20,14 +20,14 @@ export async function getAttendanceSession(context) {
 
 export async function requireAttendanceSession(context) {
   const session = await getAttendanceSession(context);
-  if (!session) return { response: attendanceJson({ ok: false, error: "Attendance authentication required." }, 401) };
+  if (!session) return { response: attendanceJson({ ok: false, error: "Check-in authentication required." }, 401) };
   return { session };
 }
 
 export async function requireAttendanceAdmin(context) {
   const auth = await requireAttendanceSession(context);
   if (auth.response) return auth;
-  if (auth.session.attendance_access !== "write") return { response: attendanceJson({ ok: false, error: "This account cannot modify attendance." }, 403) };
+  if (auth.session.attendance_access !== "write") return { response: attendanceJson({ ok: false, error: "This account cannot modify check-in." }, 403) };
   return auth;
 }
 
@@ -49,7 +49,7 @@ export async function handleAttendanceAuth(context) {
   if (!username || !password) return attendanceJson({ ok: false, error: "Username and password are required." }, 400);
   const user = await context.env.DB.prepare("SELECT id, username, password_hash, password_salt, password_iterations, role, registrations_access, attendance_access FROM admin_users WHERE username = ?").bind(username).first();
   if (!user) return attendanceJson({ ok: false, error: "Invalid username or password." }, 401);
-  if (user.attendance_access === "none") return attendanceJson({ ok: false, error: "This account cannot access attendance." }, 403);
+  if (user.attendance_access === "none") return attendanceJson({ ok: false, error: "This account cannot access check-in." }, 403);
   let passwordHash;
   try { passwordHash = await hashPassword(password, user.password_salt, user.password_iterations); } catch { return attendanceJson({ ok: false, error: "Invalid username or password." }, 401); }
   if (!(await constantTimeEqual(passwordHash, user.password_hash))) return attendanceJson({ ok: false, error: "Invalid username or password." }, 401);

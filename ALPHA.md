@@ -27,3 +27,14 @@ The provisional plan has 53 rooms / 565 tables: RS 16 rooms, R 16, CC 16, D 5; 4
 Allocation tests include real concurrent SQLite connections, duplicate claims, repeat attendance, changed mode/headcount, waiting-list resolution, permissions, and transactional rollback. Run `npm test` and `npm run build` before deploying.
 
 Already assigned teams can be reallocated from Venue Finder or Manual Allocation. Moves require a compatible free table and attendance write access. A single conditional SQL update claims the new table and releases the old one; stale requests or unavailable targets preserve the existing assignment. Manual Allocation includes all checked-in teams and filters for waiting or already allocated teams.
+
+
+## Per-table capacities (0024)
+
+Apply `0024_table_seating.sql` to alpha before deploying the mixed-table allocator. It adds `venue_tables.seats` (2, 3 or 4), copying each existing table's former room capacity without moving teams or changing evaluations. The legacy `venue_rooms.seats` column remains for compatibility but is no longer used for allocation. New table inserts should specify their actual capacity; the default is conservatively 2.
+
+Rooms may mix 2-, 3- and 4-seat tables. New check-ins claim the smallest adequate free table across matching mode, sector and solution type, then room/table order: 2 → 3 → 4, 3 → 4, or 4 only. Existing compatible assignments are retained on repeat check-in, including larger fallback tables. A headcount increase releases a too-small table and attempts a suitable replacement in the same transaction. No suitable table leaves check-in saved and the team waiting. Manual assignment/reallocation also accepts larger tables, never smaller ones, and lists exact fits first. Tables are not shared between teams.
+
+Room views show capacities per table and the room's size mix. Judge routes follow physical room/table order independent of capacity, accepting larger tables while flagging insufficient capacity for review. Table-capacity edits invalidate stale workspace requests through the existing revision triggers.
+
+This migration preserves the current provisional inventory; it does not invent a mixed seating plan for the physical event. Apply subsequent explicit inventory migrations to `venue_tables.seats` once the actual table counts and capacities are known. For the local `db/schema.sql` bootstrap snapshot, apply the existing room seed 0020, then migrations 0021–0024. Do not rerun 0020 on a seeded database.

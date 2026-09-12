@@ -654,7 +654,7 @@ function RoomOrder({ data, save, busy }) {
                   {r.name} <span className="muted">· {r.block} block</span>
                 </strong>
                 <small>
-                  {r.sector} · {r.solution_type} · {r.project_mode} · {r.seats}{" "}
+                  {r.sector} · {r.solution_type} · {r.project_mode} · {r.min_seats === r.max_seats ? r.min_seats : `${r.min_seats}–${r.max_seats}`}{" "}
                   seats per table
                 </small>
               </div>

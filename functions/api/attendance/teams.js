@@ -22,6 +22,6 @@ export async function onRequestGet(context) {
     return attendanceJson({ ok: true, teams: result.results || [] });
   } catch (error) {
     console.error(JSON.stringify({ event: "attendance_teams_query_failed", reason: error instanceof Error ? error.message : "unknown" }));
-    return attendanceJson({ ok: false, error: "Could not load hackathon teams. Apply the attendance migration first." }, 500);
+    return attendanceJson({ ok: false, error: "Could not load hackathon teams. Apply the check-in migration first." }, 500);
   }
 }

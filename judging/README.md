@@ -17,7 +17,7 @@ Room walking order starts with the existing room order and must be confirmed aga
 
 Every write uses an audited revision guard inside a D1 transaction. Seating and eligibility changes increment the same revision. A stale preview rejects the entire write with HTTP 409. `judging_assignments.team_id` is unique, enforcing one judge per team. Assignment history is retained in `judging_changes` including replaced/released routes and the staff actor.
 
-Judges sign in at `/judges/login`, see only their assigned teams and team leader names, and evaluate in three steps: sector nominations, scoring, and final review. The sector determines the six award checkboxes; multiple or no nominations are allowed. All sectors use Impact, Creativity, Validity, Relevance and Presentation, each scored with integer buttons from 0–5 (25 total). Registration and seating details are readonly metadata.
+Judges sign in at `/judges/login`, see only their assigned teams and team leader names, and evaluate in three steps: sector nominations, scoring, and final review. The sector determines the six awards plus None of the above. Exactly one option must be explicitly selected before continuing or submitting. All sectors use Impact, Creativity, Validity, Relevance and Presentation, each scored with integer buttons from 0–5 (25 total). Registration and seating details are readonly metadata.
 
 Next saves nominations to a server draft. Save draft allows partial scores; Save evaluation requires all five scores and opens the final review. Submit details permanently locks scores and nominations. A separate revision prevents competing tabs from overwriting a draft or submission. The server validates ownership, eligibility, score bounds, sector award IDs and completeness; the client cannot supply a total or override a submitted score.
 
@@ -26,3 +26,5 @@ The venue **Emergency** tab lists evaluations and their history. Reopening requi
 The **Judges** tab creates or resets an individual login ID and password for each roster entry. Resetting credentials revokes that judge’s active sessions. No judge accounts are seeded automatically.
 
 The landing page offers Judge and Venue team login. Venue team sign-in is at `/team/login`; `/judges/login` accepts individual judge credentials. Judge roster entries do not create accounts. Venue account provisioning is performed separately from source migrations.
+
+Table capacity comes from `venue_tables.seats` after migration 0024. Larger tables are eligible for smaller teams; judging routes still follow room/table order. The room overview displays the range of table capacities instead of a uniform room size.

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { api } from "./client.js";
 import {
-  AWARDS,
+  nominationOptions,
+  validNominations,
   CRITERIA,
   validScores,
   scoreTotal,
@@ -30,6 +31,9 @@ export function JudgeApp({ user, onLogout }) {
         const e = d.evaluations.find((e) => e.team_id === teamId);
         setNominations(e?.nominations || []);
         setScores(e?.scores || {});
+        const currentTeam = d.teams.find((t) => t.team_id === teamId);
+        if (e?.status !== "submitted" &&
+            !validNominations(e?.nominations, currentTeam?.sector_track)) setStep(0);
       }
       setDirty(false);
     } catch (e) {
@@ -61,7 +65,7 @@ export function JudgeApp({ user, onLogout }) {
     setTeamId(t?.team_id || null);
     setNominations(e?.nominations || []);
     setScores(e?.scores || {});
-    setStep(e?.status === "submitted" ? 2 : e?.nominations_saved ? 1 : 0);
+    setStep(e?.status === "submitted" ? 2 : e?.nominations_saved && validNominations(e.nominations, t?.sector_track) ? 1 : 0);
     setDirty(false);
     setError("");
     setMessage("");
@@ -110,7 +114,7 @@ export function JudgeApp({ user, onLogout }) {
         (e) => e.team_id === t.team_id && e.status === "submitted",
       ),
     ).length || 0;
-  const awards = AWARDS[shown?.sector_track] || [];
+  const awards = nominationOptions(shown?.sector_track);
   return (
     <>
       <header className="topbar">
@@ -275,8 +279,8 @@ export function JudgeApp({ user, onLogout }) {
                 <>
                   <h2>Best {shown.sector_track} Innovation</h2>
                   <p className="muted">
-                    Select the awards you want to nominate this team for. You
-                    may select more than one, or continue without a nomination.
+                    Choose one award for this team, or select None of the above.
+                    A selection is required to continue.
                   </p>
                   <fieldset disabled={busy || data.routeNeedsReview}>
                     <legend className="sr-only">Award nominations</legend>
@@ -284,14 +288,13 @@ export function JudgeApp({ user, onLogout }) {
                       {awards.map(([id, name, description]) => (
                         <label className="award-option" key={id}>
                           <input
-                            type="checkbox"
-                            checked={nominations.includes(id)}
-                            onChange={(e) => {
-                              setNominations(
-                                e.target.checked
-                                  ? [...nominations, id]
-                                  : nominations.filter((n) => n !== id),
-                              );
+                            type="radio"
+                            name="award-nomination"
+                            value={id}
+                            required
+                            checked={nominations.length === 1 && nominations.includes(id)}
+                            onChange={() => {
+                              setNominations([id]);
                               setDirty(true);
                             }}
                           />
@@ -312,6 +315,7 @@ export function JudgeApp({ user, onLogout }) {
                       </small>
                       <button
                         className="primary"
+                        disabled={!validNominations(nominations, shown.sector_track)}
                         onClick={() => save("nominations", 1)}
                       >
                         Next · save nominations

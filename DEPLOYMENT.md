@@ -21,3 +21,11 @@ Venue-team access is provisioned separately as a salted password hash in `judgin
 Before applying migrations, capture the live schema, migration ledger, record counts, a D1 Time Travel bookmark, and the current Pages deployment IDs. Rehearse the upgrade on a local database with the live schema, and run `npm test`, `npm run build`, and `npm run build:judging` with Node 22. After deployment, verify the live database bindings and authenticated dashboard, attendance, venue, and judging reads. Production smoke checks must not mark attendance or submit evaluations.
 
 The promotion is additive, so the previous dashboard deployment can run against the upgraded schema. If the frontend or Functions regress, roll back the Pages deployment first, leaving the data in place. Use database Time Travel only as an emergency recovery action after accounting for registrations and staff updates made since the bookmark; a full restore would discard those later writes. Never reset production from an alpha snapshot.
+
+## Check-in and judging update
+
+The second alpha promotion includes the Check in terminology, matching colored classification/location cards, required single-award-or-none nominations, and the admin team-save conflict fix. Previously submitted evaluations remain locked; older drafts with zero or multiple nominations must make an explicit choice before submission.
+
+Apply `0024_table_seating.sql` before deployment. It copies each table's existing room capacity into `venue_tables.seats`, preserving inventory and assignments. Allocation now chooses the smallest adequate free table across rooms matching mode, sector and solution type (2 → 3 → 4, 3 → 4, or 4 only). Existing adequate assignments stay stable. Manual assignment/reallocation and judging routes use table capacities too. The actual mixed-room inventory can be supplied later without changing this allocation model.
+
+Both production branches receive the shared fixes; each site's existing workflow remains restricted to its own branch. This upgrade imports code and schema only, never alpha check-ins, judges, nominations, or scores.

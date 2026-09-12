@@ -1,7 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { readFileSync } from 'node:fs';
 
-export function fixture(access = 'write') {
+export function fixture(access = 'write', tableSeating = true) {
   const sqlite = new DatabaseSync(':memory:');
   sqlite.exec(`PRAGMA foreign_keys = ON;
     CREATE TABLE hackathon_teams (id INTEGER PRIMARY KEY, team_code TEXT, team_name TEXT,
@@ -16,6 +16,7 @@ export function fixture(access = 'write') {
     INSERT INTO hackathon_team_members VALUES (11,1,'Captain','','','Captain',1),(12,1,'Member 2','','','Member',2),(13,1,'Member 3','','','Member',3);`);
   sqlite.exec(readFileSync(new URL('../db/migrations/0019_venue_allocation.sql', import.meta.url), 'utf8'));
   sqlite.exec(readFileSync(new URL('../db/migrations/0020_alpha_venue_plan.sql', import.meta.url), 'utf8'));
+  if (tableSeating) sqlite.exec(readFileSync(new URL('../db/migrations/0024_table_seating.sql', import.meta.url), 'utf8'));
   let writes = 0;
   const DB = { prepare(sql) {
     let args = [];

@@ -30,6 +30,6 @@ export async function onRequestGet(context) {
     return attendanceJson({ ok: true, exported_at: new Date().toISOString(), teams: [...teams.values()] });
   } catch (error) {
     console.error(JSON.stringify({ event: "attendance_export_failed", reason: error instanceof Error ? error.message : "unknown" }));
-    return attendanceJson({ ok: false, error: "Could not export attendance." }, 500);
+    return attendanceJson({ ok: false, error: "Could not export check-in." }, 500);
   }
 }

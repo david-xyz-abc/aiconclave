@@ -224,13 +224,19 @@ async function updateTeam(context, id, session, body) {
     return json({ ok: true, registration });
   }
   const requestId = crypto.randomUUID();
+  // Gate the entire roster inside the transaction before any team/member writes.
   const statements = [
     db.prepare(
       `UPDATE hackathon_teams SET team_name = ?, team_name_key = ?,
         participant_category = ?, sector_track = ?, solution_type = ?,
         updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'),
         edit_version = edit_version + 1, last_edit_request_id = ?
-       WHERE id = ? AND edit_version = ?`,
+       WHERE id = ? AND edit_version = ?
+         AND (SELECT COUNT(*) FROM hackathon_team_members WHERE team_id = ?) = ?
+         ${parsed.value.members.map(() => `AND EXISTS (
+           SELECT 1 FROM hackathon_team_members WHERE id = ? AND team_id = ? AND edit_version = ?
+         )`).join(" ")}
+       RETURNING id`,
     ).bind(
       after.team_name,
       after.team_name.toLowerCase(),
@@ -240,13 +246,18 @@ async function updateTeam(context, id, session, body) {
       requestId,
       id,
       parsed.version,
+      id,
+      parsed.value.members.length,
+      ...parsed.value.members.flatMap(member => [member.id, id, member.version]),
     ),
     ...parsed.value.members.map((member) => db.prepare(
       `UPDATE hackathon_team_members SET full_name = ?, phone = ?,
         institution = ?, department_or_course = ?, year_or_grade = ?,
         updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'),
         edit_version = edit_version + 1, last_edit_request_id = ?
-       WHERE id = ? AND team_id = ? AND edit_version = ?`,
+       WHERE id = ? AND team_id = ? AND edit_version = ?
+         AND EXISTS (SELECT 1 FROM hackathon_teams WHERE id = ? AND last_edit_request_id = ?)
+       RETURNING id`,
     ).bind(
       member.full_name,
       member.phone,
@@ -257,6 +268,8 @@ async function updateTeam(context, id, session, body) {
       member.id,
       id,
       member.version,
+      id,
+      requestId,
     )),
     auditStatement(db, {
       requestId,
@@ -270,8 +283,9 @@ async function updateTeam(context, id, session, body) {
     }),
   ];
   const results = await db.batch(statements);
+  // RETURNING counts target rows only; D1 meta.changes also includes trigger writes.
   const writeResults = results.slice(0, 1 + parsed.value.members.length);
-  if (writeResults.some((result) => Number(result?.meta?.changes || 0) !== 1))
+  if (writeResults.some((result) => result?.results?.length !== 1))
     return json({ ok: false, error: "This team changed while it was being saved. Reload it and try again.", code: "edit_conflict" }, 409);
   const registration = await updatedRegistration(db, "hackathon", "team", id);
   return json({ ok: true, registration });

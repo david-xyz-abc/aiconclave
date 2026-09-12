@@ -5,7 +5,7 @@ import {
   writeGuard,
   historyStatement,
 } from "../_shared/evaluations.js";
-import { AWARDS, validScores } from "../../shared/evaluation.js";
+import { AWARDS, validScores, validNominations } from "../../shared/evaluation.js";
 const fail = (error, status = 400) => json({ ok: false, error }, status);
 export async function onRequestGet(context) {
   const auth = await requireJudge(context);
@@ -93,11 +93,9 @@ export async function onRequestPost(context) {
     };
     if (body.action === "nominations") {
       if (
-        !Array.isArray(body.nominations) ||
-        new Set(body.nominations).size !== body.nominations.length ||
-        body.nominations.some((id) => !awards.some((a) => a[0] === id))
+        !validNominations(body.nominations, team.sector_track)
       )
-        return fail("Select nominations from this team’s sector.");
+        return fail("Choose exactly one award or None of the above.");
       next.nominations = body.nominations;
       next.nominations_saved = 1;
     } else if (body.action === "scores") {
@@ -108,7 +106,7 @@ export async function onRequestPost(context) {
       if (
         !next.nominations_saved ||
         !validScores(next.scores, true) ||
-        next.nominations.some((id) => !awards.some((a) => a[0] === id))
+        !validNominations(next.nominations, team.sector_track)
       )
         return fail(
           "Save the nomination step and all five scores before submitting.",
