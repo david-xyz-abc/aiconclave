@@ -1,7 +1,7 @@
 name: Deploy judging admin
 on:
   push:
-    branches: [dashboard-dev]
+    branches: [judging-production]
     paths:
       - "judging/**"
       - "functions/_shared/auth.js"
@@ -17,6 +17,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   deploy:
+    if: github.ref == 'refs/heads/judging-production'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -37,4 +38,4 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           wranglerVersion: "4.125.0"
           workingDirectory: judging
-          command: pages deploy dist --project-name=aiconclave-judging --branch=dashboard-dev --commit-dirty=true
+          command: pages deploy dist --project-name=aiconclave-judging --branch=judging-production --commit-dirty=true

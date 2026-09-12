@@ -1,6 +1,8 @@
 # Dashboard and judging deployment
 
-`dashboard-dev` deploys the operations dashboard at https://aiconclave-dashboard.pages.dev and the separate judging website at https://aiconclave-judging.pages.dev. Both bind `DB` to `aiconclave-registrations` (`cfc0669f-3de7-4429-ab54-686e966bb56b`). Registration and food websites share this database, but their branches and deployments are independent.
+`dashboard-dev` deploys the operations dashboard at https://aiconclave-dashboard.pages.dev while the independent `judging-production` branch deploys venue management and the judges’ portal at https://aiconclave-judging.pages.dev. Both bind `DB` to `aiconclave-registrations` (`cfc0669f-3de7-4429-ab54-686e966bb56b`). Registration and food websites share this database, but their branches and deployments are independent.
+
+Make production judging changes on `judging-production`, primarily under `judging/`. Its workflow only deploys from that branch; dashboard pushes cannot publish judging changes. The dashboard workflow similarly only deploys from `dashboard-dev`, including manual workflow runs. The branches retain shared source history and helper modules; deliberately merge or cherry-pick shared fixes when both apps need them.
 
 Alpha remains on `dashboard-dev-alpha`, with separate Pages projects and database. Never copy alpha registrations, attendance, check-ins, allocations, judges, evaluations, or sessions into production.
 
