@@ -6,7 +6,7 @@ export function OperationsHeader({ active, onLogout, children }) {
     <nav aria-label="Operations navigation">
       <a href="/">Home</a>
       <a href="/attendance" aria-current={active === 'attendance' ? 'page' : undefined}>Check in</a>
-      {active !== 'attendance' && <a href="/attendance/venues" aria-current={active === 'venues' ? 'page' : undefined}>Staff venues</a>}
+      <a href="/attendance/venues" aria-current={active === 'venues' ? 'page' : undefined}>Staff venues</a>
       {children}
     </nav>
     <button className="ops-logout" onClick={onLogout}>Log out</button>
