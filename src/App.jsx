@@ -5,6 +5,7 @@ import { Dashboard } from "./features/dashboard/Dashboard.jsx";
 import { LandingPage } from "./features/landing/LandingPage.jsx";
 import { AttendanceApp } from "./features/attendance/AttendanceApp.jsx";
 import { useDashboardRoute } from "./hooks/useDashboardRoute.js";
+import { clearAdminCache } from "./hooks/useDashboardData.js";
 import { authApi } from "./services/dashboardApi.js";
 
 export default function App() {
@@ -12,7 +13,7 @@ export default function App() {
   const [session, setSession] = useState({ loading: true, user: null });
   const { route, navigate } = useDashboardRoute();
   const clearSession = useCallback(
-    () => setSession({ loading: false, user: null }),
+    () => { clearAdminCache(); setSession({ loading: false, user: null }); },
     [],
   );
 

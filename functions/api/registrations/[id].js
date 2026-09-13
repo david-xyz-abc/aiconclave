@@ -74,8 +74,8 @@ function auditStatement(db, {
 async function updatedRegistration(db, registrationType, recordType, id) {
   const tables = await getRegistrationTables(db);
   const registrations = registrationType === "panel"
-    ? await loadPanelRegistrations(db, tables)
-    : await loadHackathonRegistrations(db, tables);
+    ? await loadPanelRegistrations(db, tables, id)
+    : await loadHackathonRegistrations(db, tables, id, recordType);
   return registrations.find(
     (item) => item.id === id && (
       registrationType === "panel" || item.record_type === recordType
@@ -479,5 +479,26 @@ export async function onRequestDelete(context) {
       }),
     );
     return json({ ok: false, error: "Could not delete registration." }, 500);
+  }
+}
+
+export async function onRequestGet(context) {
+  const session = await getSession(context);
+  if (!session) return json({ ok: false, error: "Authentication required." }, 401);
+  const url = new URL(context.request.url);
+  const type = url.searchParams.get('type') || 'panel';
+  const recordType = url.searchParams.get('record_type') || type;
+  const rawId = String(context.params.id);
+  const id = /^\d+$/.test(rawId) ? Number(rawId) : 0;
+  if (!Number.isSafeInteger(id) || id < 1 || !(
+    (type === 'panel' && recordType === 'panel') ||
+    (type === 'hackathon' && ['team', 'legacy'].includes(recordType))))
+    return json({ ok: false, error: 'Invalid registration.' }, 400);
+  try {
+    const registration = await updatedRegistration(context.env.DB, type, recordType, id);
+    return registration ? json({ ok: true, registration })
+      : json({ ok: false, error: 'Registration not found.' }, 404);
+  } catch {
+    return json({ ok: false, error: 'Could not load registration.' }, 500);
   }
 }

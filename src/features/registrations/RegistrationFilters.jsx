@@ -21,14 +21,14 @@ export function RegistrationFilters({
   return (
     <div className="filters">
       <label className="search-control">
-        <span>Search all details</span>
+        <span>Search registrations</span>
         <input
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
           placeholder={
             isHackathon
-              ? "Team, student, email, phone or institution"
-              : "Name, email, phone or organisation"
+              ? "Team name, team code or captain"
+              : "Name, email or organisation"
           }
         />
       </label>
