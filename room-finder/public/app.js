@@ -25,18 +25,18 @@ function card(team){const el=element('article','','team');el.append(element('h2'
 
 function renderSearch(){
  sequence++;$('detail').replaceChildren();$('results').replaceChildren();
- $('synced').textContent=directory?'Last synced '+new Date(directory.syncedAt).toLocaleString()+' · '+directory.teams.length+' teams':'No directory saved on this phone.';
- if(!directory){$('status').textContent='Tap Refresh at the top to download the team directory.';return;}
+ $('synced').textContent=directory?'Last synced '+new Date(directory.syncedAt).toLocaleString()+' · '+directory.teams.length+' teams':'';
+ if(!directory){$('status').textContent='Refresh to load teams.';return;}
  const q=$('query').value.trim();
- if(q.length<2){$('status').textContent='Type at least two characters to find a team.';return;}
+ if(q.length<2){$('status').textContent='';return;}
  const matches=searchDirectory(directory.teams,q);
- $('status').textContent=matches.length>30?'Showing 30 matches. Type more to narrow the list.':matches.length+' matching team'+(matches.length===1?'':'s')+'. Tap a team to check its current room.';
+ $('status').textContent=matches.length>30?'First 30 matches':matches.length+' matching team'+(matches.length===1?'':'s')+'';
  for(const team of matches.slice(0,30)){
   const button=element('button','','team team-choice');button.type='button';
-  button.append(element('strong',team.team_name),element('span',team.team_code,'meta'),element('span','Team leader: '+(team.leader||team.captain||'Not recorded'),'meta'),element('span','View current room →','choice-action'));
+  button.append(element('strong',team.team_name),element('span',team.team_code,'meta'),element('span','Team leader: '+(team.leader||team.captain||'Not recorded'),'meta'),element('span','View room →','choice-action'));
   button.addEventListener('click',()=>{selectedButton=button;loadRoom(team);});$('results').append(button);
  }
- if(!matches.length)$('results').append(element('div','No matches. Try another name or code, or Refresh to download recent changes.','empty'));
+ if(!matches.length)$('results').append(element('div','No teams found.','empty'));
 }
 async function loadRoom(team){
  if(loadingId===team.id)return;
