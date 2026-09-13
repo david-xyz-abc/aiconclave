@@ -113,6 +113,9 @@ function AttendanceDesk({ onLogout, user }) {
   const [exporting, setExporting] = useState(false);
   const [editingAttendance, setEditingAttendance] = useState(false);
   const [changingLead, setChangingLead] = useState(false);
+  const [loadingEdit, setLoadingEdit] = useState(false);
+  const selectionRef = useRef(selectedId);
+  selectionRef.current = selectedId;
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   async function refreshDirectory() {
@@ -207,6 +210,15 @@ function AttendanceDesk({ onLogout, user }) {
     } finally {
       setSaving(false);
     }
+  }
+  async function openEdit() {
+    if(loadingEdit || !canEdit)return;
+    const id=team.id;setLoadingEdit(true);setError('');
+    try {
+      const data=await attendanceApi.team(id,date,true);
+      if(mounted.current && selectionRef.current===id){setTeam(data.team);setEditingAttendance(true);}
+    } catch(e) { if(mounted.current && selectionRef.current===id){setError(e.message);if(isUnauthorized(e))onLogout();} }
+    finally { if(mounted.current)setLoadingEdit(false); }
   }
   async function exportAttendance() {
     setExporting(true);
@@ -319,8 +331,7 @@ function AttendanceDesk({ onLogout, user }) {
                     </p>
                     <h2>{team.team_name}</h2>
                     <p className="checkin-team-meta">
-                      {team.participant_category} ·{" "}
-                      {team.member_count} members
+                      {team.participant_category}{!attendanceMarked || editingAttendance ? ` · ${team.member_count} members` : ""}
                     </p>
                     <dl className="checkin-classifications">
                       <div className="checkin-classification" data-kind={team.solution_type}>
@@ -331,20 +342,24 @@ function AttendanceDesk({ onLogout, user }) {
                         <dt>Sector</dt>
                         <dd>{team.sector_track || 'Not specified'}</dd>
                       </div>
-                      {team.allocation?.table_id && (
+                      {(team.allocation?.table_id || attendanceMarked) && (
                         <div className="checkin-classification checkin-seat" role="status">
                           <dt>Room &amp; table</dt>
-                          <dd>{team.allocation.room_name} · Table {`T${team.allocation.table_number}`}</dd>
+                          <dd>{team.allocation?.table_id ? `${team.allocation.room_name} · Table T${team.allocation.table_number}` : "Awaiting allocation"}</dd>
                         </div>
                       )}
                     </dl>
                   </div>
-                  <span className="attendance-status">
+                  {(!attendanceMarked || editingAttendance) && <span className="attendance-status">
                     {presentCount === team.member_count
                       ? "Complete"
                       : `${presentCount}/${team.member_count} present`}
-                  </span>
+                  </span>}
                 </div>
+                {attendanceMarked && !editingAttendance ? <div className="attendance-locked-bar">
+                  {canEdit && <button type="button" className="attendance-edit-button" disabled={loadingEdit} onClick={openEdit}>{loadingEdit ? "Loading…" : "Edit"}</button>}
+                  {error && <p className="form-error" role="alert">{error}</p>}
+                </div> : <>
                 <section className="venue-attendance-panel" ref={venuePanel}>
                   <fieldset className="venue-mode-toggle" disabled={controlsLocked}>
                     <legend>Project mode — ask the team</legend>
@@ -467,6 +482,7 @@ function AttendanceDesk({ onLogout, user }) {
                     <span aria-hidden="true">→</span>
                   </button>
                 ) : null}
+                </>}
               </>
             ) : (
               <div className="attendance-empty">

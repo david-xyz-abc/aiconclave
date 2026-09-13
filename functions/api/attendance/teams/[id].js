@@ -1,22 +1,39 @@
-import { allocationStatements, getAllocation } from "../../../_shared/allocation.js";
+import { allocationStatements } from "../../../_shared/allocation.js";
 import { attendanceJson, requireAttendanceAdmin, requireAttendanceSession } from "../../../_shared/attendance.js";
 
 function validId(value) { const id = Number.parseInt(value, 10); return Number.isInteger(id) && id > 0 ? id : null; }
 function validDate(value) { return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null; }
 
-async function loadTeam(db, id, date) {
-  const team = await db.prepare(`SELECT t.id, t.team_code, t.team_name, t.participant_category, t.sector_track, t.solution_type, t.team_size, COALESCE(t.attendance_lead_member_id, captain.id) AS lead_member_id FROM hackathon_teams t LEFT JOIN hackathon_team_members captain ON captain.team_id = t.id AND captain.role = 'Captain' WHERE t.id = ? AND t.submitted_at IS NOT NULL`).bind(id).first();
-  if (!team) return null;
-  const members = await db.prepare(`SELECT m.id, m.full_name, m.email, m.institution, m.role, a.meal_preference, CASE WHEN a.present = 1 THEN 1 ELSE 0 END AS present FROM hackathon_team_members m LEFT JOIN hackathon_attendance a ON a.id = (SELECT aa.id FROM hackathon_attendance aa WHERE aa.member_id = m.id AND aa.team_id = m.team_id ORDER BY aa.attendance_date DESC, aa.marked_at DESC, aa.id DESC LIMIT 1) WHERE m.team_id = ? ORDER BY m.member_order`).bind(id).all();
-  const dates = await db.prepare("SELECT DISTINCT attendance_date FROM hackathon_attendance WHERE team_id = ? ORDER BY attendance_date DESC").bind(id).all();
-  return { ...team, allocation: await getAllocation(db, id), member_count: (members.results || []).length, members: (members.results || []).map((member) => ({ ...member, meal_preference: member.present ? member.meal_preference ?? null : null })), attendance_dates: (dates.results || []).map((row) => row.attendance_date), attendance_marked: Boolean((dates.results || []).length) };
+export async function loadTeam(db, id, date, full = true) {
+  const row = await db.prepare(`SELECT t.id,t.team_code,t.team_name,t.participant_category,t.sector_track,t.solution_type,t.team_size,
+    t.attendance_lead_member_id AS lead_member_id,
+    EXISTS(SELECT 1 FROM hackathon_attendance WHERE team_id=t.id) attendance_marked,
+    c.project_mode,a.table_id,r.name room_name,r.block,vt.table_number,vt.seats table_seats
+    FROM hackathon_teams t LEFT JOIN venue_checkins c ON c.team_id=t.id
+    LEFT JOIN venue_allocations a ON a.team_id=t.id LEFT JOIN venue_tables vt ON vt.id=a.table_id
+    LEFT JOIN venue_rooms r ON r.id=vt.room_id WHERE t.id=? AND t.submitted_at IS NOT NULL`).bind(id).first();
+  if (!row) return null;
+  const {project_mode,table_id,room_name,block,table_number,table_seats,...team}=row;
+  const allocation={project_mode,table_id,room_name,block,table_number,table_seats};
+  if(!full && row.attendance_marked) return {...team,attendance_marked:true,summary_only:true,allocation};
+  const result = await db.prepare(`SELECT m.id,m.full_name,m.email,m.institution,m.role,a.meal_preference,
+    CASE WHEN a.present=1 THEN 1 ELSE 0 END present FROM hackathon_team_members m
+    LEFT JOIN hackathon_attendance a ON a.id=(SELECT aa.id FROM hackathon_attendance aa
+    WHERE aa.member_id=m.id AND aa.team_id=m.team_id ORDER BY aa.attendance_date DESC,aa.marked_at DESC,aa.id DESC LIMIT 1)
+    WHERE m.team_id=? ORDER BY m.member_order`).bind(id).all();
+  const members=(result.results||[]).map(m=>({...m,meal_preference:m.present?m.meal_preference??null:null}));
+  const lead_member_id=team.lead_member_id??members.find(m=>m.role==='Captain')?.id;
+  const dates=await db.prepare('SELECT DISTINCT attendance_date FROM hackathon_attendance WHERE team_id=? ORDER BY attendance_date DESC').bind(id).all();
+  return {...team,lead_member_id,summary_only:false,attendance_marked:Boolean(team.attendance_marked),member_count:members.length,members,
+    attendance_dates:(dates.results||[]).map(r=>r.attendance_date),
+    allocation:{...allocation,present_count:members.filter(m=>m.present).length,lead_present:members.some(m=>m.id===lead_member_id&&m.present)?1:0}};
 }
 
 export async function onRequestGet(context) {
   const auth = await requireAttendanceSession(context); if (auth.response) return auth.response;
   const id = validId(context.params.id); const date = validDate(new URL(context.request.url).searchParams.get("date")) || new Date().toISOString().slice(0, 10);
   if (!id) return attendanceJson({ ok: false, error: "Invalid team." }, 400);
-  try { const team = await loadTeam(context.env.DB, id, date); return team ? attendanceJson({ ok: true, team, date }) : attendanceJson({ ok: false, error: "Team not found." }, 404); } catch { return attendanceJson({ ok: false, error: "Could not load this team." }, 500); }
+  try { const team = await loadTeam(context.env.DB, id, date, new URL(context.request.url).searchParams.get('full') === '1'); return team ? attendanceJson({ ok: true, team, date }) : attendanceJson({ ok: false, error: "Team not found." }, 404); } catch { return attendanceJson({ ok: false, error: "Could not load this team." }, 500); }
 }
 
 export async function onRequestPost(context) {
