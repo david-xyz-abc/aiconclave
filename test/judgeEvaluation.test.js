@@ -299,10 +299,18 @@ test("simultaneous submissions and stale score saves cannot overwrite a submitte
     f.evaluate({ action: "scores", revision: 2, scores: { impact: 0 } }),
   ]);
   assert.deepEqual(results.map((r) => r.status).sort(), [200, 409]);
-  assert.equal(
-    f.sqlite.prepare("SELECT status FROM judging_evaluations").get().status,
-    "submitted",
-  );
+  // Either concurrent request can win. If scores won, submit the current revision.
+  let saved = f.sqlite.prepare("SELECT * FROM judging_evaluations").get();
+  if (results[0].status === 409) {
+    assert.equal(saved.status, "draft");
+    assert.equal((await f.evaluate({ action: "scores", revision: saved.revision, scores: fullScores })).status, 200);
+    saved = f.sqlite.prepare("SELECT * FROM judging_evaluations").get();
+    assert.equal((await f.evaluate({ action: "submit", revision: saved.revision })).status, 200);
+  }
+  const submitted = f.sqlite.prepare("SELECT * FROM judging_evaluations").get();
+  assert.equal(submitted.status, "submitted");
+  assert.equal((await f.evaluate({ action: "scores", revision: 2, scores: { impact: 0 } })).status, 409);
+  assert.deepEqual(f.sqlite.prepare("SELECT * FROM judging_evaluations").get(), submitted);
 });
 test("all sector award sets have six unique options and valid nominations persist", async () => {
   const f = await setup();
