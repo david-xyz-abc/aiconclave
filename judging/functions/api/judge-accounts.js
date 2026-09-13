@@ -21,14 +21,15 @@ export async function onRequestPost(context) {
   if (
     typeof body?.judgeId !== "string" ||
     !Number.isSafeInteger(body.revision) ||
-    !/^[a-zA-Z0-9._-]{3,60}$/.test(body.username || "") ||
+    !(/^[a-zA-Z0-9._-]{3,60}$/.test(body.username || "") || (typeof body.username === "string" && body.username.length <= 80 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.username))) ||
     typeof body.password !== "string" ||
     body.password.length < 8 ||
     body.password.length > 128
   )
     return fail(
-      "Use a 3–60 character login ID (letters, numbers, dots, underscores or hyphens) and a password of 8–128 characters.",
+      "Use a valid email or username and a password of 8–128 characters.",
     );
+  body.username = body.username.includes("@") ? body.username.toLowerCase() : body.username;
   try {
     const db = context.env.DB;
     if (

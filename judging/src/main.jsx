@@ -52,13 +52,14 @@ function Login({ onLogin, judge = false }) {
         <h1>{judge ? "Judge sign in" : "Venue team sign in"}</h1>
         <p>
           {judge
-            ? "Use the individual login ID and password provided by the venue team."
+            ? "Sign in with your email and password."
             : "Manage judges and their assigned teams."}
         </p>
         <form onSubmit={submit}>
           <label>
-            Username
+            {judge ? "Email" : "Username"}
             <input
+              type={judge ? "email" : "text"}
               autoComplete="username"
               required
               value={username}
