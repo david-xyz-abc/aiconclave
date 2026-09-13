@@ -15,49 +15,60 @@ export function clearAdminCache() {
 }
 export function useDashboardData(routeId, onUnauthorized, owner) {
   const [entries, setEntries] = useState(() => readCache(owner));
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const generation = useRef(0);
-  const pending = useRef(false);
+  const [loadingRoutes, setLoadingRoutes] = useState({});
+  const [errors, setErrors] = useState({});
+  const pending = useRef(new Set());
+  const opened = useRef(new Set());
+  const mounted = useRef(true);
   const nextRefreshAt = useRef(0);
   const cooldownTimer = useRef(null);
   const [coolingDown, setCoolingDown] = useState(false);
-  useEffect(() => () => clearTimeout(cooldownTimer.current), []);
   useEffect(() => {
-    generation.current += 1;
-    pending.current = false;
-    setLoading(false);
-    setError('');
-    return () => { generation.current += 1; };
-  }, [routeId]);
+    mounted.current = true;
+    return () => { mounted.current = false; clearTimeout(cooldownTimer.current); };
+  }, []);
   useEffect(() => {
     try { localStorage.setItem(CACHE_KEY, JSON.stringify({ owner, entries })); } catch { /* Storage full or unavailable. */ }
   }, [entries, owner]);
 
-  const refresh = useCallback(async () => {
-    if (pending.current || Date.now() < nextRefreshAt.current) return;
+  const loadRoute = useCallback(async (id) => {
+    if (pending.current.has(id)) return;
+    pending.current.add(id);
+    setLoadingRoutes(current => ({ ...current, [id]: true }));
+    setErrors(current => ({ ...current, [id]: '' }));
+    try {
+      const data = id === 'overview' ? await registrationsApi.summary()
+        : ['checked-in','judges-allocation'].includes(id) ? await registrationsApi.report(id)
+        : await registrationsApi.list(id);
+      if (!mounted.current) return;
+      setEntries(current => ({ ...current, [id]: { ...data, syncedAt: new Date().toISOString() } }));
+    } catch (err) {
+      if (!mounted.current) return;
+      if (isUnauthorized(err)) { clearAdminCache(); onUnauthorized(); }
+      else setErrors(current => ({ ...current, [id]: err.message }));
+    } finally {
+      pending.current.delete(id);
+      if (mounted.current) setLoadingRoutes(current => ({ ...current, [id]: false }));
+    }
+  }, [onUnauthorized]);
+
+  useEffect(() => {
+    if (!['overview', 'panel', 'hackathon', 'checked-in', 'judges-allocation'].includes(routeId) || opened.current.has(routeId)) return;
+    opened.current.add(routeId);
+    void loadRoute(routeId);
+  }, [routeId, loadRoute]);
+
+  const refresh = useCallback(() => {
+    if (pending.current.has(routeId) || Date.now() < nextRefreshAt.current) return;
     nextRefreshAt.current = Date.now() + 5000;
     setCoolingDown(true);
     clearTimeout(cooldownTimer.current);
     cooldownTimer.current = setTimeout(() => setCoolingDown(false), 5000);
-    pending.current = true;
-    const version = generation.current;
-    setLoading(true);
-    setError('');
-    try {
-      const data = routeId === 'overview' ? await registrationsApi.summary()
-        : ['checked-in','judges-allocation'].includes(routeId) ? await registrationsApi.report(routeId)
-        : await registrationsApi.list(routeId);
-      if (version !== generation.current) return;
-      setEntries(current => ({ ...current, [routeId]: { ...data, syncedAt: new Date().toISOString() } }));
-    } catch (err) {
-      if (version !== generation.current) return;
-      if (isUnauthorized(err)) { clearAdminCache(); onUnauthorized(); }
-      else setError(err.message);
-    } finally {
-      if (version === generation.current) { pending.current = false; setLoading(false); }
-    }
-  }, [routeId, onUnauthorized]);
+    return loadRoute(routeId);
+  }, [routeId, loadRoute]);
+  const loading = Boolean(loadingRoutes[routeId]);
+  const error = errors[routeId] || '';
+  const setError = useCallback(value => setErrors(current => ({ ...current, [routeId]: value })), [routeId]);
 
   const removeRegistration = useCallback(async (type, registration) => {
     await registrationsApi.remove(type, registration.id, registration.record_type);
