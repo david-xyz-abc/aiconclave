@@ -21,6 +21,10 @@ export function LandingPage() {
           <strong>Staff venues <span aria-hidden="true">→</span></strong>
           <p>Find teams, manage allocations and view rooms.</p>
         </a>
+        <a href="https://aiconclave-food.pages.dev/">
+          <strong>Food <span aria-hidden="true">→</span></strong>
+          <p>View meal counts and manage food service.</p>
+        </a>
         <a href="https://aiconclave-judging-alpha.pages.dev/judges/login">
           <strong>Judges <span aria-hidden="true">→</span></strong>
           <p>View assigned teams and submit evaluations.</p>
