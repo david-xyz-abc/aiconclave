@@ -7,18 +7,16 @@ ALTER TABLE judging_changes ADD COLUMN expected_evaluation_revision INTEGER;
 ALTER TABLE judging_changes ADD COLUMN evaluation_judge_id TEXT;
 DROP TRIGGER judging_write_guard;
 CREATE TRIGGER judging_write_guard BEFORE INSERT ON judging_changes
-BEGIN
- SELECT CASE
- WHEN NEW.expected_routing_revision IS NULL AND NEW.expected_revision <> (SELECT revision FROM judging_state WHERE id=1)
- THEN RAISE(ABORT,'judging_stale_revision')
- WHEN NEW.expected_routing_revision IS NOT NULL AND (
+WHEN (NEW.expected_routing_revision IS NULL AND NEW.expected_revision <> (SELECT revision FROM judging_state WHERE id=1)) OR (NEW.expected_routing_revision IS NOT NULL AND (
    NEW.action NOT IN ('evaluation_nominations','evaluation_scores','evaluation_submit')
    OR NEW.evaluation_team_id IS NULL OR NEW.expected_evaluation_revision IS NULL OR NEW.evaluation_judge_id IS NULL
    OR NEW.expected_routing_revision <> (SELECT routing_revision FROM judging_state WHERE id=1)
    OR NEW.expected_evaluation_revision <> COALESCE((SELECT revision FROM judging_evaluations WHERE team_id=NEW.evaluation_team_id),0)
    OR EXISTS(SELECT 1 FROM judging_evaluations WHERE team_id=NEW.evaluation_team_id AND status='submitted')
    OR NOT EXISTS(SELECT 1 FROM judging_assignments WHERE team_id=NEW.evaluation_team_id AND judge_id=NEW.evaluation_judge_id)
- ) THEN RAISE(ABORT,'judging_stale_revision') END;
+ ))
+BEGIN
+ SELECT RAISE(ABORT,'judging_stale_revision');
 END;
 DROP TRIGGER judging_write_revision;
 CREATE TRIGGER judging_write_revision AFTER INSERT ON judging_changes
