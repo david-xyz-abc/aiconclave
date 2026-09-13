@@ -3,16 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f7f7f3">
+  <meta name="theme-color" content="#f7f8fa">
   <title>Food · AI Conclave 2026</title>
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/style.css?v=operations-2">
   <script src="/app.js" type="module"></script>
 </head>
 <body>
   <header><div class="brand"><span class="logo">AC</span> AI CONCLAVE 2026</div><nav aria-label="Food navigation"><a class="home-link" href="https://aiconclave-dashboard-alpha.pages.dev/">Home</a><button id="logout" hidden>Log out</button></nav></header>
   <main>
     <section id="signin" class="signin" aria-labelledby="login-title">
-      <h1 id="login-title">Food</h1>
+      <h1 id="login-title">Food service</h1>
+      <p class="subtitle">Sign in to view meal counts.</p>
       <form id="login-form">
         <label>Username<input name="username" autocomplete="username" required maxlength="80"></label>
         <label>Password<input name="password" type="password" autocomplete="current-password" required maxlength="512"></label>
@@ -21,7 +22,7 @@
       </form>
     </section>
     <section id="dashboard" hidden aria-labelledby="title">
-      <div class="heading"><h1 id="title" tabindex="-1">Food</h1><button id="refresh">Refresh</button></div>
+      <div class="heading"><div><h1 id="title" tabindex="-1">Food service</h1><p class="subtitle">Meal counts for checked-in participants.</p></div><button id="refresh">Refresh</button></div>
       <p class="status" id="status" role="status">Loading…</p>
       <p id="data-error" class="error" role="alert"></p>
       <dl class="counts">
@@ -29,10 +30,10 @@
         <div><dt>Non-veg</dt><dd id="nonVeg">—</dd></div>
       </dl>
       <dl class="summary">
-        <div><dt>Present participants</dt><dd id="present">—</dd></div>
+        <div><dt>Checked-in participants</dt><dd id="present">—</dd></div>
         <div><dt>Meal not recorded</dt><dd id="unrecorded">—</dd></div>
       </dl>
-      <p class="note">Present participants only · Updates every 30 seconds</p>
+      <p class="note">Updates automatically every 30 seconds</p>
     </section>
   </main>
 </body>
