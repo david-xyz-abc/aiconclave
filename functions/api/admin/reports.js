@@ -10,7 +10,7 @@ export const CHECKED_IN_SQL = `SELECT m.id, m.full_name, m.role, t.id AS team_id
  LEFT JOIN venue_tables vt ON vt.id=va.table_id LEFT JOIN venue_rooms r ON r.id=vt.room_id
  WHERE t.submitted_at IS NOT NULL AND a.present=1
  ORDER BY t.team_name, m.member_order`;
-export const JUDGES_SQL = `SELECT j.id AS judge_id, j.name AS judge_name, j.solution_type,
+export const JUDGES_SQL = `SELECT j.id AS judge_id, j.name AS judge_name, t.solution_type,
  a.team_id, a.visit_order, t.team_name, t.team_code, t.sector_track,
  r.name AS room_name, vt.table_number
  FROM judging_judges j LEFT JOIN judging_assignments a ON a.judge_id=j.id
