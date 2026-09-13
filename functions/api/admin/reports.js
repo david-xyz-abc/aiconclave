@@ -1,6 +1,6 @@
 import { getSession } from '../../_shared/auth.js';
 
-export const CHECKED_IN_SQL = `SELECT m.id, m.full_name, m.role, t.team_name, t.team_code,
+export const CHECKED_IN_SQL = `SELECT m.id, m.full_name, m.role, t.id AS team_id, t.team_size, t.team_name, t.team_code,
  t.sector_track, t.solution_type, a.marked_at, r.name AS room_name, vt.table_number
  FROM hackathon_teams t JOIN hackathon_team_members m ON m.team_id=t.id
  JOIN hackathon_attendance a ON a.id=(SELECT latest.id FROM hackathon_attendance latest
