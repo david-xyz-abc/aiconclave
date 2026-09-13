@@ -25,7 +25,7 @@
 .venue-menus button[aria-current="page"] { color:var(--ops-accent); border-bottom-color:var(--ops-accent); }
 .venue-menus button:hover { color:var(--ops-text); }
 .venue-menus button span { min-width:20px; padding:1px 5px; border-radius:10px; background:#eaf0f9; color:#2858a5; font-size:11px; }
-.venue-summary { display:flex; gap:24px; padding:16px 0; font-size:13px; color:var(--ops-muted); }
+.venue-summary { display:flex; flex-wrap:wrap; gap:24px; padding:16px 0; font-size:13px; color:var(--ops-muted); }
 .venue-summary strong { color:var(--ops-text); font-weight:600; font-variant-numeric:tabular-nums; margin-right:3px; }
 .venue-toolbar { display:flex; align-items:end; gap:16px; margin:8px 0 20px; }
 .venue-field { display:grid; gap:6px; margin:0; font-size:13px; font-weight:500; color:var(--ops-text); }
@@ -188,7 +188,7 @@
  .venue-back { display:inline-block; min-height:44px; padding:0; margin:-4px 0 16px; border:0; background:none; color:var(--ops-accent); font:500 13px/1.4 var(--sans); }
  .venue-detail h2,.attendance-shell .attendance-detail-head h2 { font-size:21px; }
  .venue-tables th,.venue-tables td { padding:10px 6px; }
- .venue-tables th:first-child { width:42px; }
+ .venue-tables th:first-child { width:54px; }
  .venue-tables th:last-child { width:74px; }
  .venue-result strong { font-size:20px; }
  .venue-search-empty { padding:48px 12px; }

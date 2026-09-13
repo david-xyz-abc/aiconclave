@@ -2,7 +2,7 @@
 // release incompatible ones, and claim the first free matching table in SQL.
 export const CLAIM_SQL = `INSERT INTO venue_allocations (team_id, table_id, assigned_by)
  SELECT q.team_id, vt.id, ? FROM venue_requirements q
- JOIN venue_rooms r ON r.project_mode = q.project_mode AND r.sector = q.sector_track
+ JOIN venue_rooms r ON (r.project_mode IS NULL OR r.project_mode = q.project_mode) AND (r.sector IS NULL OR r.sector = q.sector_track)
  AND r.solution_type = q.solution_type
  JOIN venue_tables vt ON vt.room_id = r.id AND vt.seats >= q.present_count
  WHERE q.team_id = ? AND q.present_count >= 2 AND q.lead_present = 1
@@ -17,7 +17,7 @@ export function allocationStatements(db, teamId, mode, username) {
     db.prepare(`DELETE FROM venue_allocations WHERE team_id = ? AND NOT EXISTS (
       SELECT 1 FROM venue_requirements q JOIN venue_tables vt ON vt.id = venue_allocations.table_id
       JOIN venue_rooms r ON r.id = vt.room_id WHERE q.team_id = venue_allocations.team_id
-      AND r.project_mode = q.project_mode AND r.sector = q.sector_track
+      AND (r.project_mode IS NULL OR r.project_mode = q.project_mode) AND (r.sector IS NULL OR r.sector = q.sector_track)
       AND r.solution_type = q.solution_type
       AND vt.seats >= q.present_count AND q.present_count >= 2 AND q.lead_present = 1)`).bind(teamId),
     db.prepare(CLAIM_SQL).bind(username || 'attendance-desk', teamId),

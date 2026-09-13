@@ -1,0 +1,209 @@
+[
+  {
+    "id": 1001,
+    "name": "Rb Auditorium",
+    "category": "Technical",
+    "seats": 4,
+    "start": 1,
+    "end": 90,
+    "projectMode": "Starting from scratch"
+  },
+  {
+    "id": 1002,
+    "name": "RS203",
+    "category": "Technical",
+    "seats": 3,
+    "start": 91,
+    "end": 105,
+    "projectMode": "Starting from scratch"
+  },
+  {
+    "id": 1003,
+    "name": "RS205",
+    "category": "Technical",
+    "seats": 2,
+    "start": 106,
+    "end": 125,
+    "projectMode": "Starting from scratch"
+  },
+  {
+    "id": 1004,
+    "name": "RS209",
+    "category": "Technical",
+    "seats": 4,
+    "start": 126,
+    "end": 145,
+    "projectMode": "Starting from scratch"
+  },
+  {
+    "id": 1005,
+    "name": "2nd Corridor",
+    "category": "Technical",
+    "seats": 4,
+    "start": 146,
+    "end": 185,
+    "projectMode": "Prepared"
+  },
+  {
+    "id": 1006,
+    "name": "RS305",
+    "category": "Technical",
+    "seats": 3,
+    "start": 186,
+    "end": 200,
+    "projectMode": "Starting from scratch"
+  },
+  {
+    "id": 1007,
+    "name": "3rd Corridor",
+    "category": "Technical",
+    "seats": 4,
+    "start": 201,
+    "end": 240,
+    "projectMode": "Prepared"
+  },
+  {
+    "id": 1008,
+    "name": "RS503",
+    "category": "Technical",
+    "seats": 2,
+    "start": 241,
+    "end": 260,
+    "projectMode": "Starting from scratch"
+  },
+  {
+    "id": 1009,
+    "name": "RS504",
+    "category": "Technical",
+    "seats": 4,
+    "start": 261,
+    "end": 300,
+    "projectMode": "Starting from scratch"
+  },
+  {
+    "id": 1010,
+    "name": "RS508",
+    "category": "Technical",
+    "seats": 3,
+    "start": 301,
+    "end": 315,
+    "projectMode": "Starting from scratch"
+  },
+  {
+    "id": 1011,
+    "name": "RS703",
+    "category": "Non-Technical",
+    "seats": 2,
+    "start": 316,
+    "end": 325,
+    "projectMode": null
+  },
+  {
+    "id": 1012,
+    "name": "RS705",
+    "category": "Non-Technical",
+    "seats": 3,
+    "start": 326,
+    "end": 340,
+    "projectMode": null
+  },
+  {
+    "id": 1013,
+    "name": "RS706",
+    "category": "Technical",
+    "seats": 3,
+    "start": 341,
+    "end": 355,
+    "projectMode": "Starting from scratch"
+  },
+  {
+    "id": 1014,
+    "name": "RS802",
+    "category": "Technical",
+    "seats": 3,
+    "start": 356,
+    "end": 365,
+    "projectMode": "Starting from scratch"
+  },
+  {
+    "id": 1015,
+    "name": "RS803",
+    "category": "Technical",
+    "seats": 3,
+    "start": 366,
+    "end": 380,
+    "projectMode": "Starting from scratch"
+  },
+  {
+    "id": 1016,
+    "name": "RS806",
+    "category": "Technical",
+    "seats": 3,
+    "start": 381,
+    "end": 395,
+    "projectMode": "Starting from scratch"
+  },
+  {
+    "id": 1017,
+    "name": "CCF LAB 1",
+    "category": "Technical",
+    "seats": 4,
+    "start": 396,
+    "end": 415,
+    "projectMode": "Starting from scratch"
+  },
+  {
+    "id": 1018,
+    "name": "CCF LAB 2",
+    "category": "Technical",
+    "seats": 4,
+    "start": 416,
+    "end": 435,
+    "projectMode": "Starting from scratch"
+  },
+  {
+    "id": 1019,
+    "name": "CCF LAB 3",
+    "category": "Technical",
+    "seats": 4,
+    "start": 436,
+    "end": 446,
+    "projectMode": "Starting from scratch"
+  },
+  {
+    "id": 1020,
+    "name": "CCF LAB 4",
+    "category": "Technical",
+    "seats": 2,
+    "start": 447,
+    "end": 458,
+    "projectMode": "Starting from scratch"
+  },
+  {
+    "id": 1021,
+    "name": "CCF Seminar hall",
+    "category": "Non-Technical",
+    "seats": 4,
+    "start": 459,
+    "end": 468,
+    "projectMode": null
+  },
+  {
+    "id": 1022,
+    "name": "Incubation",
+    "category": "Non-Technical",
+    "seats": 4,
+    "start": 469,
+    "end": 513,
+    "projectMode": null
+  },
+  {
+    "id": 1023,
+    "name": "Alphonsa Hall",
+    "category": "Technical",
+    "seats": 4,
+    "start": 514,
+    "end": 568,
+    "projectMode": "Prepared"
+  }
+]

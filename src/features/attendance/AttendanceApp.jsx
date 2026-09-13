@@ -330,7 +330,7 @@ function AttendanceDesk({ onLogout, user }) {
                       {team.allocation?.table_id && (
                         <div className="checkin-classification checkin-seat" role="status">
                           <dt>Room &amp; table</dt>
-                          <dd>{team.allocation.room_name} · Table {String(team.allocation.table_number).padStart(2, '0')}</dd>
+                          <dd>{team.allocation.room_name} · Table {`T${team.allocation.table_number}`}</dd>
                         </div>
                       )}
                     </dl>
