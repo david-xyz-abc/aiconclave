@@ -43,18 +43,6 @@ export function HackathonMetrics({
         label="Students"
         value={metrics.students}
         detail="Across all teams"
-        action={
-          <button
-            className="metric-download"
-            type="button"
-            disabled={downloadDisabled || !metrics.students}
-            onClick={onDownloadStudents}
-            title="Download one Excel row for every registered hackathon student"
-          >
-            {downloadingStudents ? "Preparing…" : "Download list"}
-            <span aria-hidden="true">↓</span>
-          </button>
-        }
       />
       <MetricCard
         label="School teams"

@@ -19,6 +19,10 @@ export function useDashboardData(routeId, onUnauthorized, owner) {
   const [error, setError] = useState("");
   const generation = useRef(0);
   const pending = useRef(false);
+  const nextRefreshAt = useRef(0);
+  const cooldownTimer = useRef(null);
+  const [coolingDown, setCoolingDown] = useState(false);
+  useEffect(() => () => clearTimeout(cooldownTimer.current), []);
   useEffect(() => {
     generation.current += 1;
     pending.current = false;
@@ -31,7 +35,11 @@ export function useDashboardData(routeId, onUnauthorized, owner) {
   }, [entries, owner]);
 
   const refresh = useCallback(async () => {
-    if (pending.current) return;
+    if (pending.current || Date.now() < nextRefreshAt.current) return;
+    nextRefreshAt.current = Date.now() + 5000;
+    setCoolingDown(true);
+    clearTimeout(cooldownTimer.current);
+    cooldownTimer.current = setTimeout(() => setCoolingDown(false), 5000);
     pending.current = true;
     const version = generation.current;
     setLoading(true);
@@ -76,5 +84,5 @@ export function useDashboardData(routeId, onUnauthorized, owner) {
   return { registrations: Array.isArray(entry?.registrations) ? entry.registrations : [],
     summary: entries.overview?.summary || EMPTY_SUMMARY, recent: entries.overview?.recent || [],
     rows: Array.isArray(entry?.rows) ? entry.rows : [],
-    syncedAt: entry?.syncedAt, loading, error, setError, refresh, removeRegistration, updateRegistration };
+    syncedAt: entry?.syncedAt, coolingDown, loading, error, setError, refresh, removeRegistration, updateRegistration };
 }

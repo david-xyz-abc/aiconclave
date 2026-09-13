@@ -151,18 +151,6 @@ export function RegistrationDirectory({
           </p>
         </div>
         <div className="directory-actions">
-          <button
-            className={`export-button${route.id === "panel" ? " panel-directory-export" : ""}`}
-            type="button"
-            disabled={loading || exporting || !registrations.length}
-            onClick={() => onDownloadExcel("workbook")}
-            title={`Download all ${registrations.length} ${
-              route.id === "hackathon" ? "teams" : "registrations"
-            } as an Excel workbook`}
-          >
-            {exporting === "workbook" ? "Preparing Excel…" : "Download Excel"}
-            <span aria-hidden="true">↓</span>
-          </button>
           <button className="reset-button" type="button" onClick={resetFilters}>
             Clear filters
           </button>

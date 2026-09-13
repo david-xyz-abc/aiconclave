@@ -20,6 +20,7 @@ export function Dashboard({ user, route, onNavigate, onLogout }) {
     registrations,
     rows,
     refresh,
+    coolingDown,
     syncedAt,
     summary,
     recent,
@@ -132,20 +133,16 @@ export function Dashboard({ user, route, onNavigate, onLogout }) {
             {route.id === "overview" ? "Registration overview" : route.label}
           </h1>
         </header>
-        <DashboardNavigation
-          route={route}
-          onNavigate={onNavigate}
-        />
-        {(route.id === 'overview' || DIRECTORY_ROUTES.has(route.id) || ['checked-in','judges-allocation'].includes(route.id)) && (
-          <div className="directory-actions admin-refresh">
-            <button className="admin-refresh-button" type="button" onClick={refresh} disabled={loading || opening || Boolean(savingId)}>
-              <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 7v5h-5" /><path d="M4 17v-5h5" /><path d="M6.1 7a7 7 0 0 1 11.6-1L20 9M4 15l2.3 3A7 7 0 0 0 17.9 17" /></svg>
+        <div className="admin-toolbar">
+          <DashboardNavigation route={route} onNavigate={onNavigate} />
+          {(route.id === 'overview' || DIRECTORY_ROUTES.has(route.id) || ['checked-in','judges-allocation'].includes(route.id)) && (
+            <button className="admin-refresh-button" type="button" onClick={refresh} disabled={loading || coolingDown || opening || Boolean(savingId)}>
+              <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 11a9 9 0 0 1 15.5-6.3L21 7" /><path d="M21 3v4h-4" /><path d="M21 13a9 9 0 0 1-15.5 6.3L3 17" /><path d="M7 17H3v4" /></svg>
               {loading ? 'Refreshing…' : 'Refresh'}
             </button>
-            <span>{syncedAt ? `Last synced ${new Date(syncedAt).toLocaleString()}` : 'Refresh to load registrations.'}</span>
-            {opening && <span role="status">Loading details…</span>}
-          </div>
-        )}
+          )}
+        </div>
+        {opening && <p role="status">Loading details…</p>}
         {["checked-in", "judges-allocation"].includes(route.id) ? (
           <AdminReport key={route.id} type={route.id} rows={rows} loading={loading} error={error} syncedAt={syncedAt} />
         ) : route.id === "overview" ? (
