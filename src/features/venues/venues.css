@@ -267,3 +267,28 @@
 .attendance-search-row .attendance-export-button:disabled { opacity:.6; cursor:wait; }
 
 .admin-refresh { margin-bottom: 1rem; gap: 1rem; flex-wrap: wrap; }
+
+.admin-refresh .admin-refresh-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  min-height: 48px;
+  padding: 0.75rem 1.35rem;
+  border: 1px solid #2857a5;
+  border-radius: 8px;
+  background: #2857a5;
+  color: #fff;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.admin-refresh .admin-refresh-button:hover:not(:disabled) { background: #204787; }
+.admin-refresh .admin-refresh-button:focus-visible { outline: 3px solid #90b5f1; outline-offset: 3px; }
+.admin-refresh .admin-refresh-button:disabled { opacity: 0.6; cursor: wait; }
+.admin-refresh > span { color: #68758b; font-size: 0.875rem; }
+@media (max-width: 600px) {
+  .admin-refresh { justify-content: flex-start; }
+  .admin-refresh > span { flex-basis: 100%; }
+}

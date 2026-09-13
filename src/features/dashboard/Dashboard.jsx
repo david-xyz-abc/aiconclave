@@ -136,7 +136,8 @@ export function Dashboard({ user, route, onNavigate, onLogout }) {
         />
         {(route.id === 'overview' || DIRECTORY_ROUTES.has(route.id)) && (
           <div className="directory-actions admin-refresh">
-            <button className="reset-button" type="button" onClick={refresh} disabled={loading || opening || Boolean(savingId)}>
+            <button className="admin-refresh-button" type="button" onClick={refresh} disabled={loading || opening || Boolean(savingId)}>
+              <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 7v5h-5" /><path d="M4 17v-5h5" /><path d="M6.1 7a7 7 0 0 1 11.6-1L20 9M4 15l2.3 3A7 7 0 0 0 17.9 17" /></svg>
               {loading ? 'Refreshing…' : 'Refresh'}
             </button>
             <span>{syncedAt ? `Last synced ${new Date(syncedAt).toLocaleString()}` : 'Refresh to load registrations.'}</span>
