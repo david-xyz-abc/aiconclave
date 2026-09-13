@@ -32,3 +32,7 @@ input { width:100%; padding:12px; background:white; color:var(--ink); }
 .error { color:#a01418; line-height:1.5; }
 .error:empty { display:none; }
 @media(max-width:520px) { main { margin:40px auto; } .counts>div { padding:24px 16px; } .brand { font-size:11px; } header { padding:16px; } }
+
+header nav { display:flex; align-items:center; gap:12px; }
+.home-link { display:inline-flex; align-items:center; min-height:44px; padding:10px 16px; color:var(--ink); text-decoration:none; }
+.home-link:hover { text-decoration:underline; }
