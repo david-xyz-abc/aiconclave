@@ -39,6 +39,7 @@ export const authApi = {
 };
 
 export const registrationsApi = {
+  report: (view) => requestJson(`/api/admin/reports?view=${encodeURIComponent(view)}`),
   detail: (type, id, recordType) => requestJson(`/api/registrations/${encodeURIComponent(id)}?type=${encodeURIComponent(type)}&record_type=${encodeURIComponent(recordType || type)}`),
   export: (type) => requestJson(`/api/registrations?type=${encodeURIComponent(type)}&view=export`),
   summary: () => requestJson("/api/registrations?type=panel&view=summary"),

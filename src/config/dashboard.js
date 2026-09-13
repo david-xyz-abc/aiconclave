@@ -31,6 +31,8 @@ export const DASHBOARD_NAVIGATION = [
     status: "Dashboard",
   },
   ...REGISTRATION_SECTIONS,
+  { id: "checked-in", path: "/checked-in", label: "Checked in" },
+  { id: "judges-allocation", path: "/judges-allocation", label: "Judges allocation" },
 ];
 
 export const DIRECTORY_ROUTES = new Set(["panel", "hackathon"]);

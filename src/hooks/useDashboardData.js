@@ -37,7 +37,9 @@ export function useDashboardData(routeId, onUnauthorized, owner) {
     setLoading(true);
     setError('');
     try {
-      const data = routeId === 'overview' ? await registrationsApi.summary() : await registrationsApi.list(routeId);
+      const data = routeId === 'overview' ? await registrationsApi.summary()
+        : ['checked-in','judges-allocation'].includes(routeId) ? await registrationsApi.report(routeId)
+        : await registrationsApi.list(routeId);
       if (version !== generation.current) return;
       setEntries(current => ({ ...current, [routeId]: { ...data, syncedAt: new Date().toISOString() } }));
     } catch (err) {
@@ -73,5 +75,6 @@ export function useDashboardData(routeId, onUnauthorized, owner) {
   const entry = entries[routeId];
   return { registrations: Array.isArray(entry?.registrations) ? entry.registrations : [],
     summary: entries.overview?.summary || EMPTY_SUMMARY, recent: entries.overview?.recent || [],
+    rows: Array.isArray(entry?.rows) ? entry.rows : [],
     syncedAt: entry?.syncedAt, loading, error, setError, refresh, removeRegistration, updateRegistration };
 }
