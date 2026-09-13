@@ -52,6 +52,10 @@ function teamCode() {
 }
 
 export async function onRequestPost(context) {
+  return json({ ok: false, code: 'REGISTRATIONS_CLOSED', error: 'Registrations are closed for AI Conclave 2026.' }, 403)
+}
+
+async function registerWhenOpen(context) {
   const db = context.env?.DB
   if (!db) return json({ ok: false, error: 'Registration service is not configured.' }, 503)
   if (!isSameOrigin(context.request)) return json({ ok: false, error: 'This registration request could not be verified.' }, 403)

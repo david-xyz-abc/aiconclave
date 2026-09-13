@@ -20,7 +20,7 @@ function Header({ active }) {
           <li><a href={PATHS.schedule} className={linkClass('schedule')} aria-current={active === 'schedule' ? 'page' : undefined} onClick={closeMenu}>Schedule</a></li>
           <li><a href={PATHS.participate} className={linkClass('participate')} aria-current={active === 'participate' ? 'page' : undefined} onClick={closeMenu}>Participate</a></li>
           <li><a href={PATHS.myRegistration} className={linkClass('my-registration')} aria-current={active === 'my-registration' ? 'page' : undefined} onClick={closeMenu}>My registrations</a></li>
-          <li><a href={PATHS.register} className={`btn btn-primary nav-cta${registrationActive ? ' is-active' : ''}`} aria-current={registrationActive ? 'page' : undefined} onClick={closeMenu}>Register</a></li>
+          <li><a href={PATHS.register} className={`btn btn-primary nav-cta${registrationActive ? ' is-active' : ''}`} aria-current={registrationActive ? 'page' : undefined} onClick={closeMenu}>Registrations closed</a></li>
         </ul>
       </nav>
     </div>

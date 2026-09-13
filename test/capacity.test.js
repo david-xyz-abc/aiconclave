@@ -11,7 +11,7 @@ function fixture(students) {
   const sql = new DatabaseSync(':memory:')
   sql.exec('PRAGMA foreign_keys=ON')
   const migrations = new URL('../db/migrations/', import.meta.url)
-  for (const name of readdirSync(migrations).sort()) sql.exec(readFileSync(new URL(name, migrations), 'utf8'))
+  for (const name of readdirSync(migrations).filter(name => name !== "0026_close_registrations.sql").sort()) sql.exec(readFileSync(new URL(name, migrations), 'utf8'))
   const db = {
     prepare(query) {
       let args = []
@@ -64,45 +64,45 @@ function fixture(students) {
 }
 
 
-test('school and college share a hard limit of 1990 participants', async () => {
+test('manual closure blocks both categories before the 1990 limit', async () => {
   const f = fixture(1986)
-  assert.equal((await f.submit(2, 'College')).status, 201)
-  assert.equal((await f.submit(2, 'School')).status, 201)
+  assert.equal((await f.submit(2, 'College')).status, 403)
+  assert.equal((await f.submit(2, 'School')).status, 403)
   const response = await onRequestGet({ env: { DB: f.db } })
   const { hackathon } = await response.json()
-  assert.equal(hackathon.students, 1990)
+  assert.equal(hackathon.students, 1986)
   assert.equal(hackathon.limit, 1990)
   assert.equal(hackathon.remaining, 0)
   assert.equal(hackathon.open, false)
   assert.equal(hackathon.schoolOpen, false)
   assert.equal(hackathon.collegeOpen, false)
-  assert.equal((await f.submit(2)).status, 409)
+  assert.equal((await f.submit(2)).status, 403)
   f.sql.close()
 })
 
-test('an oversized team is rejected without saving a team, members, claims or email', async () => {
+test('closure rejects all team sizes without registration writes', async () => {
   const f = fixture(1987)
   const counts = () => ['hackathon_teams', 'hackathon_team_members', 'hackathon_member_claims', 'registration_email_deliveries'].map(table => f.sql.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get().n)
   const before = counts()
-  assert.equal((await f.submit(4)).status, 409)
+  assert.equal((await f.submit(4)).status, 403)
   assert.deepEqual(counts(), before)
-  assert.equal((await f.submit(3)).status, 201)
+  assert.equal((await f.submit(3)).status, 403)
   f.sql.close()
 })
 
-test('concurrent final teams cannot overbook or leave a partial registration', async () => {
+test('concurrent registration requests are both rejected after closure', async () => {
   const f = fixture(1988)
   const responses = await Promise.all([f.submit(2, 'School'), f.submit(2, 'College')])
-  assert.deepEqual(responses.map(r => r.status).sort(), [201, 409])
-  assert.equal((await getHackathonCapacity(f.db)).students, 1990)
-  assert.equal(f.sql.prepare('SELECT COUNT(*) AS n FROM registration_email_deliveries').get().n, 1)
+  assert.deepEqual(responses.map(r => r.status).sort(), [403, 403])
+  assert.equal((await getHackathonCapacity(f.db)).students, 1988)
+  assert.equal(f.sql.prepare('SELECT COUNT(*) AS n FROM registration_email_deliveries').get().n, 0)
   f.sql.close()
 })
 
 test('one remaining place closes registration because teams need at least two', async () => {
   const f = fixture(1989)
   assert.equal((await getHackathonCapacity(f.db)).open, false)
-  assert.equal((await f.submit(2)).status, 409)
+  assert.equal((await f.submit(2)).status, 403)
   f.sql.close()
 })
 
@@ -125,3 +125,20 @@ test('database batch rolls back all members if an older client exceeds capacity'
   assert.equal((await getHackathonCapacity(f.db)).students, 1988)
   f.sql.close()
 })
+
+
+test('closure blocks panel, legacy, team, member inserts and draft submission without deleting existing data', async () => {
+ const f=fixture(4);const draft=f.seedTeam(2,false);
+ const before=f.sql.prepare('SELECT COUNT(*) n FROM hackathon_team_members').get().n;
+ f.sql.exec(readFileSync(new URL('../db/migrations/0026_close_registrations.sql',import.meta.url),'utf8'));
+ for(const table of ['panel_registrations','hackathon_registrations','hackathon_teams','hackathon_team_members']) {
+  assert.throws(()=>f.sql.exec(`INSERT INTO ${table} DEFAULT VALUES`),/registrations_closed/);
+ }
+ assert.throws(()=>f.sql.prepare('UPDATE hackathon_teams SET submitted_at=? WHERE id=?').run('2026-09-14',draft),/registrations_closed/);
+ assert.equal(f.sql.prepare('SELECT COUNT(*) n FROM hackathon_team_members').get().n,before);
+ for (const registrationType of ['panel','hackathon','workshop']) {
+  const r=await onRequestPost({env:{DB:f.db},request:new Request('https://site.test/api/register',{method:'POST',body:JSON.stringify({registrationType})})});
+  assert.equal(r.status,403);assert.equal((await r.json()).code,'REGISTRATIONS_CLOSED');
+ }
+ f.sql.close();
+});

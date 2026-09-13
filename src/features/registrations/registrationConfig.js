@@ -1,4 +1,4 @@
-export const HACKATHON_REGISTRATION_OPEN = true
+export const HACKATHON_REGISTRATION_OPEN = false
 export const hackathonTrackOptions = [
   {
     id: 'track-hackathon-tech',

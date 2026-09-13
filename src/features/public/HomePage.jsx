@@ -1,9 +1,7 @@
 import { PATHS } from '../../config/routes.js'
 import { PromoterMarquee } from './PromoterMarquee.jsx'
-import { useHackathonCapacity } from '../registrations/useHackathonCapacity.js'
 
 export function HomePage() {
-  const [capacity] = useHackathonCapacity()
   return (
     <main id="main">
       <section id="hero" className="dot-field">
@@ -16,10 +14,10 @@ export function HomePage() {
               <h1 className="hero-title">AI Conclave<br />2026</h1>
               <p className="hero-tagline">A two-day celebration of Artificial Intelligence — talks, workshops, industry panel discussions and a ₹1,00,000 hackathon at AJCE.</p>
               <div className="hero-actions">
-                <a className="btn btn-primary" href={PATHS.register}>Register Now <span className="btn-arrow" aria-hidden="true">→</span></a>
+                <button className="btn btn-primary" disabled>Registrations closed</button>
                 <a className="btn btn-outline" href={PATHS.schedule}>View Schedule</a>
               </div>
-              {capacity.status === 'ready' && !capacity.collegeOpen && <p role="status">Hackathon registrations are closed.</p>}
+              <p role="status">Registration for all events is now closed.</p>
               <div className="hero-perforation"></div>
               <div className="hero-strip">
                 <div className="hero-strip-item"><span className="hero-strip-label">Dates</span><span className="hero-strip-value">15–16 September 2026</span></div>
@@ -60,7 +58,7 @@ export function HomePage() {
             <a className="page-link-card" href={PATHS.about} data-reveal><span className="page-link-title">About</span><span className="page-link-desc">What AI Conclave 2026 is, and who's organising it.</span><span className="page-link-arrow" aria-hidden="true">→</span></a>
             <a className="page-link-card" href={PATHS.schedule} data-reveal><span className="page-link-title">Schedule</span><span className="page-link-desc">The full Day 1 and Day 2 programme, including the panel discussion speakers.</span><span className="page-link-arrow" aria-hidden="true">→</span></a>
             <a className="page-link-card" href={PATHS.participate} data-reveal><span className="page-link-title">Who Should Attend</span><span className="page-link-desc">The audience across Agriculture, Health &amp; Education.</span><span className="page-link-arrow" aria-hidden="true">→</span></a>
-            <a className="page-link-card page-link-card-cta" href={PATHS.register} data-reveal><span className="page-link-title">Register</span><span className="page-link-desc">Claim your delegate pass.</span><span className="page-link-arrow" aria-hidden="true">→</span></a>
+            <a className="page-link-card page-link-card-cta" href={PATHS.register} data-reveal><span className="page-link-title">Registrations closed</span><span className="page-link-desc">Already registered? View your registration details.</span><span className="page-link-arrow" aria-hidden="true">→</span></a>
           </div>
         </div>
       </section>

@@ -7,6 +7,15 @@ import { MyRegistrationPage } from '../features/registrations/ParticipantPortal.
 import { HackathonRegisterPage, HackathonRegistrationClosedPage, PanelRegisterPage, RegistrationChoicePage } from '../features/registrations/RegistrationPages.jsx'
 
 export function AppRouter({ page }) {
+  if (['register', 'register-hackathon', 'register-panel'].includes(page)) return (
+    <main id="main"><section className="section"><div className="container">
+      <p className="eyebrow">AI Conclave 2026</p>
+      <h1 className="section-heading">Registrations closed</h1>
+      <p className="section-lede">Registration for the hackathon, panel discussion and workshops is now closed. Thank you for your interest.</p>
+      <a className="btn btn-primary" href="/my-registration">View my registration</a>
+      <a className="btn btn-outline" href="/schedule">View schedule</a>
+    </div></section></main>
+  )
   switch (page) {
     case 'about': return <AboutPage />
     case 'schedule': return <SchedulePage />

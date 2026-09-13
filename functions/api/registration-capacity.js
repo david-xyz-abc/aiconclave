@@ -4,7 +4,7 @@ import { json } from '../_lib/http.js'
 export async function onRequestGet({ env }) {
   try {
     if (!env?.DB) return json({ ok: false, error: 'Registration status is unavailable.' }, 503)
-    return json({ ok: true, hackathon: await getHackathonCapacity(env.DB) })
+    return json({ ok: true, registrationsOpen: false, panelOpen: false, hackathon: { ...await getHackathonCapacity(env.DB), open: false, collegeOpen: false, schoolOpen: false, remaining: 0, closed: true } })
   } catch (error) {
     console.error(JSON.stringify({ event: 'capacity_check_failed', reason: error instanceof Error ? error.message : 'unknown' }))
     return json({ ok: false, error: 'Registration status is unavailable. Please try again.' }, 503)
