@@ -1,5 +1,6 @@
 import {searchDirectory,readDirectory,CACHE_KEY} from './directory.js';
 const $=id=>document.getElementById(id);
+let searchScroll=0, selectedButton=null;
 let directory=null, sequence=0, authGeneration=0, signedIn=false, syncing=false, loadingId=null;
 async function api(path,options={}) {
  const response=await fetch('/api/'+path,{...options,cache:'no-store',signal:AbortSignal.timeout(15000)});
@@ -10,6 +11,7 @@ async function api(path,options={}) {
 function clearCache(){directory=null;try{localStorage.removeItem(CACHE_KEY);}catch{}}
 function show(allowed){
  signedIn=allowed;authGeneration++;sequence++;loadingId=null;
+ $('detail-page').hidden=true;
  $('login').hidden=allowed;$('finder').hidden=!allowed;$('logout').hidden=!allowed;$('refresh').hidden=!allowed;
  $('results').replaceChildren();$('detail').replaceChildren();
  if(allowed){try{directory=readDirectory(localStorage);}catch{directory=null;}renderSearch();$('query').focus();}
@@ -32,19 +34,27 @@ function renderSearch(){
  for(const team of matches.slice(0,30)){
   const button=element('button','','team team-choice');button.type='button';
   button.append(element('strong',team.team_name),element('span',team.team_code,'meta'),element('span','Team leader: '+(team.leader||team.captain||'Not recorded'),'meta'),element('span','View current room →','choice-action'));
-  button.addEventListener('click',()=>loadRoom(team));$('results').append(button);
+  button.addEventListener('click',()=>{selectedButton=button;loadRoom(team);});$('results').append(button);
  }
  if(!matches.length)$('results').append(element('div','No matches. Try another name or code, or Refresh to download recent changes.','empty'));
 }
 async function loadRoom(team){
  if(loadingId===team.id)return;
  loadingId=team.id;const current=++sequence;
+ searchScroll=window.scrollY;
+ $('finder').hidden=true;$('refresh').hidden=true;$('detail-page').hidden=false;
+ window.scrollTo(0,0);$('detail-heading').focus({preventScroll:true});
  $('detail').replaceChildren(element('p','Checking current room…','notice'));
  try{const data=await api('search?id='+team.id);if(current!==sequence||!signedIn)return;
-  $('detail').replaceChildren(card(data.team));$('detail').scrollIntoView({behavior:'smooth',block:'start'});
+  $('detail').replaceChildren(card(data.team));
  }catch(error){if(current!==sequence)return;failure(error,'detail');}
  finally{if(loadingId===team.id)loadingId=null;}
 }
+$('back-search').addEventListener('click',()=>{
+ sequence++;loadingId=null;$('detail-page').hidden=true;$('detail').replaceChildren();
+ $('finder').hidden=false;$('refresh').hidden=false;
+ selectedButton?.focus({preventScroll:true});window.scrollTo(0,searchScroll);
+});
 $('refresh').addEventListener('click',async()=>{
  if(syncing)return;syncing=true;const generation=authGeneration;
  $('refresh').disabled=true;$('refresh').textContent='Syncing…';$('status').textContent='Downloading team directory…';
