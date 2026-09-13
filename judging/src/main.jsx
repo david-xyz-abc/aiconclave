@@ -48,6 +48,7 @@ function Login({ onLogin, judge = false }) {
     <main className="login">
       <section className="login-card">
         <Brand />
+        <a className="hub-home" href="https://aiconclave-dashboard-alpha.pages.dev/">← Home</a>
         <h1>{judge ? "Judge sign in" : "Venue team sign in"}</h1>
         <p>
           {judge
@@ -726,6 +727,7 @@ function Workspace({ user, onLogout }) {
     <>
       <header className="topbar">
         <Brand />
+        <a className="hub-home" href="https://aiconclave-dashboard-alpha.pages.dev/">← Home</a>
         <div>
           <span className="staff-label">Venue team</span>
           <button
@@ -849,6 +851,7 @@ function EntryPage() {
     <main className="entry">
       <section className="entry-content">
         <Brand />
+        <a className="hub-home" href="https://aiconclave-dashboard-alpha.pages.dev/">← Home</a>
         <h1>Judging portal</h1>
         <p>Choose your workspace to continue.</p>
         <div className="entry-options">

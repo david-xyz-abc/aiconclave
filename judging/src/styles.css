@@ -952,3 +952,6 @@ tr.selected {
     padding: 14px;
   }
 }
+
+.hub-home { display:inline-block; color:#2858a5; font-size:14px; font-weight:600; margin:12px 16px 12px 0; text-decoration:none; }
+.hub-home:hover { text-decoration:underline; }

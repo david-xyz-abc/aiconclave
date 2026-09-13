@@ -124,6 +124,7 @@ export function JudgeApp({ user, onLogout }) {
           <i>Judging</i>
         </a>
         <div>
+          <a className="hub-home" href="https://aiconclave-dashboard-alpha.pages.dev/" onClick={event => { if (dirty && !window.confirm("Return home and discard unsaved changes?")) event.preventDefault(); }}>Home</a>
           <span className="staff-label">
             {data?.judge?.name || user.username}
           </span>

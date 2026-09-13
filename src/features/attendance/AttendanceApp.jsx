@@ -31,6 +31,7 @@ function AttendanceLogin({ onLogin }) {
         className="auth-panel"
         aria-labelledby="attendance-login-heading"
       >
+        <a className="ops-home-link" href="/">← Home</a>
         <BrandLockup />
         <div className="auth-copy">
           <h1 id="attendance-login-heading">Staff sign in</h1>
