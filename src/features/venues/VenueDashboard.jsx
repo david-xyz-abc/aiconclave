@@ -10,7 +10,7 @@ function seatSummary(tables) {
   return [2,3,4].map(seats => ({ seats, count: tables.filter(t => t.seats === seats).length })).filter(t => t.count).map(t => `${t.count} × ${t.seats}-seat`).join(' · ');
 }
 
-const menus = [['finder', 'Venue Finder'], ['allocate', 'Manual Allocation'], ['rooms', 'Rooms & Tables']];
+const menus = [['allocate', 'Manual Allocation'], ['rooms', 'Rooms & Tables']];
 function status(team) {
   if (!team.attendance_marked) return 'Not checked in — direct the team to the check-in desk.';
   if (team.table_id) return `${team.block ? team.block + ' block · ' : ''}${team.room_name} · Table ${`T${team.table_number}`}`;
@@ -23,7 +23,7 @@ function compatible(team, table) {
 }
 
 export function VenueDashboard({ user, onLogout }) {
-  const [menu, setMenu] = useState('finder');
+  const [menu, setMenu] = useState('allocate');
   const [data, setData] = useState({ teams: [], tables: [] });
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState(null);
@@ -137,7 +137,7 @@ export function VenueDashboard({ user, onLogout }) {
               <div className={`venue-result ${selected.table_id ? 'is-assigned' : ''}`} role="status">
                 {selected.table_id ? <><span>Assigned venue</span><strong>{selected.room_name} <span>·</span> Table {`T${selected.table_number}`}</strong>{selected.block && <small>{selected.block} block</small>}</> : status(selected)}
               </div>
-              {!selected.attendance_marked || !selected.project_mode || selected.present_count < 2 || !selected.lead_present ? <a className="ops-primary" href="/attendance">Open check-in desk</a> : menu === 'finder' ? (canEdit || !selected.table_id) && <button className="ops-secondary" onClick={() => { setMenu('allocate'); setQuery(''); setTableId(''); }}>{selected.table_id ? 'Reallocate team' : 'Open Manual Allocation'}</button> : canEdit ? <div className="venue-assignment-form">
+              {!selected.attendance_marked || !selected.project_mode || selected.present_count < 2 || !selected.lead_present ? <a className="ops-primary" href="/attendance">Open check-in desk</a> : canEdit ? <div className="venue-assignment-form">
                 <label className="venue-field">Compatible free room and table<select value={tableId} disabled={saving} onChange={e => setTableId(e.target.value)}><option value="">Choose a table</option>{free.map(t => <option key={t.table_id} value={t.table_id}>{t.name} · Table {`T${t.table_number}`} · {t.seats} seats</option>)}</select></label>
                 {!free.length && <p className="venue-help">{selected.table_id ? 'No matching tables available. The current assignment is retained.' : 'No matching tables available. The team remains on the waiting list.'}</p>}
                 <button className="ops-primary" disabled={saving || !free.some(t => String(t.table_id) === tableId)} onClick={assign}>{saving ? 'Saving…' : selected.table_id ? 'Reallocate room and table' : 'Assign room and table'}</button>
