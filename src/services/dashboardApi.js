@@ -68,7 +68,7 @@ export const attendanceApi = {
   }),
   currentSession: () => requestJson("/api/attendance/auth"),
   logout: () => requestJson("/api/attendance/auth", { method: "DELETE" }),
-  teams: (query = "", date = new Date().toISOString().slice(0, 10)) => requestJson(`/api/attendance/teams?q=${encodeURIComponent(query)}&date=${encodeURIComponent(date)}`),
+  teams: () => requestJson("/api/attendance/teams"),
   team: (id, date) => requestJson(`/api/attendance/teams/${encodeURIComponent(id)}?date=${encodeURIComponent(date)}`),
   saveAttendance: (id, date, attendance, projectMode) => requestJson(`/api/attendance/teams/${encodeURIComponent(id)}`, {
     method: "POST",

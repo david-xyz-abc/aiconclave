@@ -30,7 +30,10 @@ export async function onRequestPost(context) {
   const existing = await context.env.DB.prepare(`SELECT id FROM hackathon_team_members WHERE team_id = ? AND id IN (${memberIds.map(() => "?").join(",")})`).bind(id, ...memberIds).all();
   if ((existing.results || []).length !== new Set(memberIds).size) return attendanceJson({ ok: false, error: "One or more members do not belong to this team." }, 400);
   try {
-    const currentTeam = await loadTeam(context.env.DB, id, date);
+    const currentTeam = await context.env.DB.prepare(`SELECT t.id,
+ COALESCE(t.attendance_lead_member_id,(SELECT id FROM hackathon_team_members WHERE team_id=t.id AND role='Captain' LIMIT 1)) lead_member_id,
+ (SELECT COUNT(*) FROM hackathon_team_members WHERE team_id=t.id) member_count
+ FROM hackathon_teams t WHERE t.id=? AND t.submitted_at IS NOT NULL`).bind(id).first();
     if (!currentTeam) return attendanceJson({ ok: false, error: "Team not found." }, 404);
     if (attendance.filter((item) => item.present === true).length < 2) {
       return attendanceJson({ ok: false, error: "At least two team members must be present to check in." }, 400);

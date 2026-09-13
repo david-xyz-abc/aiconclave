@@ -1,6 +1,7 @@
+import {DIRECTORY_KEY,readTeamDirectory,filterTeams,clearTeamDirectory} from './teamDirectory.js';
 import { OperationsHeader } from "../../components/layout/OperationsHeader.jsx";
 import { VenueDashboard } from "../venues/VenueDashboard.jsx";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BrandLockup } from "../../components/common/BrandLockup.jsx";
 import { attendanceApi, isUnauthorized } from "../../services/dashboardApi.js";
 import { downloadAttendanceWorkbook } from "../../services/registrationExport.js";
@@ -82,12 +83,7 @@ function TeamRow({ team, selected, onSelect }) {
         <strong>{team.team_name}</strong>
         <small>{team.team_code || `TEAM-${String(team.id).padStart(4, "0")}`}</small>
       </span>
-      <span
-        className={`attendance-count${team.present_count === team.member_count ? " is-complete" : ""}`}
-      >
-        {team.present_count}/{team.member_count}
-        <small>present</small>
-      </span>
+      <span className="attendance-count">{team.team_size}<small>members</small></span>
     </button>
   );
 }
@@ -96,11 +92,21 @@ function AttendanceDesk({ onLogout, user }) {
   const venuePanel = useRef(null);
   const canEdit = user?.attendanceAccess === "write";
   const [query, setQuery] = useState("");
-  const [teams, setTeams] = useState([]);
+  const [initialDirectory] = useState(() => { try { return readTeamDirectory(localStorage); } catch { return null; } });
+  const [teams, setTeams] = useState(initialDirectory?.teams || []);
+  const [syncedAt, setSyncedAt] = useState(initialDirectory?.syncedAt || null);
+  useEffect(() => {
+    if(!syncedAt)return;
+    try { localStorage.setItem(DIRECTORY_KEY,JSON.stringify({teams,syncedAt})); } catch {}
+  }, [teams,syncedAt]);
+  const filteredTeams = useMemo(() => filterTeams(teams, query), [teams, query]);
+  const mounted = useRef(true);
+  const refreshing = useRef(false);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const [selectedId, setSelectedId] = useState(null);
   const [team, setTeam] = useState(null);
   const [date] = useState(today);
-  const [loadingTeams, setLoadingTeams] = useState(true);
+  const [loadingTeams, setLoadingTeams] = useState(false);
   const [loadingTeam, setLoadingTeam] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -109,25 +115,17 @@ function AttendanceDesk({ onLogout, user }) {
   const [changingLead, setChangingLead] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  useEffect(() => {
-    let active = true;
-    setLoadingTeams(true);
-    attendanceApi
-      .teams(query, date)
-      .then((data) => {
-        if (active) setTeams(data.teams || []);
-      })
-      .catch((e) => {
-        if (active) {
-          setError(e.message);
-          if (isUnauthorized(e)) onLogout();
-        }
-      })
-      .finally(() => active && setLoadingTeams(false));
-    return () => {
-      active = false;
-    };
-  }, [query, date, onLogout]);
+  async function refreshDirectory() {
+    if(refreshing.current)return;
+    refreshing.current=true;setLoadingTeams(true);setError('');
+    try {
+      const data=await attendanceApi.teams();
+      if(!mounted.current)return;
+      setTeams(data.teams||[]);setSyncedAt(data.syncedAt);
+      try { localStorage.setItem(DIRECTORY_KEY,JSON.stringify({teams:data.teams||[],syncedAt:data.syncedAt})); } catch {}
+    } catch(e) { if(mounted.current){setError(e.message);if(isUnauthorized(e))onLogout();} }
+    finally { refreshing.current=false;if(mounted.current)setLoadingTeams(false); }
+  }
   useEffect(() => {
     if (!selectedId) {
       setTeam(null);
@@ -135,6 +133,7 @@ function AttendanceDesk({ onLogout, user }) {
       setShowConfirmDialog(false);
       return;
     }
+    setTeam(null);
     setEditingAttendance(false);
     setShowConfirmDialog(false);
     let active = true;
@@ -197,7 +196,7 @@ function AttendanceDesk({ onLogout, user }) {
         team.allocation?.project_mode,
       );
       setTeam(data.team);
-      setTeams(current => current.map(item => item.id === data.team.id ? { ...item, present_count: data.team.members.filter(member => member.present).length } : item));
+      setTeams(current => current.map(item => item.id === data.team.id ? { ...item, team_name: data.team.team_name, team_code: data.team.team_code, team_size: data.team.member_count, lead_name: data.team.members.find(member => member.id === data.team.lead_member_id)?.full_name || item.lead_name } : item));
       setEditingAttendance(false);
       setShowConfirmDialog(false);
       setMessage("");
@@ -240,7 +239,7 @@ function AttendanceDesk({ onLogout, user }) {
       setTeams((current) =>
         current.map((item) =>
           item.id === team.id
-            ? { ...item, lead_name: data.team.lead_name }
+            ? { ...item, lead_name: data.team.members.find(member => member.id === data.team.lead_member_id)?.full_name || item.lead_name }
             : item,
         ),
       );
@@ -254,6 +253,7 @@ function AttendanceDesk({ onLogout, user }) {
   return (
     <div className="attendance-shell">
       <OperationsHeader active="attendance" onLogout={async () => { await attendanceApi.logout().catch(() => {}); onLogout(); }}>
+        <button className="attendance-export-button" type="button" onClick={refreshDirectory} disabled={loadingTeams}>{loadingTeams ? "Refreshing…" : "Refresh"}</button>
         <button className="attendance-export-button" type="button" onClick={exportAttendance} disabled={exporting}>{exporting ? "Exporting…" : "Export Excel"}</button>
       </OperationsHeader>
       <main className="attendance-main">
@@ -271,7 +271,7 @@ function AttendanceDesk({ onLogout, user }) {
             <div className="attendance-section-heading">
               <div>
                 <h2 id="teams-heading">Teams</h2>
-                <p>{teams.length} submitted</p>
+                <p>{teams.length} teams{syncedAt ? ` · Synced ${new Date(syncedAt).toLocaleTimeString()}` : ""}</p>
               </div>
             </div>
             <label className="attendance-search">
@@ -285,22 +285,23 @@ function AttendanceDesk({ onLogout, user }) {
             <div className="attendance-team-list">
               {loadingTeams ? (
                 <div className="table-state">Loading teams…</div>
-              ) : teams.length ? (
-                teams.map((item) => (
+              ) : filteredTeams.length ? (
+                filteredTeams.map((item) => (
                   <TeamRow
                     key={item.id}
                     team={item}
                     selected={item.id === selectedId}
-                    onSelect={setSelectedId}
+                    onSelect={(id) => { if(!saving && !changingLead) setSelectedId(id); }}
                   />
                 ))
               ) : (
-                <div className="table-state">No teams match that search.</div>
+                <div className="table-state">{syncedAt ? "No teams match that search." : "Refresh to load teams."}</div>
               )}
             </div>
           </section>
           <section className="attendance-detail" aria-live="polite">
-            {selectedId && <button className="venue-back" onClick={() => setSelectedId(null)}>← Back to teams</button>}
+            {error && !team && <p className="form-error" role="alert">{error}</p>}
+            {selectedId && <button className="venue-back" disabled={saving || changingLead} onClick={() => setSelectedId(null)}>← Back to teams</button>}
             {loadingTeam ? (
                 <div className="attendance-empty">
                 <span className="attendance-empty-number">…</span>
@@ -496,11 +497,12 @@ export function AttendanceApp({ venues = false }) {
     loading: true,
     authenticated: false,
   });
+  const logout = useCallback(() => { clearTeamDirectory();setSession({ loading:false, authenticated:false, user:null }); }, []);
   useEffect(() => {
     attendanceApi
       .currentSession()
       .then((data) => setSession({ loading: false, authenticated: true, user: data.user }))
-      .catch(() => setSession({ loading: false, authenticated: false }));
+      .catch(logout);
   }, []);
   if (session.loading)
     return <div className="loading-screen">Loading…</div>;
@@ -510,11 +512,11 @@ export function AttendanceApp({ venues = false }) {
       onLogin={(user) => setSession({ loading: false, authenticated: true, user })}
       />
     );
-  if (venues) return <VenueDashboard user={session.user} onLogout={() => setSession({ loading: false, authenticated: false, user: null })} />;
+  if (venues) return <VenueDashboard user={session.user} onLogout={logout} />;
   return (
     <AttendanceDesk
       user={session.user}
-      onLogout={() => setSession({ loading: false, authenticated: false, user: null })}
+      onLogout={logout}
     />
   );
 }
