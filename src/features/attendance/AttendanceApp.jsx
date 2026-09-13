@@ -112,7 +112,6 @@ function AttendanceDesk({ onLogout, user }) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [editingAttendance, setEditingAttendance] = useState(false);
-  const [changingLead, setChangingLead] = useState(false);
   const [loadingEdit, setLoadingEdit] = useState(false);
   const selectionRef = useRef(selectedId);
   selectionRef.current = selectedId;
@@ -163,8 +162,8 @@ function AttendanceDesk({ onLogout, user }) {
   const attendanceMarked = Boolean(team?.attendance_marked);
   const leadPresent = Boolean(team?.members?.some((member) => member.id === team.lead_member_id && member.present));
   const mealsComplete = Boolean(team?.members?.every((member) => !member.present || ['Veg', 'Non-Veg'].includes(member.meal_preference)));
-  const controlsLocked = !canEdit || saving || changingLead || (attendanceMarked && !editingAttendance);
-  const canSaveAttendance = Boolean(team?.allocation?.project_mode) && leadPresent && presentCount >= 2 && mealsComplete && !changingLead && !saving;
+  const controlsLocked = !canEdit || saving || (attendanceMarked && !editingAttendance);
+  const canSaveAttendance = Boolean(team?.allocation?.project_mode) && leadPresent && presentCount >= 2 && mealsComplete && !saving;
   function updateMeal(memberId, mealPreference) {
     if (controlsLocked) return;
     setTeam((current) => ({ ...current, members: current.members.map((member) => member.id === memberId ? { ...member, meal_preference: mealPreference } : member) }));
@@ -197,6 +196,8 @@ function AttendanceDesk({ onLogout, user }) {
           mealPreference: member.present ? member.meal_preference : null,
         })),
         team.allocation?.project_mode,
+        team.checkin_version,
+        team.lead_member_id,
       );
       setTeam(data.team);
       setTeams(current => current.map(item => item.id === data.team.id ? { ...item, team_name: data.team.team_name, team_code: data.team.team_code, team_size: data.team.member_count, lead_name: data.team.members.find(member => member.id === data.team.lead_member_id)?.full_name || item.lead_name } : item));
@@ -231,36 +232,13 @@ function AttendanceDesk({ onLogout, user }) {
       if (isUnauthorized(e)) onLogout();
     } finally { setExporting(false); }
   }
-  async function changeLead(event) {
-    if (!canEdit || saving || changingLead || (attendanceMarked && !editingAttendance)) return;
+  function changeLead(event) {
+    if (!canEdit || saving || (attendanceMarked && !editingAttendance)) return;
     const memberId = Number(event.target.value);
-    if (!memberId) return;
-    setChangingLead(true);
+    if (!team.members.some(member => member.id === memberId)) return;
+    setTeam(current => ({...current,lead_member_id:memberId}));
     setShowConfirmDialog(false);
-    setError("");
-    try {
-      const data = await attendanceApi.changeLead(team.id, memberId, editingAttendance);
-      setTeam((current) => current?.id === data.team.id ? {
-        ...data.team,
-        members: data.team.members.map((member) => {
-          const draft = current.members.find((item) => item.id === member.id);
-          return draft ? { ...member, present: draft.present, meal_preference: draft.meal_preference } : member;
-        }),
-      } : current);
-      setShowConfirmDialog(false);
-      setTeams((current) =>
-        current.map((item) =>
-          item.id === team.id
-            ? { ...item, lead_name: data.team.members.find(member => member.id === data.team.lead_member_id)?.full_name || item.lead_name }
-            : item,
-        ),
-      );
-      setMessage("Team lead updated.");
-    } catch (e) {
-      setError(e.message);
-      if (isUnauthorized(e)) onLogout();
-    }
-    finally { setChangingLead(false); }
+    setMessage("");
   }
   return (
     <div className="attendance-shell">
@@ -305,7 +283,7 @@ function AttendanceDesk({ onLogout, user }) {
                     key={item.id}
                     team={item}
                     selected={item.id === selectedId}
-                    onSelect={(id) => { if(!saving && !changingLead) setSelectedId(id); }}
+                    onSelect={(id) => { if(!saving) setSelectedId(id); }}
                   />
                 ))
               ) : (
@@ -315,7 +293,7 @@ function AttendanceDesk({ onLogout, user }) {
           </section>
           <section className="attendance-detail" aria-live="polite">
             {error && !team && <p className="form-error" role="alert">{error}</p>}
-            {selectedId && <button className="venue-back" disabled={saving || changingLead} onClick={() => setSelectedId(null)}>← Back to teams</button>}
+            {selectedId && <button className="venue-back" disabled={saving} onClick={() => setSelectedId(null)}>← Back to teams</button>}
             {loadingTeam ? (
                 <div className="attendance-empty">
                 <span className="attendance-empty-number">…</span>
@@ -381,7 +359,7 @@ function AttendanceDesk({ onLogout, user }) {
                       <select
                         value={team.lead_member_id || ""}
                         onChange={changeLead}
-                        disabled={!canEdit || saving || changingLead || (attendanceMarked && !editingAttendance)}
+                        disabled={!canEdit || saving || (attendanceMarked && !editingAttendance)}
                       >
                         {team.members.map((member) => (
                           <option value={member.id} key={member.id}>

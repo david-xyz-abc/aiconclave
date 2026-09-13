@@ -17,8 +17,9 @@ export function fixture(access = 'write', tableSeating = true) {
   sqlite.exec(readFileSync(new URL('../db/migrations/0019_venue_allocation.sql', import.meta.url), 'utf8'));
   sqlite.exec(readFileSync(new URL('../db/migrations/0020_alpha_venue_plan.sql', import.meta.url), 'utf8'));
   if (tableSeating) sqlite.exec(readFileSync(new URL('../db/migrations/0024_table_seating.sql', import.meta.url), 'utf8'));
+  sqlite.exec(readFileSync(new URL('../db/migrations/0029_checkin_versions.sql', import.meta.url),'utf8'));
   let writes = 0;
-  const DB = { prepare(sql) {
+  const DB = { currentVersion(id=1) { return sqlite.prepare('SELECT checkin_version FROM hackathon_teams WHERE id=?').get(id)?.checkin_version; }, prepare(sql) {
     let args = [];
     const statement = {
       bind(...values) { args = values; return statement; },
@@ -39,6 +40,7 @@ export function fixture(access = 'write', tableSeating = true) {
 }
 
 export function context(DB, body, method = 'POST', path = 'teams/1') {
+  if(method==='POST' && body?.attendance && body.expectedVersion===undefined) body={...body,expectedVersion:DB.currentVersion()};
   return { env: { DB }, params: { id: '1' }, request: new Request(`https://test.example/api/attendance/${path}`, {
     method, headers: { origin: 'https://test.example', 'content-type': 'application/json', cookie: '__Host-aiconclave_attendance_session=test' },
     ...(method === 'GET' ? {} : { body: JSON.stringify(body) }),

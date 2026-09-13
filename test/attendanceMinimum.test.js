@@ -9,7 +9,7 @@ async function save(attendance, access = 'write') {
   const { sqlite, DB } = f;
   const response = await onRequestPost({ env: { DB }, params: { id: '1' }, request: new Request('https://test.example/api/attendance/teams/1', {
     method: 'POST', headers: { 'content-type': 'application/json', cookie: '__Host-aiconclave_attendance_session=test-session' },
-    body: JSON.stringify({ date: '2026-09-16', attendance, projectMode: 'Prepared' }),
+    body: JSON.stringify({ date: '2026-09-16', expectedVersion:DB.currentVersion(), attendance, projectMode: 'Prepared' }),
   }) });
   const rows = sqlite.prepare('SELECT member_id, present, meal_preference FROM hackathon_attendance ORDER BY member_id').all();
   sqlite.close();

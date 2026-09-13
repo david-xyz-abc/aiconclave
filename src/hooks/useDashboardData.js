@@ -19,6 +19,7 @@ export function useDashboardData(routeId, onUnauthorized, owner) {
   const [errors, setErrors] = useState({});
   const pending = useRef(new Set());
   const opened = useRef(new Set());
+  const overviewRevision = useRef(0);
   const mounted = useRef(true);
   const nextRefreshAt = useRef(0);
   const cooldownTimer = useRef(null);
@@ -34,6 +35,7 @@ export function useDashboardData(routeId, onUnauthorized, owner) {
   const loadRoute = useCallback(async (id) => {
     if (pending.current.has(id)) return;
     pending.current.add(id);
+    const revision = overviewRevision.current;
     setLoadingRoutes(current => ({ ...current, [id]: true }));
     setErrors(current => ({ ...current, [id]: '' }));
     try {
@@ -41,7 +43,8 @@ export function useDashboardData(routeId, onUnauthorized, owner) {
         : ['checked-in','judges-allocation'].includes(id) ? await registrationsApi.report(id)
         : await registrationsApi.list(id);
       if (!mounted.current) return;
-      setEntries(current => ({ ...current, [id]: { ...data, syncedAt: new Date().toISOString() } }));
+      setEntries(current => ({ ...current, [id]: { ...data, syncedAt: new Date().toISOString(),
+        stale: id === 'overview' && revision !== overviewRevision.current } }));
     } catch (err) {
       if (!mounted.current) return;
       if (isUnauthorized(err)) { clearAdminCache(); onUnauthorized(); }
@@ -72,7 +75,8 @@ export function useDashboardData(routeId, onUnauthorized, owner) {
 
   const removeRegistration = useCallback(async (type, registration) => {
     await registrationsApi.remove(type, registration.id, registration.record_type);
-    setEntries(current => ({ ...current, overview: null, [type]: {
+    overviewRevision.current += 1;
+    setEntries(current => ({ ...current, overview: { ...current.overview, stale: true }, [type]: {
       ...current[type], registrations: (current[type]?.registrations || []).filter(item =>
         !(item.id === registration.id && item.record_type === registration.record_type)),
     } }));
@@ -80,7 +84,8 @@ export function useDashboardData(routeId, onUnauthorized, owner) {
   const updateRegistration = useCallback(async (type, registration, payload) => {
     const { registration: updated } = await registrationsApi.update(type, registration.id, registration.record_type, payload);
     // Keep only directory fields in persistent storage, never the full roster.
-    setEntries(current => ({ ...current, overview: null, [type]: {
+    overviewRevision.current += 1;
+    setEntries(current => ({ ...current, overview: { ...current.overview, stale: true }, [type]: {
       ...current[type], registrations: (current[type]?.registrations || []).map(item => {
         if (item.id !== registration.id || item.record_type !== registration.record_type) return item;
         const compact = Object.fromEntries(Object.keys(item).map(key => [key, updated[key] ?? item[key]]));
@@ -93,6 +98,7 @@ export function useDashboardData(routeId, onUnauthorized, owner) {
   }, []);
   const entry = entries[routeId];
   return { registrations: Array.isArray(entry?.registrations) ? entry.registrations : [],
+    overviewStale: Boolean(entries.overview?.stale),
     summary: entries.overview?.summary || EMPTY_SUMMARY, recent: entries.overview?.recent || [],
     rows: Array.isArray(entry?.rows) ? entry.rows : [],
     syncedAt: entry?.syncedAt, coolingDown, loading, error, setError, refresh, removeRegistration, updateRegistration };

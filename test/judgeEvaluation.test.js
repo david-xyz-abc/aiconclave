@@ -399,3 +399,92 @@ test('None of the above is an explicit saved choice in every sector', async () =
     assert.deepEqual(result.evaluation.nominations, ['none-of-the-above']);
   }
 });
+
+// Hold requests after their reads, immediately before committing their guards.
+function overlapWrites(f, count = 2) {
+  const batch = f.DB.batch.bind(f.DB);
+  const waiting = [];
+  f.DB.batch = async statements => {
+    if (statements[0].sql.includes('INSERT INTO judging_changes') && waiting.length < count) {
+      await new Promise(resolve => {
+        waiting.push(resolve);
+        if (waiting.length === count) waiting.forEach(release => release());
+      });
+    }
+    return batch(statements);
+  };
+}
+
+test('independent judges can save different teams concurrently without losing drafts', async () => {
+  const f = await setup();
+  const { createHash } = await import('node:crypto');
+  f.sqlite.exec(`INSERT INTO judging_judges(id,name,assignment_solution_type,sector_filter,mode_filter)
+    VALUES('second-judge','Second Judge','Technical','Agriculture','Prepared');
+    INSERT INTO judging_users(id,username,password_hash,password_salt,password_iterations,role,judge_id)
+    VALUES('second-user','second-judge','unused','unused',100000,'judge','second-judge');
+    UPDATE judging_assignments SET judge_id='second-judge',visit_order=1 WHERE team_id=3;`);
+  f.sqlite.prepare("INSERT INTO judging_sessions VALUES(?,'second-user',datetime('now','+1 hour'))")
+    .run(createHash('sha256').update('second-cookie').digest('hex'));
+  overlapWrites(f);
+  const responses = await Promise.all([
+    f.evaluate({ action: 'nominations', revision: 0, nominations: ['none-of-the-above'] }),
+    postEvaluation(judgeContext(f.DB, '__Host-aiconclave_judging_session=second-cookie', {
+      teamId: 3, action: 'nominations', revision: 0, nominations: ['agri-impact'],
+    })),
+  ]);
+  assert.deepEqual(responses.map(r => r.status), [200,200]);
+  assert.equal(f.sqlite.prepare('SELECT COUNT(*) n FROM judging_evaluations').get().n, 2);
+  assert.equal(f.sqlite.prepare('SELECT COUNT(*) n FROM judging_evaluation_history').get().n, 2);
+});
+
+test('overlapping saves for the same evaluation retain one winner and one audit entry', async () => {
+  const f = await setup();
+  overlapWrites(f);
+  const responses = await Promise.all([
+    f.evaluate({ action: 'nominations', revision: 0, nominations: ['none-of-the-above'] }),
+    f.evaluate({ action: 'nominations', revision: 0, nominations: ['agri-impact'] }),
+  ]);
+  assert.deepEqual(responses.map(r => r.status).sort(), [200,409]);
+  assert.equal(f.sqlite.prepare('SELECT revision FROM judging_evaluations').get().revision, 1);
+  assert.equal(f.sqlite.prepare('SELECT COUNT(*) n FROM judging_evaluation_history').get().n, 1);
+});
+
+test('a route change after evaluation reads aborts the whole save', async () => {
+  const f = await setup();
+  const batch = f.DB.batch.bind(f.DB);
+  f.DB.batch = async statements => {
+    if (statements[0].sql.includes('INSERT INTO judging_changes')) {
+      f.sqlite.prepare('DELETE FROM judging_assignments WHERE team_id=1').run();
+    }
+    return batch(statements);
+  };
+  assert.equal((await f.evaluate({ action: 'nominations', revision: 0, nominations: ['none-of-the-above'] })).status,409);
+  assert.equal(f.sqlite.prepare('SELECT COUNT(*) n FROM judging_evaluations').get().n,0);
+  assert.equal(f.sqlite.prepare('SELECT COUNT(*) n FROM judging_evaluation_history').get().n,0);
+});
+
+test('simultaneous emergency reopening preserves a single audited reopen', async () => {
+  const f = await setup();
+  await f.evaluate({ action: 'nominations', revision: 0, nominations: ['none-of-the-above'] });
+  await f.evaluate({ action: 'scores', revision: 1, scores: fullScores });
+  await f.evaluate({ action: 'submit', revision: 2 });
+  const body={teamId:1,revision:(await loadWorkspace(f.DB)).revision,evaluationRevision:3,reason:'Concurrent emergency request'};
+  overlapWrites(f);
+  const results=await Promise.all([emergencyPost(judgingContext(f.DB,body)),emergencyPost(judgingContext(f.DB,body))]);
+  assert.deepEqual(results.map(r=>r.status).sort(),[200,409]);
+  assert.equal(f.sqlite.prepare("SELECT COUNT(*) n FROM judging_evaluation_history WHERE action='reopen'").get().n,1);
+});
+
+test('seating changes between reading and saving cannot commit a stale evaluation', async () => {
+  const f = await setup();
+  const batch=f.DB.batch.bind(f.DB);
+  f.DB.batch=async statements=>{
+    if(statements[0].sql.includes('INSERT INTO judging_changes')) {
+      f.sqlite.prepare('DELETE FROM venue_allocations WHERE team_id=1').run();
+    }
+    return batch(statements);
+  };
+  assert.equal((await f.evaluate({action:'nominations',revision:0,nominations:['none-of-the-above']})).status,409);
+  assert.equal(f.sqlite.prepare('SELECT COUNT(*) n FROM judging_evaluations').get().n,0);
+  assert.equal(f.sqlite.prepare('SELECT COUNT(*) n FROM judging_evaluation_history').get().n,0);
+});

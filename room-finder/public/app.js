@@ -23,8 +23,9 @@ function card(team){const el=element('article','','team');el.append(element('h2'
  if(team.room){const location=element('div','','location');for(const [label,value] of [['Room',team.room],['Table','T'+team.table_number]]){const box=element('div','');box.append(element('small',label),element('strong',value));location.append(box);}el.append(location);if(team.block)el.append(element('p',team.block+' block','meta'));}
  else {const text=!team.attendance_marked?'Not checked in. Direct the team to the check-in desk.':!team.project_mode?'Project mode missing. Ask the check-in desk to update it.':team.present_count<2||!team.lead_present?'Check-in incomplete. At least two members and the team lead must be present.':'Awaiting room allocation. Direct the team to Staff venues.';el.append(element('div',text,'notice'));}return el;}
 
-function renderSearch(){
- sequence++;$('detail').replaceChildren();$('results').replaceChildren();
+function renderSearch({preserveDetail=false}={}){
+ if(!preserveDetail){sequence++;$('detail').replaceChildren();}
+ $('results').replaceChildren();
  $('synced').textContent=directory?'Last synced '+new Date(directory.syncedAt).toLocaleString()+' · '+directory.teams.length+' teams':'';
  if(!directory){$('status').textContent='Refresh to load teams.';return;}
  const q=$('query').value.trim();
@@ -53,7 +54,7 @@ async function loadRoom(team){
 $('back-search').addEventListener('click',()=>{
  sequence++;loadingId=null;$('detail-page').hidden=true;$('detail').replaceChildren();
  $('finder').hidden=false;$('refresh').hidden=false;
- selectedButton?.focus({preventScroll:true});window.scrollTo(0,searchScroll);
+ (selectedButton?.isConnected ? selectedButton : $('query')).focus({preventScroll:true});window.scrollTo(0,searchScroll);
 });
 $('refresh').addEventListener('click',async()=>{
  if(syncing)return;syncing=true;const generation=authGeneration;
@@ -61,7 +62,7 @@ $('refresh').addEventListener('click',async()=>{
  try{const data=await api('directory');if(generation!==authGeneration||!signedIn)return;
   directory={teams:data.teams,syncedAt:data.syncedAt};let saved=true;
   try{localStorage.setItem(CACHE_KEY,JSON.stringify(directory));}catch{saved=false;}
-  renderSearch();if(!saved)$('synced').textContent+=' · Available for this visit only';
+  renderSearch({preserveDetail:!$('detail-page').hidden});if(!saved)$('synced').textContent+=' · Available for this visit only';
  }catch(error){if(generation===authGeneration)failure(error,'status');}
  finally{syncing=false;$('refresh').disabled=false;$('refresh').textContent='Refresh';}
 });

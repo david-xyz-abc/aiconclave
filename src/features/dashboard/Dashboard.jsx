@@ -23,6 +23,7 @@ export function Dashboard({ user, route, onNavigate, onLogout }) {
     coolingDown,
     syncedAt,
     summary,
+    overviewStale,
     recent,
     loading,
     error,
@@ -143,6 +144,7 @@ export function Dashboard({ user, route, onNavigate, onLogout }) {
           )}
         </div>
         {opening && <p role="status">Loading details…</p>}
+        {route.id === "overview" && overviewStale && <p role="status">Registrations changed. Refresh to update this overview.</p>}
         {["checked-in", "judges-allocation"].includes(route.id) ? (
           <AdminReport key={route.id} type={route.id} rows={rows} loading={loading} error={error} syncedAt={syncedAt} />
         ) : route.id === "overview" ? (

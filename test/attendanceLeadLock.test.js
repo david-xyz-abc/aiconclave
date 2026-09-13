@@ -1,45 +1,54 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DatabaseSync } from 'node:sqlite';
-import { onRequestPatch } from '../functions/api/attendance/teams/[id].js';
-
-async function change({ marked, editingAttendance, access = 'write' }) {
-  const sql = new DatabaseSync(':memory:');
-  sql.exec("CREATE TABLE hackathon_teams (id INTEGER PRIMARY KEY, attendance_lead_member_id INTEGER, updated_at TEXT, submitted_at TEXT); INSERT INTO hackathon_teams VALUES (1, 11, NULL, '2026-09-16'); CREATE TABLE hackathon_attendance (team_id INTEGER);");
-  if (marked) sql.exec('INSERT INTO hackathon_attendance VALUES (1)');
-  const DB = { prepare(query) {
-    let args = [];
-    const stmt = {
-      bind(...values) { args = values; return stmt; },
-      async first() { return query.includes('attendance_sessions') ? { attendance_access: access } : { id: 1, lead_member_id: 11 }; },
-      async all() { return { results: [] }; },
-      async run() { return { meta: sql.prepare(query).run(...args) }; },
-    };
-    return stmt;
-  } };
-  try {
-    const response = await onRequestPatch({ env: { DB }, params: { id: '1' }, request: new Request('https://test.example/api/attendance/teams/1', {
-      method: 'PATCH', headers: { 'content-type': 'application/json', cookie: '__Host-aiconclave_attendance_session=test' },
-      body: JSON.stringify({ leadMemberId: 12, editingAttendance }),
-    }) });
-    return { status: response.status, lead: sql.prepare('SELECT attendance_lead_member_id AS lead FROM hackathon_teams').get().lead };
-  } finally { sql.close(); }
-}
-
-test('lead changes are allowed before attendance is marked', async () => {
-  assert.deepEqual(await change({ marked: false }), { status: 200, lead: 12 });
+import { fixture,context } from './venueFixture.js';
+import {onRequestPost as save,onRequestPatch as legacyLead,loadTeam} from '../functions/api/attendance/teams/[id].js';
+const body=(version,lead=11,present=[11,12])=>({date:'2026-09-16',expectedVersion:version,leadMemberId:lead,projectMode:'Prepared',attendance:[11,12,13].map(memberId=>({memberId,present:present.includes(memberId),mealPreference:'Veg'}))});
+const snapshot=f=>JSON.stringify({team:f.sqlite.prepare('SELECT * FROM hackathon_teams').all(),attendance:f.sqlite.prepare('SELECT * FROM hackathon_attendance').all(),allocation:f.sqlite.prepare('SELECT * FROM venue_allocations').all(),mode:f.sqlite.prepare('SELECT * FROM venue_checkins').all()});
+test('competing check-in drafts: exactly one commits; stale save cannot change lead, attendance, mode or table',async()=>{
+ const f=fixture();try{
+  const v=f.DB.currentVersion();
+  const responses=await Promise.all([save(context(f.DB,body(v))),save(context(f.DB,{...body(v,13,[12,13]),projectMode:'Starting from scratch'}))]);
+  assert.deepEqual(responses.map(r=>r.status).sort(),[200,409]);
+  const before=snapshot(f);
+  assert.equal((await save(context(f.DB,body(v,13,[12,13])))).status,409);
+  assert.equal(snapshot(f),before);
+  assert.equal(f.sqlite.prepare('SELECT COUNT(*) n FROM checkin_save_guards').get().n,0);
+ }finally{f.sqlite.close();}
 });
-
-test('marked attendance locks lead changes unless editing is explicitly requested', async () => {
-  for (const editingAttendance of [undefined, false, 'true']) {
-    assert.deepEqual(await change({ marked: true, editingAttendance }), { status: 409, lead: 11 });
-  }
+test('lead and attendance commit together; obsolete separate lead request cannot mutate checked-in team',async()=>{
+ const f=fixture();try{
+  assert.equal((await save(context(f.DB,body(f.DB.currentVersion())))).status,200);
+  const before=snapshot(f);
+  assert.equal((await legacyLead(context(f.DB,{leadMemberId:13,editingAttendance:true},'PATCH'))).status,409);
+  assert.equal(snapshot(f),before);
+  assert.equal((await save(context(f.DB,body(f.DB.currentVersion(),13,[12,13])))).status,200);
+  const q=f.sqlite.prepare('SELECT * FROM venue_requirements WHERE team_id=1').get();
+  assert.equal(q.lead_present,1);assert.equal(q.present_count,2);
+  assert.equal(f.sqlite.prepare('SELECT attendance_lead_member_id id FROM hackathon_teams').get().id,13);
+ }finally{f.sqlite.close();}
 });
-
-test('Edit permits an admin to change the lead of marked attendance', async () => {
-  assert.deepEqual(await change({ marked: true, editingAttendance: true }), { status: 200, lead: 12 });
+test('missing version, absent draft lead, and roster edits cannot overwrite check-in',async()=>{
+ const f=fixture();try{
+  const v=f.DB.currentVersion();
+  const ctx=context(f.DB,body(v)); const requestBody=body(v);delete requestBody.expectedVersion;
+  ctx.request=new Request(ctx.request.url,{method:'POST',headers:ctx.request.headers,body:JSON.stringify(requestBody)});
+  assert.equal((await save(ctx)).status,409);
+  assert.equal((await save(context(f.DB,body(v,13)))).status,400);
+  f.sqlite.exec("UPDATE hackathon_team_members SET full_name='Corrected name' WHERE id=12");
+  assert.equal((await save(context(f.DB,body(v)))).status,409);
+  assert.equal(f.sqlite.prepare('SELECT COUNT(*) n FROM hackathon_attendance').get().n,0);
+ }finally{f.sqlite.close();}
 });
-
-test('editing flag does not grant a viewer write access', async () => {
-  assert.deepEqual(await change({ marked: true, editingAttendance: true, access: 'read' }), { status: 403, lead: 11 });
+test('failed allocation rolls back version and lead together, while summary and edit expose current version',async()=>{
+ const f=fixture();try{
+  const v=f.DB.currentVersion();
+  f.sqlite.exec("CREATE TRIGGER fail BEFORE INSERT ON venue_allocations BEGIN SELECT RAISE(ABORT,'forced');END;");
+  assert.equal((await save(context(f.DB,body(v,13,[12,13])))).status,500);
+  assert.equal(f.DB.currentVersion(),v);
+  assert.equal(f.sqlite.prepare('SELECT attendance_lead_member_id id FROM hackathon_teams').get().id,null);
+  f.sqlite.exec('DROP TRIGGER fail');
+  const res=await save(context(f.DB,body(v)));assert.equal(res.status,200);
+  const data=await res.json();assert.ok(data.team.checkin_version>v);
+  for(const full of [true,false])assert.equal((await loadTeam(f.DB,1,'2026-09-16',full)).checkin_version,f.DB.currentVersion());
+ }finally{f.sqlite.close();}
 });
