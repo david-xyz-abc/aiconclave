@@ -253,7 +253,6 @@ function AttendanceDesk({ onLogout, user }) {
   return (
     <div className="attendance-shell">
       <OperationsHeader active="attendance" onLogout={async () => { await attendanceApi.logout().catch(() => {}); onLogout(); }}>
-        <button className="attendance-export-button" type="button" onClick={refreshDirectory} disabled={loadingTeams}>{loadingTeams ? "Refreshing…" : "Refresh"}</button>
         <button className="attendance-export-button" type="button" onClick={exportAttendance} disabled={exporting}>{exporting ? "Exporting…" : "Export Excel"}</button>
       </OperationsHeader>
       <main className="attendance-main">
@@ -274,6 +273,7 @@ function AttendanceDesk({ onLogout, user }) {
                 <p>{teams.length} teams{syncedAt ? ` · Synced ${new Date(syncedAt).toLocaleTimeString()}` : ""}</p>
               </div>
             </div>
+            <div className="attendance-search-row">
             <label className="attendance-search">
               <span className="sr-only">Search teams</span>
               <input
@@ -282,6 +282,8 @@ function AttendanceDesk({ onLogout, user }) {
                 placeholder="Search name, lead or code"
               />
             </label>
+            <button className="attendance-export-button" type="button" onClick={refreshDirectory} disabled={loadingTeams}>{loadingTeams ? "Refreshing…" : "Refresh"}</button>
+            </div>
             <div className="attendance-team-list">
               {loadingTeams ? (
                 <div className="table-state">Loading teams…</div>

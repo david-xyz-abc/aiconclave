@@ -260,3 +260,8 @@
 .ops-home-link { display:inline-block; margin-bottom:16px; color:#2858a5; font-weight:600; }
 .workspace-coming-soon { color:#667085; }
 .workspace-coming-soon strong span { font-size:12px; font-weight:500; align-self:center; }
+
+.attendance-search-row { display:flex; align-items:center; gap:10px; padding:0 20px 16px; }
+.attendance-search-row .attendance-search { flex:1; min-width:0; margin:0; padding:0; }
+.attendance-search-row .attendance-export-button { flex-shrink:0; min-height:44px; border:1px solid #cdd5e1; border-radius:6px; padding:10px 14px; background:#fff; color:#2858a5; cursor:pointer; }
+.attendance-search-row .attendance-export-button:disabled { opacity:.6; cursor:wait; }
