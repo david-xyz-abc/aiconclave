@@ -2,7 +2,7 @@ import { requireJudge, json } from "../_shared/auth.js";
 import { isSameOrigin, readJsonBody } from "../../../functions/_shared/auth.js";
 import {
   judgeData,
-  writeGuard,
+  evaluationGuard,
   historyStatement,
 } from "../_shared/evaluations.js";
 import { AWARDS, validScores, validNominations } from "../../shared/evaluation.js";
@@ -115,13 +115,8 @@ export async function onRequestPost(context) {
       next.submitted_at = next.updated_at;
     }
     await db.batch([
-      writeGuard(
-        db,
-        data.revision,
-        auth.session.username,
-        "evaluation_" + body.action,
-        { teamId: team.team_id, judgeId },
-      ),
+      evaluationGuard(db, data, auth.session.username, body.action,
+        team.team_id, judgeId, body.revision),
       db
         .prepare(
           `INSERT INTO judging_evaluations(team_id,judge_id,revision,status,nominations,nominations_saved,scores,team_snapshot,updated_at,submitted_at) VALUES(?,?,?,?,?,?,?,?,?,?)

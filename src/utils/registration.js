@@ -40,6 +40,7 @@ export function parseTracks(value) {
 
 export function searchableRegistrationText(registration) {
   return [
+    registration.captain_name,
     registration.team_code,
     registration.team_name,
     registration.participant_category,

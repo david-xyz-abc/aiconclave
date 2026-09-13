@@ -3,7 +3,7 @@ import { loadWorkspace } from "../api/workspace.js";
 import { judgeRoute } from "../../shared/assignments.js";
 export async function judgeData(db, judgeId) {
   const results = await db.batch([
-    db.prepare("SELECT revision FROM judging_state WHERE id=1"),
+    db.prepare("SELECT revision, routing_revision FROM judging_state WHERE id=1"),
     db
       .prepare(
         `SELECT a.team_id, a.visit_order, a.table_id AS assigned_table_id, t.team_name,t.team_code,t.participant_category,
@@ -26,6 +26,7 @@ export async function judgeData(db, judgeId) {
   const judge = workspace.judges.find((j) => j.id === judgeId);
   return {
     revision: results[0].results[0].revision,
+    routingRevision: results[0].results[0].routing_revision,
     teams: results[1].results,
     evaluations: results[2].results.map(decodeEvaluation),
     judge: results[3].results[0],
@@ -67,4 +68,10 @@ export function historyStatement(
       previous ? JSON.stringify(previous) : null,
       JSON.stringify(next),
     );
+}
+
+export function evaluationGuard(db, data, actor, action, teamId, judgeId, revision) {
+  return db.prepare(`INSERT INTO judging_changes(id,expected_revision,actor,action,details,expected_routing_revision,evaluation_team_id,expected_evaluation_revision,evaluation_judge_id) VALUES(?,?,?,?,?,?,?,?,?)`)
+    .bind(crypto.randomUUID(), data.revision, actor, "evaluation_" + action,
+      JSON.stringify({ teamId, judgeId }), data.routingRevision, teamId, revision, judgeId);
 }

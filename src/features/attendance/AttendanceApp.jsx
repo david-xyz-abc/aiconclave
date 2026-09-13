@@ -1,6 +1,7 @@
+import {DIRECTORY_KEY,readTeamDirectory,filterTeams,clearTeamDirectory} from './teamDirectory.js';
 import { OperationsHeader } from "../../components/layout/OperationsHeader.jsx";
 import { VenueDashboard } from "../venues/VenueDashboard.jsx";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BrandLockup } from "../../components/common/BrandLockup.jsx";
 import { attendanceApi, isUnauthorized } from "../../services/dashboardApi.js";
 import { downloadAttendanceWorkbook } from "../../services/registrationExport.js";
@@ -31,6 +32,7 @@ function AttendanceLogin({ onLogin }) {
         className="auth-panel"
         aria-labelledby="attendance-login-heading"
       >
+        <a className="ops-home-link" href="/">← Home</a>
         <BrandLockup />
         <div className="auth-copy">
           <h1 id="attendance-login-heading">Staff sign in</h1>
@@ -81,12 +83,7 @@ function TeamRow({ team, selected, onSelect }) {
         <strong>{team.team_name}</strong>
         <small>{team.team_code || `TEAM-${String(team.id).padStart(4, "0")}`}</small>
       </span>
-      <span
-        className={`attendance-count${team.present_count === team.member_count ? " is-complete" : ""}`}
-      >
-        {team.present_count}/{team.member_count}
-        <small>present</small>
-      </span>
+      <span className="attendance-count">{team.team_size}<small>members</small></span>
     </button>
   );
 }
@@ -95,38 +92,42 @@ function AttendanceDesk({ onLogout, user }) {
   const venuePanel = useRef(null);
   const canEdit = user?.attendanceAccess === "write";
   const [query, setQuery] = useState("");
-  const [teams, setTeams] = useState([]);
+  const [initialDirectory] = useState(() => { try { return readTeamDirectory(localStorage); } catch { return null; } });
+  const [teams, setTeams] = useState(initialDirectory?.teams || []);
+  const [syncedAt, setSyncedAt] = useState(initialDirectory?.syncedAt || null);
+  useEffect(() => {
+    if(!syncedAt)return;
+    try { localStorage.setItem(DIRECTORY_KEY,JSON.stringify({teams,syncedAt})); } catch {}
+  }, [teams,syncedAt]);
+  const filteredTeams = useMemo(() => filterTeams(teams, query), [teams, query]);
+  const mounted = useRef(true);
+  const refreshing = useRef(false);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const [selectedId, setSelectedId] = useState(null);
   const [team, setTeam] = useState(null);
   const [date] = useState(today);
-  const [loadingTeams, setLoadingTeams] = useState(true);
+  const [loadingTeams, setLoadingTeams] = useState(false);
   const [loadingTeam, setLoadingTeam] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [editingAttendance, setEditingAttendance] = useState(false);
-  const [changingLead, setChangingLead] = useState(false);
+  const [loadingEdit, setLoadingEdit] = useState(false);
+  const selectionRef = useRef(selectedId);
+  selectionRef.current = selectedId;
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  useEffect(() => {
-    let active = true;
-    setLoadingTeams(true);
-    attendanceApi
-      .teams(query, date)
-      .then((data) => {
-        if (active) setTeams(data.teams || []);
-      })
-      .catch((e) => {
-        if (active) {
-          setError(e.message);
-          if (isUnauthorized(e)) onLogout();
-        }
-      })
-      .finally(() => active && setLoadingTeams(false));
-    return () => {
-      active = false;
-    };
-  }, [query, date, onLogout]);
+  async function refreshDirectory() {
+    if(refreshing.current)return;
+    refreshing.current=true;setLoadingTeams(true);setError('');
+    try {
+      const data=await attendanceApi.teams();
+      if(!mounted.current)return;
+      setTeams(data.teams||[]);setSyncedAt(data.syncedAt);
+      try { localStorage.setItem(DIRECTORY_KEY,JSON.stringify({teams:data.teams||[],syncedAt:data.syncedAt})); } catch {}
+    } catch(e) { if(mounted.current){setError(e.message);if(isUnauthorized(e))onLogout();} }
+    finally { refreshing.current=false;if(mounted.current)setLoadingTeams(false); }
+  }
   useEffect(() => {
     if (!selectedId) {
       setTeam(null);
@@ -134,6 +135,7 @@ function AttendanceDesk({ onLogout, user }) {
       setShowConfirmDialog(false);
       return;
     }
+    setTeam(null);
     setEditingAttendance(false);
     setShowConfirmDialog(false);
     let active = true;
@@ -160,8 +162,8 @@ function AttendanceDesk({ onLogout, user }) {
   const attendanceMarked = Boolean(team?.attendance_marked);
   const leadPresent = Boolean(team?.members?.some((member) => member.id === team.lead_member_id && member.present));
   const mealsComplete = Boolean(team?.members?.every((member) => !member.present || ['Veg', 'Non-Veg'].includes(member.meal_preference)));
-  const controlsLocked = !canEdit || saving || changingLead || (attendanceMarked && !editingAttendance);
-  const canSaveAttendance = Boolean(team?.allocation?.project_mode) && leadPresent && presentCount >= 2 && mealsComplete && !changingLead && !saving;
+  const controlsLocked = !canEdit || saving || (attendanceMarked && !editingAttendance);
+  const canSaveAttendance = Boolean(team?.allocation?.project_mode) && leadPresent && presentCount >= 2 && mealsComplete && !saving;
   function updateMeal(memberId, mealPreference) {
     if (controlsLocked) return;
     setTeam((current) => ({ ...current, members: current.members.map((member) => member.id === memberId ? { ...member, meal_preference: mealPreference } : member) }));
@@ -194,9 +196,11 @@ function AttendanceDesk({ onLogout, user }) {
           mealPreference: member.present ? member.meal_preference : null,
         })),
         team.allocation?.project_mode,
+        team.checkin_version,
+        team.lead_member_id,
       );
       setTeam(data.team);
-      setTeams(current => current.map(item => item.id === data.team.id ? { ...item, present_count: data.team.members.filter(member => member.present).length } : item));
+      setTeams(current => current.map(item => item.id === data.team.id ? { ...item, team_name: data.team.team_name, team_code: data.team.team_code, team_size: data.team.member_count, lead_name: data.team.members.find(member => member.id === data.team.lead_member_id)?.full_name || item.lead_name } : item));
       setEditingAttendance(false);
       setShowConfirmDialog(false);
       setMessage("");
@@ -207,6 +211,15 @@ function AttendanceDesk({ onLogout, user }) {
     } finally {
       setSaving(false);
     }
+  }
+  async function openEdit() {
+    if(loadingEdit || !canEdit)return;
+    const id=team.id;setLoadingEdit(true);setError('');
+    try {
+      const data=await attendanceApi.team(id,date,true);
+      if(mounted.current && selectionRef.current===id){setTeam(data.team);setEditingAttendance(true);}
+    } catch(e) { if(mounted.current && selectionRef.current===id){setError(e.message);if(isUnauthorized(e))onLogout();} }
+    finally { if(mounted.current)setLoadingEdit(false); }
   }
   async function exportAttendance() {
     setExporting(true);
@@ -219,36 +232,13 @@ function AttendanceDesk({ onLogout, user }) {
       if (isUnauthorized(e)) onLogout();
     } finally { setExporting(false); }
   }
-  async function changeLead(event) {
-    if (!canEdit || saving || changingLead || (attendanceMarked && !editingAttendance)) return;
+  function changeLead(event) {
+    if (!canEdit || saving || (attendanceMarked && !editingAttendance)) return;
     const memberId = Number(event.target.value);
-    if (!memberId) return;
-    setChangingLead(true);
+    if (!team.members.some(member => member.id === memberId)) return;
+    setTeam(current => ({...current,lead_member_id:memberId}));
     setShowConfirmDialog(false);
-    setError("");
-    try {
-      const data = await attendanceApi.changeLead(team.id, memberId, editingAttendance);
-      setTeam((current) => current?.id === data.team.id ? {
-        ...data.team,
-        members: data.team.members.map((member) => {
-          const draft = current.members.find((item) => item.id === member.id);
-          return draft ? { ...member, present: draft.present, meal_preference: draft.meal_preference } : member;
-        }),
-      } : current);
-      setShowConfirmDialog(false);
-      setTeams((current) =>
-        current.map((item) =>
-          item.id === team.id
-            ? { ...item, lead_name: data.team.lead_name }
-            : item,
-        ),
-      );
-      setMessage("Team lead updated.");
-    } catch (e) {
-      setError(e.message);
-      if (isUnauthorized(e)) onLogout();
-    }
-    finally { setChangingLead(false); }
+    setMessage("");
   }
   return (
     <div className="attendance-shell">
@@ -270,9 +260,10 @@ function AttendanceDesk({ onLogout, user }) {
             <div className="attendance-section-heading">
               <div>
                 <h2 id="teams-heading">Teams</h2>
-                <p>{teams.length} submitted</p>
+                <p>{teams.length} teams{syncedAt ? ` · Synced ${new Date(syncedAt).toLocaleTimeString()}` : ""}</p>
               </div>
             </div>
+            <div className="attendance-search-row">
             <label className="attendance-search">
               <span className="sr-only">Search teams</span>
               <input
@@ -281,25 +272,28 @@ function AttendanceDesk({ onLogout, user }) {
                 placeholder="Search name, lead or code"
               />
             </label>
+            <button className="attendance-export-button" type="button" onClick={refreshDirectory} disabled={loadingTeams}>{loadingTeams ? "Refreshing…" : "Refresh"}</button>
+            </div>
             <div className="attendance-team-list">
               {loadingTeams ? (
                 <div className="table-state">Loading teams…</div>
-              ) : teams.length ? (
-                teams.map((item) => (
+              ) : filteredTeams.length ? (
+                filteredTeams.map((item) => (
                   <TeamRow
                     key={item.id}
                     team={item}
                     selected={item.id === selectedId}
-                    onSelect={setSelectedId}
+                    onSelect={(id) => { if(!saving) setSelectedId(id); }}
                   />
                 ))
               ) : (
-                <div className="table-state">No teams match that search.</div>
+                <div className="table-state">{syncedAt ? "No teams match that search." : "Refresh to load teams."}</div>
               )}
             </div>
           </section>
           <section className="attendance-detail" aria-live="polite">
-            {selectedId && <button className="venue-back" onClick={() => setSelectedId(null)}>← Back to teams</button>}
+            {error && !team && <p className="form-error" role="alert">{error}</p>}
+            {selectedId && <button className="venue-back" disabled={saving} onClick={() => setSelectedId(null)}>← Back to teams</button>}
             {loadingTeam ? (
                 <div className="attendance-empty">
                 <span className="attendance-empty-number">…</span>
@@ -315,8 +309,7 @@ function AttendanceDesk({ onLogout, user }) {
                     </p>
                     <h2>{team.team_name}</h2>
                     <p className="checkin-team-meta">
-                      {team.participant_category} ·{" "}
-                      {team.member_count} members
+                      {team.participant_category}{!attendanceMarked || editingAttendance ? ` · ${team.member_count} members` : ""}
                     </p>
                     <dl className="checkin-classifications">
                       <div className="checkin-classification" data-kind={team.solution_type}>
@@ -327,20 +320,24 @@ function AttendanceDesk({ onLogout, user }) {
                         <dt>Sector</dt>
                         <dd>{team.sector_track || 'Not specified'}</dd>
                       </div>
-                      {team.allocation?.table_id && (
+                      {(team.allocation?.table_id || attendanceMarked) && (
                         <div className="checkin-classification checkin-seat" role="status">
                           <dt>Room &amp; table</dt>
-                          <dd>{team.allocation.room_name} · Table {String(team.allocation.table_number).padStart(2, '0')}</dd>
+                          <dd>{team.allocation?.table_id ? `${team.allocation.room_name} · Table T${team.allocation.table_number}` : "Awaiting allocation"}</dd>
                         </div>
                       )}
                     </dl>
                   </div>
-                  <span className="attendance-status">
+                  {(!attendanceMarked || editingAttendance) && <span className="attendance-status">
                     {presentCount === team.member_count
                       ? "Complete"
                       : `${presentCount}/${team.member_count} present`}
-                  </span>
+                  </span>}
                 </div>
+                {attendanceMarked && !editingAttendance ? <div className="attendance-locked-bar">
+                  {canEdit && <button type="button" className="attendance-edit-button" disabled={loadingEdit} onClick={openEdit}>{loadingEdit ? "Loading…" : "Edit"}</button>}
+                  {error && <p className="form-error" role="alert">{error}</p>}
+                </div> : <>
                 <section className="venue-attendance-panel" ref={venuePanel}>
                   <fieldset className="venue-mode-toggle" disabled={controlsLocked}>
                     <legend>Project mode — ask the team</legend>
@@ -362,7 +359,7 @@ function AttendanceDesk({ onLogout, user }) {
                       <select
                         value={team.lead_member_id || ""}
                         onChange={changeLead}
-                        disabled={!canEdit || saving || changingLead || (attendanceMarked && !editingAttendance)}
+                        disabled={!canEdit || saving || (attendanceMarked && !editingAttendance)}
                       >
                         {team.members.map((member) => (
                           <option value={member.id} key={member.id}>
@@ -463,6 +460,7 @@ function AttendanceDesk({ onLogout, user }) {
                     <span aria-hidden="true">→</span>
                   </button>
                 ) : null}
+                </>}
               </>
             ) : (
               <div className="attendance-empty">
@@ -495,11 +493,12 @@ export function AttendanceApp({ venues = false }) {
     loading: true,
     authenticated: false,
   });
+  const logout = useCallback(() => { clearTeamDirectory();setSession({ loading:false, authenticated:false, user:null }); }, []);
   useEffect(() => {
     attendanceApi
       .currentSession()
       .then((data) => setSession({ loading: false, authenticated: true, user: data.user }))
-      .catch(() => setSession({ loading: false, authenticated: false }));
+      .catch(logout);
   }, []);
   if (session.loading)
     return <div className="loading-screen">Loading…</div>;
@@ -509,11 +508,11 @@ export function AttendanceApp({ venues = false }) {
       onLogin={(user) => setSession({ loading: false, authenticated: true, user })}
       />
     );
-  if (venues) return <VenueDashboard user={session.user} onLogout={() => setSession({ loading: false, authenticated: false, user: null })} />;
+  if (venues) return <VenueDashboard user={session.user} onLogout={logout} />;
   return (
     <AttendanceDesk
       user={session.user}
-      onLogout={() => setSession({ loading: false, authenticated: false, user: null })}
+      onLogout={logout}
     />
   );
 }

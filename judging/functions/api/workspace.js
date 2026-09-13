@@ -108,11 +108,10 @@ export async function onRequestPost(context) {
         names.length > 100 ||
         names.some(
           (n) => typeof n !== "string" || !n.trim() || n.trim().length > 100,
-        ) ||
-        !SIDES.includes(body.solutionType)
+        )
       )
         return fail(
-          "Enter up to 100 judge names, one per line, and choose a side.",
+          "Enter up to 100 judge names, one per line.",
         );
       const trimmed = names.map((n) => n.trim());
       if (new Set(trimmed.map((n) => n.toLowerCase())).size !== trimmed.length)
@@ -124,41 +123,34 @@ export async function onRequestPost(context) {
         statements.push(
           db
             .prepare(
-              "INSERT INTO judging_judges(id,name,solution_type) VALUES(?,?,?)",
+              "INSERT INTO judging_judges(id,name) VALUES(?,?)",
             )
-            .bind(j.id, j.name, body.solutionType),
+            .bind(j.id, j.name),
         );
-      details = { judges, solutionType: body.solutionType };
+      details = { judges };
     } else if (body.action === "saveJudge") {
       const name = typeof body.name === "string" ? body.name.trim() : "";
-      if (!name || name.length > 100 || !SIDES.includes(body.solutionType))
+      if (!name || name.length > 100)
         return fail(
-          "Enter a judge name and choose Technical or Non-technical.",
+          "Enter a judge name.",
         );
       if (body.judgeId && !judge) return fail("Judge not found.", 404);
-      if (
-        judge &&
-        judge.solution_type !== body.solutionType &&
-        data.assignments.some((a) => a.judge_id === judge.id)
-      )
-        return fail(
-          "Release this judge’s assignments before changing their side.",
-        );
       const id = judge?.id || crypto.randomUUID();
       statements.push(
         db
           .prepare(
-            `INSERT INTO judging_judges(id,name,solution_type) VALUES(?,?,?)
-        ON CONFLICT(id) DO UPDATE SET name=excluded.name, solution_type=excluded.solution_type`,
+            `INSERT INTO judging_judges(id,name) VALUES(?,?)
+        ON CONFLICT(id) DO UPDATE SET name=excluded.name`,
           )
-          .bind(id, name, body.solutionType),
+          .bind(id, name),
       );
-      details = { judgeId: id, name, solutionType: body.solutionType };
+      details = { judgeId: id, name };
     } else if (body.action === "assign") {
       if (!judge) return fail("Select a judge.");
       const filters = body.filters;
       if (
         !filters ||
+        !SIDES.includes(filters.solution_type) ||
         typeof filters.sector !== "string" ||
         typeof filters.mode !== "string" ||
         (filters.mode && !MODES.includes(filters.mode)) ||
@@ -181,9 +173,9 @@ export async function onRequestPost(context) {
       statements.push(
         db
           .prepare(
-            "UPDATE judging_judges SET sector_filter=?, mode_filter=? WHERE id=?",
+            "UPDATE judging_judges SET sector_filter=?, mode_filter=?, assignment_solution_type=? WHERE id=?",
           )
-          .bind(filters.sector, filters.mode, judge.id),
+          .bind(filters.sector, filters.mode, filters.solution_type, judge.id),
       );
       for (const [index, team] of preview.teams.entries())
         statements.push(

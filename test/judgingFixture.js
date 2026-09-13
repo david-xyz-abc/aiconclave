@@ -21,6 +21,8 @@ export function judgingFixture(access = "write") {
       "utf8",
     ),
   );
+  f.sqlite.exec(readFileSync(new URL("../db/migrations/0027_judges_without_categories.sql", import.meta.url), "utf8"));
+  f.sqlite.exec(readFileSync(new URL("../db/migrations/0028_judging_evaluation_guards.sql", import.meta.url), "utf8"));
   f.sqlite
     .prepare(
       "INSERT INTO judging_users(id,username,password_hash,password_salt,password_iterations,role) VALUES (?,?,?,?,?,?)",
@@ -41,7 +43,7 @@ export function judgingFixture(access = "write") {
   for (let id = 1; id <= 8; id++) {
     if (id > 1) {
       f.sqlite
-        .prepare(`INSERT INTO hackathon_teams VALUES (?,?,?,?,?,?,?,?,?,?)`)
+        .prepare(`INSERT INTO hackathon_teams(id,team_code,team_name,participant_category,sector_track,solution_type,team_size,attendance_lead_member_id,submitted_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)`)
         .run(
           id,
           "AIC-" + id,

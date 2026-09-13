@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { api } from "./client.js";
 export function JudgeAccount({ judge, revision, onSaved }) {
-  const [username, setUsername] = useState(judge.login_username || ""),
+  const [username, setUsername] = useState(judge.login_username || judge.email || ""),
     [password, setPassword] = useState(""),
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState(""),
@@ -40,15 +40,14 @@ export function JudgeAccount({ judge, revision, onSaved }) {
     <section className="preview">
       <h3>Judge login</h3>
       <p className="hint">
-        Each judge uses a separate login ID and password. Roster names and login
-        IDs can be different.
+        Use the judge’s email as their login.
       </p>
       <form onSubmit={submit}>
         <label>
-          Login ID
+          Email or username
           <input
             required
-            pattern="[a-zA-Z0-9._-]{3,60}"
+            maxLength={80}
             value={username}
             autoComplete="off"
             onChange={(e) => setUsername(e.target.value)}

@@ -39,6 +39,9 @@ export const authApi = {
 };
 
 export const registrationsApi = {
+  report: (view) => requestJson(`/api/admin/reports?view=${encodeURIComponent(view)}`),
+  detail: (type, id, recordType) => requestJson(`/api/registrations/${encodeURIComponent(id)}?type=${encodeURIComponent(type)}&record_type=${encodeURIComponent(recordType || type)}`),
+  export: (type) => requestJson(`/api/registrations?type=${encodeURIComponent(type)}&view=export`),
   summary: () => requestJson("/api/registrations?type=panel&view=summary"),
   list: (registrationType) =>
     requestJson(
@@ -68,17 +71,12 @@ export const attendanceApi = {
   }),
   currentSession: () => requestJson("/api/attendance/auth"),
   logout: () => requestJson("/api/attendance/auth", { method: "DELETE" }),
-  teams: (query = "", date = new Date().toISOString().slice(0, 10)) => requestJson(`/api/attendance/teams?q=${encodeURIComponent(query)}&date=${encodeURIComponent(date)}`),
-  team: (id, date) => requestJson(`/api/attendance/teams/${encodeURIComponent(id)}?date=${encodeURIComponent(date)}`),
-  saveAttendance: (id, date, attendance, projectMode) => requestJson(`/api/attendance/teams/${encodeURIComponent(id)}`, {
+  teams: () => requestJson("/api/attendance/teams"),
+  team: (id, date, full = false) => requestJson(`/api/attendance/teams/${encodeURIComponent(id)}?date=${encodeURIComponent(date)}${full ? "&full=1" : ""}`),
+  saveAttendance: (id, date, attendance, projectMode, expectedVersion, leadMemberId) => requestJson(`/api/attendance/teams/${encodeURIComponent(id)}`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ date, attendance, projectMode }),
-  }),
-  changeLead: (id, memberId, editingAttendance = false) => requestJson(`/api/attendance/teams/${encodeURIComponent(id)}`, {
-    method: "PATCH",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ leadMemberId: memberId, editingAttendance }),
+    body: JSON.stringify({ date, attendance, projectMode, expectedVersion, leadMemberId }),
   }),
   exportData: () => requestJson("/api/attendance/export"),
 };
@@ -88,6 +86,8 @@ export function isUnauthorized(error) {
 }
 
 export const venuesApi = {
+  rooms: () => requestJson("/api/attendance/rooms"),
+  room: (id) => requestJson(`/api/attendance/rooms/${encodeURIComponent(id)}`),
   reallocate: (teamId, tableId, currentTableId) => requestJson('/api/attendance/venues', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ teamId, tableId, currentTableId }) }),
   load: () => requestJson('/api/attendance/venues'),
   assign: (teamId, tableId) => requestJson('/api/attendance/venues', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ teamId, tableId }) }),

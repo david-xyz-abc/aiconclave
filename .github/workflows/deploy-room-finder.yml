@@ -1,0 +1,29 @@
+name: Deploy Room Finder production
+on:
+  push:
+    branches: [room-finder-production]
+    paths: ["room-finder/**", "functions/_shared/auth.js", ".github/workflows/deploy-room-finder.yml"]
+  workflow_dispatch:
+concurrency:
+  group: room-finder-production
+  cancel-in-progress: true
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/room-finder-production'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test test/roomFinder.test.js
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4.125.0"
+          workingDirectory: room-finder
+          command: pages deploy public --project-name=aiconclave-room-finder --branch=room-finder-production --commit-dirty=true

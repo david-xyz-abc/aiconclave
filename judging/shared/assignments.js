@@ -23,8 +23,8 @@ export function orderedTeams(data, filters) {
 export function previewAssignment(data, judgeId, filters, startTeamId, count) {
   const judge = data.judges.find((j) => j.id === judgeId);
   if (!judge) return { teams: [], error: "Select a judge." };
-  if (judge.solution_type !== filters.solution_type)
-    return { teams: [], error: "Select teams on the judge’s assigned side." };
+  if (!SIDES.includes(filters.solution_type))
+    return { teams: [], error: "Choose a valid team solution type." };
   if (!Number.isInteger(count) || count < 1 || count > 100)
     return { teams: [], error: "Choose between 1 and 100 teams." };
   const ordered = orderedTeams(data, filters);
@@ -76,7 +76,7 @@ export function judgeRoute(data, judge) {
     ...a,
   }));
   const filters = {
-    solution_type: judge.solution_type,
+    solution_type: judge.assignment_solution_type,
     sector: judge.sector_filter,
     mode: judge.mode_filter,
   };

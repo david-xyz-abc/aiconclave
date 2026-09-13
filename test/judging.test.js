@@ -314,3 +314,19 @@ test('judges can follow mixed-capacity tables in table order; insufficient capac
   assert.equal(judgeRoute(current,current.judges.find(j=>j.id===id)).needsReview,true);
  }finally{f.sqlite.close();}
 });
+
+test('judges have no category and can be assigned teams of either solution type', async () => {
+ const f = judgingFixture();
+ try {
+  assert.equal((await post(f, {action:'addJudges',names:['Uncategorised judge']})).status,200);
+  let d = await loadWorkspace(f.DB);
+  const judge = d.judges[0];
+  assert.equal('solution_type' in judge,false);
+  assert.equal((await post(f,{action:'assign',judgeId:judge.id,filters,startTeamId:1,count:2})).status,200);
+  assert.equal((await post(f,{action:'release',judgeId:judge.id})).status,200);
+  f.sqlite.exec("UPDATE hackathon_teams SET solution_type='Non-Technical'");
+  assert.equal((await post(f,{action:'assign',judgeId:judge.id,filters:{...filters,solution_type:'Non-Technical'},startTeamId:1,count:2})).status,200);
+  d = await loadWorkspace(f.DB);
+  assert.equal(judgeRoute(d,d.judges[0]).needsReview,false);
+ } finally { f.sqlite.close(); }
+});

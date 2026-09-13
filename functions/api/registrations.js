@@ -4,10 +4,11 @@ import {
   loadHackathonRegistrations,
   loadPanelRegistrations,
   loadRegistrationSummary,
+  loadRegistrationDirectory,
 } from "../_shared/registrations.js";
 
 const REGISTRATION_TYPES = new Set(["panel", "hackathon"]);
-const REGISTRATION_VIEWS = new Set(["directory", "summary"]);
+const REGISTRATION_VIEWS = new Set(["directory", "summary", "export"]);
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -43,8 +44,9 @@ export async function onRequestGet(context) {
       const summary = await loadRegistrationSummary(context.env.DB, tables);
       return json({ ok: true, registrationType, view, ...summary });
     }
-    const registrations =
-      registrationType === "panel"
+    const registrations = view === "directory"
+      ? await loadRegistrationDirectory(context.env.DB, tables, registrationType)
+      : registrationType === "panel"
         ? await loadPanelRegistrations(context.env.DB, tables)
         : await loadHackathonRegistrations(context.env.DB, tables);
     return json({ ok: true, registrationType, registrations });

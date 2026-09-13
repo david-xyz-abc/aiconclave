@@ -29,3 +29,17 @@ The second alpha promotion includes the Check in terminology, matching colored c
 Apply `0024_table_seating.sql` before deployment. It copies each table's existing room capacity into `venue_tables.seats`, preserving inventory and assignments. Allocation now chooses the smallest adequate free table across rooms matching mode, sector and solution type (2 → 3 → 4, 3 → 4, or 4 only). Existing adequate assignments stay stable. Manual assignment/reallocation and judging routes use table capacities too. The actual mixed-room inventory can be supplied later without changing this allocation model.
 
 Both production branches receive the shared fixes; each site's existing workflow remains restricted to its own branch. This upgrade imports code and schema only, never alpha check-ins, judges, nominations, or scores.
+
+
+## September alpha promotion
+
+Production operations: `dashboard-dev` → aiconclave-dashboard.
+Judging: `judging-production` → aiconclave-judging.
+Room Finder: `room-finder-production` → aiconclave-room-finder.
+All three bind to production D1 `cfc0669f-3de7-4429-ab54-686e966bb56b`.
+
+Apply `db/production/0030_promote_alpha_operations.sql` once as a single transaction after a backup, before deploying these endpoints. It rejects installation after event check-in/evaluations begin, archives the old room inventory, installs the approved 23-room/568-table plan and adds judge/check-in concurrency guards. Do not replay historical alpha migrations against production: production's 0025/0026 registration migrations have different meanings. Deployment workflows intentionally do not auto-apply migrations.
+
+Import the approved judge roster separately using private credentials; never commit personal records, passwords, database exports or simulated event data. Room Finder uses FINDER_PASSWORD_HASH, FINDER_PASSWORD_SALT and FINDER_SESSION_SECRET as encrypted Pages secrets.
+
+The public main website remains on its separate main branch, with all registration closure guards preserved.

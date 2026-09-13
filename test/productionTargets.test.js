@@ -6,6 +6,7 @@ test('production dashboard and judging deployments share production D1 and never
   const read = path => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
   for (const [config, workflow, project, branch] of [
     ['wrangler.toml', '.github/workflows/deploy-dashboard.yml', 'aiconclave-dashboard', 'dashboard-dev'],
+    ['room-finder/wrangler.toml', '.github/workflows/deploy-room-finder.yml', 'aiconclave-room-finder', 'room-finder-production'],
     ['judging/wrangler.toml', '.github/workflows/deploy-judging.yml', 'aiconclave-judging', 'judging-production'],
   ]) {
     assert.match(read(config), /database_id = "cfc0669f-3de7-4429-ab54-686e966bb56b"/);

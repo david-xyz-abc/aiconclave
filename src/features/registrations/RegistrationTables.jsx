@@ -105,7 +105,7 @@ function TeamRow({ registration, onOpen }) {
           {registration.members?.length || registration.team_size}
         </strong>
         <span className="cell-secondary">
-          Captain: {captain?.full_name || "Not provided"}
+          Captain: {registration.captain_name || captain?.full_name || "Not provided"}
         </span>
       </td>
       <td data-label="Sector">

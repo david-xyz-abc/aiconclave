@@ -25,7 +25,7 @@
 .venue-menus button[aria-current="page"] { color:var(--ops-accent); border-bottom-color:var(--ops-accent); }
 .venue-menus button:hover { color:var(--ops-text); }
 .venue-menus button span { min-width:20px; padding:1px 5px; border-radius:10px; background:#eaf0f9; color:#2858a5; font-size:11px; }
-.venue-summary { display:flex; gap:24px; padding:16px 0; font-size:13px; color:var(--ops-muted); }
+.venue-summary { display:flex; flex-wrap:wrap; gap:24px; padding:16px 0; font-size:13px; color:var(--ops-muted); }
 .venue-summary strong { color:var(--ops-text); font-weight:600; font-variant-numeric:tabular-nums; margin-right:3px; }
 .venue-toolbar { display:flex; align-items:end; gap:16px; margin:8px 0 20px; }
 .venue-field { display:grid; gap:6px; margin:0; font-size:13px; font-weight:500; color:var(--ops-text); }
@@ -188,7 +188,7 @@
  .venue-back { display:inline-block; min-height:44px; padding:0; margin:-4px 0 16px; border:0; background:none; color:var(--ops-accent); font:500 13px/1.4 var(--sans); }
  .venue-detail h2,.attendance-shell .attendance-detail-head h2 { font-size:21px; }
  .venue-tables th,.venue-tables td { padding:10px 6px; }
- .venue-tables th:first-child { width:42px; }
+ .venue-tables th:first-child { width:54px; }
  .venue-tables th:last-child { width:74px; }
  .venue-result strong { font-size:20px; }
  .venue-search-empty { padding:48px 12px; }
@@ -210,7 +210,7 @@
 .ops-landing h1 { font:600 30px/1.3 var(--sans); letter-spacing:-.025em; }
 .ops-landing-heading p { margin:8px 0 0; color:#667085; }
 .ops-workspaces { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
-.ops-workspaces a { display:block; padding:24px; border:1px solid #e4e7ec; border-radius:8px; text-decoration:none; background:#fff; }
+.ops-workspaces a, .ops-workspaces .workspace-coming-soon { display:block; padding:24px; border:1px solid #e4e7ec; border-radius:8px; text-decoration:none; background:#fff; }
 .ops-workspaces a:hover { border-color:#91afd8; }
 .ops-workspaces a:focus-visible { outline:2px solid #2858a5; outline-offset:3px; }
 .ops-workspaces strong { display:flex; justify-content:space-between; gap:12px; font:600 18px/1.4 var(--sans); }
@@ -233,7 +233,7 @@
  .ops-landing { padding:24px 16px; }
  .ops-landing-heading { margin:36px 0 24px; }
  .ops-workspaces { grid-template-columns:1fr; gap:12px; }
- .ops-workspaces a { padding:20px; }
+ .ops-workspaces a, .ops-workspaces .workspace-coming-soon { padding:20px; }
  .attendance-auth-shell .auth-panel { padding:24px; }
 }
 
@@ -256,3 +256,45 @@
 }
 
 .attendance-shell .checkin-classification.checkin-seat { border-color:#a8dcd9; background:#e8f7f5; color:#145e59; }
+
+.ops-home-link { display:inline-block; margin-bottom:16px; color:#2858a5; font-weight:600; }
+.workspace-coming-soon { color:#667085; }
+.workspace-coming-soon strong span { font-size:12px; font-weight:500; align-self:center; }
+
+.attendance-search-row { display:flex; align-items:center; gap:10px; padding:0 20px 16px; }
+.attendance-search-row .attendance-search { flex:1; min-width:0; margin:0; padding:0; }
+.attendance-search-row .attendance-export-button { flex-shrink:0; min-height:44px; border:1px solid #cdd5e1; border-radius:6px; padding:10px 14px; background:#fff; color:#2858a5; cursor:pointer; }
+.attendance-search-row .attendance-export-button:disabled { opacity:.6; cursor:wait; }
+
+.admin-toolbar .admin-refresh-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  min-height: 48px;
+  padding: 0.75rem 1.35rem;
+  border: 1px solid #2857a5;
+  border-radius: 8px;
+  background: #2857a5;
+  color: #fff;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.admin-toolbar .admin-refresh-button:hover:not(:disabled) { background: #204787; }
+.admin-toolbar .admin-refresh-button:focus-visible { outline: 3px solid #90b5f1; outline-offset: 3px; }
+.admin-toolbar .admin-refresh-button:disabled { opacity: 0.6; cursor: wait; }
+.admin-toolbar { display: flex; align-items: center; gap: 24px; border-bottom: 1px solid var(--line); margin-bottom: 24px; padding-bottom: 8px; }
+.admin-toolbar .admin-tabs { flex: 1; min-width: 0; border-bottom: 0; }
+.admin-toolbar .admin-refresh-button { flex-shrink: 0; }
+.admin-toolbar .admin-refresh-button svg { flex-shrink: 0; }
+@media (max-width: 600px) {
+  .admin-toolbar { gap: 12px; }
+  .admin-toolbar .admin-refresh-button { padding: 0.65rem 0.85rem; font-size: 0.875rem; }
+}
+
+.checkin-view-options { display: inline-flex; gap: 4px; padding: 4px; border: 1px solid #d6deea; border-radius: 10px; background: #fff; }
+.checkin-view-options button { min-height: 44px; padding: 10px 16px; border: 0; border-radius: 7px; background: transparent; color: #526179; font: inherit; font-weight: 600; cursor: pointer; }
+.checkin-view-options button[aria-pressed="true"] { background: #2857a5; color: white; }
+.checkin-view-options button:focus-visible { outline: 3px solid #90b5f1; outline-offset: 2px; }

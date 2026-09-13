@@ -48,16 +48,18 @@ function Login({ onLogin, judge = false }) {
     <main className="login">
       <section className="login-card">
         <Brand />
+        <a className="hub-home" href="https://aiconclave-dashboard.pages.dev/">← Home</a>
         <h1>{judge ? "Judge sign in" : "Venue team sign in"}</h1>
         <p>
           {judge
-            ? "Use the individual login ID and password provided by the venue team."
+            ? "Sign in with your email and password."
             : "Manage judges and their assigned teams."}
         </p>
         <form onSubmit={submit}>
           <label>
-            Username
+            {judge ? "Email" : "Username"}
             <input
+              type={judge ? "email" : "text"}
               autoComplete="username"
               required
               value={username}
@@ -300,9 +302,8 @@ function Assignments({ data, save, busy }) {
                 value={judgeId}
                 onChange={(e) => chooseJudge(e.target.value)}
               >
-                <option value="">Select a {side.toLowerCase()} judge</option>
+                <option value="">Select a judge</option>
                 {data.judges
-                  .filter((j) => j.solution_type === side)
                   .map((j) => (
                     <option value={j.id} key={j.id}>
                       {j.name} (
@@ -315,7 +316,7 @@ function Assignments({ data, save, busy }) {
                   ))}
               </select>
             </label>
-            {!data.judges.some((j) => j.solution_type === side) && (
+            {!data.judges.length && (
               <p className="hint">
                 Add judges in the Judges tab to get started.
               </p>
@@ -425,33 +426,29 @@ function Assignments({ data, save, busy }) {
 function Judges({ data, save, busy, refresh }) {
   const [id, setId] = useState(""),
     [name, setName] = useState(""),
-    [side, setSide] = useState(SIDES[0]),
     [query, setQuery] = useState("");
   const judge = data.judges.find((j) => j.id === id),
     route = judge ? judgeRoute(data, judge) : null;
   function edit(j) {
     setId(j.id);
     setName(j.name);
-    setSide(j.solution_type);
   }
   function reset() {
     setId("");
     setName("");
-    setSide(SIDES[0]);
   }
   async function submit(e) {
     e.preventDefault();
     if (
       await save(
         id
-          ? { action: "saveJudge", judgeId: id, name, solutionType: side }
+          ? { action: "saveJudge", judgeId: id, name }
           : {
               action: "addJudges",
               names: name
                 .split("\n")
                 .map((n) => n.trim())
                 .filter(Boolean),
-              solutionType: side,
             },
         id ? "Judge updated." : "Judges added.",
       )
@@ -490,7 +487,7 @@ function Judges({ data, save, busy, refresh }) {
                 >
                   <span>
                     <strong>{j.name}</strong>
-                    <small>{j.solution_type}</small>
+                    <small>{j.department}</small>
                   </span>
                   <span className={r.needsReview ? "review" : "muted"}>
                     {r.needsReview ? "Review route" : `${r.teams.length} teams`}{" "}
@@ -528,19 +525,6 @@ function Judges({ data, save, busy, refresh }) {
                 placeholder="One name per line"
               />
             )}
-          </label>
-          <label>
-            Side
-            <select
-              aria-label="Side"
-              value={side}
-              onChange={(e) => setSide(e.target.value)}
-              disabled={Boolean(route?.teams.length)}
-            >
-              {SIDES.map((s) => (
-                <option key={s}>{s}</option>
-              ))}
-            </select>
           </label>
           <button className="primary" disabled={busy}>
             {judge ? "Save details" : "Add judges"}
@@ -726,6 +710,7 @@ function Workspace({ user, onLogout }) {
     <>
       <header className="topbar">
         <Brand />
+        <a className="hub-home" href="https://aiconclave-dashboard.pages.dev/">← Home</a>
         <div>
           <span className="staff-label">Venue team</span>
           <button
@@ -849,6 +834,7 @@ function EntryPage() {
     <main className="entry">
       <section className="entry-content">
         <Brand />
+        <a className="hub-home" href="https://aiconclave-dashboard.pages.dev/">← Home</a>
         <h1>Judging portal</h1>
         <p>Choose your workspace to continue.</p>
         <div className="entry-options">

@@ -1,27 +1,14 @@
 import { attendanceJson, requireAttendanceSession } from "../../_shared/attendance.js";
-
+export const DIRECTORY_SQL = `SELECT t.id,t.team_code,t.team_name,t.team_size,
+ COALESCE(lead.full_name,captain.full_name,'') lead_name, captain.full_name captain_name
+ FROM hackathon_teams t
+ LEFT JOIN hackathon_team_members lead ON lead.id=t.attendance_lead_member_id AND lead.team_id=t.id
+ LEFT JOIN hackathon_team_members captain ON captain.team_id=t.id AND captain.role='Captain'
+ WHERE t.submitted_at IS NOT NULL ORDER BY lower(t.team_name),t.id`;
 export async function onRequestGet(context) {
-  const auth = await requireAttendanceSession(context);
-  if (auth.response) return auth.response;
-  const params = new URL(context.request.url).searchParams;
-  const query = (params.get("q") || "").trim().slice(0, 100);
-  const like = `%${query}%`;
-  try {
-    const result = await context.env.DB.prepare(`
-      SELECT t.id, t.team_code, t.team_name, t.team_size, t.participant_category,
-        COALESCE(lead.full_name, captain.full_name, '') AS lead_name,
-        COUNT(m.id) AS member_count,
-        COALESCE(SUM(CASE WHEN a.present = 1 THEN 1 ELSE 0 END), 0) AS present_count
-      FROM hackathon_teams t
-      LEFT JOIN hackathon_team_members m ON m.team_id = t.id
-      LEFT JOIN hackathon_team_members lead ON lead.id = t.attendance_lead_member_id
-      LEFT JOIN hackathon_team_members captain ON captain.team_id = t.id AND captain.role = 'Captain'
-      LEFT JOIN hackathon_attendance a ON a.id = (SELECT aa.id FROM hackathon_attendance aa WHERE aa.team_id = t.id AND aa.member_id = m.id ORDER BY aa.attendance_date DESC, aa.marked_at DESC, aa.id DESC LIMIT 1)
-      WHERE t.submitted_at IS NOT NULL AND (t.team_name LIKE ? OR t.team_code LIKE ? OR lead.full_name LIKE ? OR captain.full_name LIKE ?)
-      GROUP BY t.id ORDER BY lower(t.team_name), t.id`).bind(like, like, like, like).all();
-    return attendanceJson({ ok: true, teams: result.results || [] });
-  } catch (error) {
-    console.error(JSON.stringify({ event: "attendance_teams_query_failed", reason: error instanceof Error ? error.message : "unknown" }));
-    return attendanceJson({ ok: false, error: "Could not load hackathon teams. Apply the check-in migration first." }, 500);
-  }
+ const auth=await requireAttendanceSession(context);if(auth.response)return auth.response;
+ try {
+  const result=await context.env.DB.prepare(DIRECTORY_SQL).bind().all();
+  return attendanceJson({ok:true,teams:result.results||[],syncedAt:new Date().toISOString()});
+ }catch{return attendanceJson({ok:false,error:'Could not refresh teams.'},500);}
 }

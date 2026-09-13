@@ -21,7 +21,7 @@ export function hasTeamRegistrationTables(tables) {
   return tables.has("hackathon_teams") && tables.has("hackathon_team_members");
 }
 
-export async function loadPanelRegistrations(db, tables) {
+export async function loadPanelRegistrations(db, tables, id = null) {
   if (!tables.has("panel_registrations")) return [];
   const result = await db
     .prepare(
@@ -30,8 +30,10 @@ export async function loadPanelRegistrations(db, tables) {
       organisation_type, organisation_type_other,
       information_confirmed, updates_opt_in, edit_version, created_at
     FROM panel_registrations
+    ${id === null ? "" : "WHERE id = ?"}
     ORDER BY datetime(created_at) DESC, id DESC`,
     )
+    .bind(...(id === null ? [] : [id]))
     .all();
   return result.results || [];
 }
@@ -76,9 +78,9 @@ function mapTeamRows(rows) {
   return [...teams.values()];
 }
 
-export async function loadHackathonRegistrations(db, tables) {
+export async function loadHackathonRegistrations(db, tables, id = null, recordType = null) {
   const registrations = [];
-  if (hasTeamRegistrationTables(tables)) {
+  if (hasTeamRegistrationTables(tables) && recordType !== "legacy") {
     const teamResult = await db
       .prepare(
         `SELECT
@@ -90,22 +92,25 @@ export async function loadHackathonRegistrations(db, tables) {
         m.edit_version AS member_edit_version
       FROM hackathon_teams t
       LEFT JOIN hackathon_team_members m ON m.team_id = t.id
-      WHERE t.submitted_at IS NOT NULL
+      WHERE t.submitted_at IS NOT NULL ${id === null ? "" : "AND t.id = ?"}
       ORDER BY datetime(COALESCE(t.submitted_at, t.created_at)) DESC, t.id DESC, m.member_order ASC`,
       )
-      .all();
+      .bind(...(id === null ? [] : [id]))
+    .all();
     registrations.push(...mapTeamRows(teamResult.results || []));
   }
-  if (tables.has("hackathon_registrations")) {
+  if (tables.has("hackathon_registrations") && recordType !== "team") {
     const legacyResult = await db
       .prepare(
         `SELECT id, name, email, phone, participant_type, organisation, tracks,
         challenge_area, subcategory, problem_area, idea_summary,
         information_confirmed, edit_version, created_at
       FROM hackathon_registrations
+      ${id === null ? "" : "WHERE id = ?"}
       ORDER BY datetime(created_at) DESC, id DESC`,
       )
-      .all();
+      .bind(...(id === null ? [] : [id]))
+    .all();
     registrations.push(
       ...(legacyResult.results || []).map((row) => ({
         ...row,
@@ -208,4 +213,28 @@ export async function loadRegistrationSummary(db, tables) {
     },
     recent,
   };
+}
+
+export async function loadRegistrationDirectory(db, tables, type) {
+  if (type === 'panel') {
+    if (!tables.has('panel_registrations')) return [];
+    return (await db.prepare(`SELECT id, name, email, participant_type, organisation,
+      department, panel_selection, industry_sector, created_at FROM panel_registrations
+      ORDER BY created_at DESC, id DESC`).all()).results || [];
+  }
+  const rows = [];
+  if (hasTeamRegistrationTables(tables)) {
+    rows.push(...((await db.prepare(`SELECT t.id, 'team' AS record_type, t.team_code,
+      t.team_name, t.participant_category, t.team_size, t.sector_track, t.solution_type,
+      COALESCE(t.submitted_at, t.created_at) AS created_at,
+      (SELECT m.full_name FROM hackathon_team_members m WHERE m.team_id = t.id
+       ORDER BY m.member_order LIMIT 1) AS captain_name
+      FROM hackathon_teams t WHERE t.submitted_at IS NOT NULL`).all()).results || []));
+  }
+  if (tables.has('hackathon_registrations')) {
+    rows.push(...((await db.prepare(`SELECT id, 'legacy' AS record_type, name, email,
+      participant_type, organisation, tracks, challenge_area, subcategory, created_at
+      FROM hackathon_registrations`).all()).results || []));
+  }
+  return rows.sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
 }

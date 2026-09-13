@@ -40,7 +40,7 @@ export async function onRequest(context) {
     return json({ ok: false, error: "Invalid request." }, 400);
   }
   const username =
-    typeof body?.username === "string" ? body.username.trim() : "";
+    typeof body?.username === "string" ? (body.role === "judge" ? body.username.trim().toLowerCase() : body.username.trim()) : "";
   const password = typeof body?.password === "string" ? body.password : "";
   if (!username || username.length > 80 || !password || password.length > 1024)
     return json({ ok: false, error: "Enter your username and password." }, 400);

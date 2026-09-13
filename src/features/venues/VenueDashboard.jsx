@@ -1,25 +1,30 @@
+import {RoomsTables} from './RoomsTables.jsx';
 import { useEffect, useRef, useState } from 'react';
 import { attendanceApi, venuesApi, isUnauthorized } from '../../services/dashboardApi.js';
 import { OperationsHeader } from '../../components/layout/OperationsHeader.jsx';
+
+function roomType(room) {
+  return room.solution_type === 'Non-Technical' ? 'Non-Technical · Both project modes' : room.project_mode === 'Prepared' ? 'Technical · Exhibition (prepared)' : 'Technical · Starting from scratch';
+}
 
 function seatSummary(tables) {
   return [2,3,4].map(seats => ({ seats, count: tables.filter(t => t.seats === seats).length })).filter(t => t.count).map(t => `${t.count} × ${t.seats}-seat`).join(' · ');
 }
 
-const menus = [['finder', 'Venue Finder'], ['allocate', 'Manual Allocation'], ['rooms', 'Rooms & Tables']];
+const menus = [['allocate', 'Manual Allocation'], ['rooms', 'Rooms & Tables']];
 function status(team) {
   if (!team.attendance_marked) return 'Not checked in — direct the team to the check-in desk.';
-  if (team.table_id) return `${team.block} block · ${team.room_name} · Table ${String(team.table_number).padStart(2, '0')}`;
+  if (team.table_id) return `${team.block ? team.block + ' block · ' : ''}${team.room_name} · Table ${`T${team.table_number}`}`;
   if (!team.project_mode) return 'Project mode missing — edit check-in to record it.';
   if (team.present_count < 2 || !team.lead_present) return 'Check-in needs correction — at least two members and the team lead must be present.';
   return 'Awaiting allocation';
 }
 function compatible(team, table) {
-  return !table.team_id && team.project_mode === table.project_mode && team.sector_track === table.sector && team.solution_type === table.solution_type && team.present_count <= table.seats;
+  return !table.team_id && (!table.project_mode || team.project_mode === table.project_mode) && (!table.sector || team.sector_track === table.sector) && team.solution_type === table.solution_type && team.present_count <= table.seats;
 }
 
 export function VenueDashboard({ user, onLogout }) {
-  const [menu, setMenu] = useState('finder');
+  const [menu, setMenu] = useState('rooms');
   const [data, setData] = useState({ teams: [], tables: [] });
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState(null);
@@ -33,6 +38,8 @@ export function VenueDashboard({ user, onLogout }) {
   const [updated, setUpdated] = useState('');
   const reload = useRef(null);
   useEffect(() => {
+    if(menu === 'rooms')return;
+    setLoading(true);
     let active = true, pending = false;
     async function refresh() {
       if (pending) return;
@@ -48,7 +55,7 @@ export function VenueDashboard({ user, onLogout }) {
     refresh();
     const timer = setInterval(refresh, 10000);
     return () => { active = false; clearInterval(timer); };
-  }, [onLogout]);
+  }, [onLogout,menu]);
   const canEdit = user?.attendanceAccess === 'write';
   const waiting = data.teams.filter(team => team.attendance_marked && !team.table_id);
   const selected = data.teams.find(team => team.team_id === selectedId);
@@ -71,7 +78,8 @@ export function VenueDashboard({ user, onLogout }) {
   function changeMenu(value) { setMenu(value); setQuery(''); setSelectedId(null); setTableId(''); setMessage(''); }
   const selectedTables = currentRoom ? data.tables.filter(t => t.id === currentRoom.id) : [];
   const showTeams = menu === 'allocate' || query.trim();
-  const shortStatus = team => team.table_id ? `${team.room_name} · Table ${String(team.table_number).padStart(2, '0')}` : !team.attendance_marked ? 'Not checked in' : !team.project_mode ? 'Project mode needed' : 'Awaiting allocation';
+  const shortStatus = team => team.table_id ? `${team.room_name} · Table ${`T${team.table_number}`}` : !team.attendance_marked ? 'Not checked in' : !team.project_mode ? 'Project mode needed' : 'Awaiting allocation';
+  if(menu === 'rooms')return <RoomsTables onLogout={onLogout} onManual={()=>changeMenu('allocate')}/>;
   return <div className="attendance-app">
     <OperationsHeader active="venues" onLogout={async () => { await attendanceApi.logout().catch(() => {}); onLogout(); }} />
     <main className="venue-main">
@@ -83,36 +91,15 @@ export function VenueDashboard({ user, onLogout }) {
         {menus.map(([id,label]) => <button key={id} aria-current={menu === id ? 'page' : undefined} onClick={() => changeMenu(id)}>{label}{id === 'allocate' && waiting.length > 0 && <span aria-label={`${waiting.length} waiting`}>{waiting.length}</span>}</button>)}
       </nav>
       <div className="venue-summary" aria-label="Allocation totals">
+        <span><strong>{new Set(data.tables.map(t => t.id)).size}</strong> venues</span>
+        <span><strong>{data.tables.length}</strong> total tables</span>
         <span><strong>{data.teams.filter(t => t.table_id).length}</strong> allocated</span>
         <span><strong>{waiting.length}</strong> waiting</span>
         <span><strong>{data.tables.filter(t => !t.team_id).length}</strong> free tables</span>
       </div>
       {error && <p className="ops-notice error" role="alert">{error}</p>}
       {message && <p className="ops-notice success" role="status">{message}</p>}
-      {loading ? <div className="venue-empty" role="status">Loading venues…</div> : menu === 'rooms' ? <>
-        <div className="venue-toolbar"><label className="venue-field">Block<select value={block} onChange={e => { setBlock(e.target.value); setRoomId(''); }}><option value="">All blocks</option>{['RS','R','CC','D'].map(b => <option key={b}>{b}</option>)}</select></label><span className="venue-result-count">{rooms.length} rooms</span></div>
-        <div className={`venue-workspace ${currentRoom ? 'detail-open' : ''}`}>
-          <section className="venue-room-list" aria-label="Rooms">
-            {rooms.map(room => {
-              const tables = data.tables.filter(t => t.id === room.id), occupied = tables.filter(t => t.team_id).length;
-              return <button key={room.id} className="venue-list-row" onClick={() => setRoomId(String(room.id))} aria-pressed={roomId === String(room.id)}>
-                <span className="venue-row-main"><strong>{room.name}</strong><small>{room.sector} · {room.solution_type}</small><small>{room.project_mode} · {seatSummary(tables)}</small></span>
-                <span className="venue-row-end"><b>{tables.length-occupied} free</b><small>{tables.length} tables</small></span>
-              </button>;
-            })}
-          </section>
-          <section className="venue-detail" aria-label="Room tables">
-            {currentRoom ? <>
-              <button className="venue-back" onClick={() => setRoomId('')}>← All rooms</button>
-              <div className="venue-detail-heading"><h2>{currentRoom.name}</h2><span className="venue-tag">{currentRoom.block} block</span></div>
-              <p className="venue-detail-meta">{currentRoom.sector} · {currentRoom.solution_type}<br />{currentRoom.project_mode} · {seatSummary(selectedTables)}</p>
-              <table className="venue-tables"><caption className="sr-only">Tables in {currentRoom.name}</caption><thead><tr><th scope="col">Table</th><th scope="col">Seats</th><th scope="col">Team</th><th scope="col">Status</th></tr></thead><tbody>
-                {selectedTables.map(table => <tr key={table.table_id}><th scope="row">{String(table.table_number).padStart(2,'0')}</th><td>{table.seats}</td><td>{table.team_id ? <><strong>{table.team_name}</strong><small>{table.team_code}</small></> : <span className="venue-muted">—</span>}</td><td><span className={`venue-tag ${table.team_id ? '' : 'available'}`}>{table.team_id ? 'Occupied' : 'Free'}</span></td></tr>)}
-              </tbody></table>
-            </> : <div className="venue-empty"><h2>Select a room</h2><p>View its tables and assigned teams.</p></div>}
-          </section>
-        </div>
-      </> : <>
+      {loading ? <div className="venue-empty" role="status">Loading venues…</div> : <>
         <div className="venue-toolbar">
           <label className="venue-field venue-search-field">Search team name or code<input value={query} onChange={e => { setQuery(e.target.value); setSelectedId(null); setTableId(''); }} placeholder="Team name or code" /></label>
         </div>
@@ -129,10 +116,10 @@ export function VenueDashboard({ user, onLogout }) {
               <p className="venue-team-code">{selected.team_code}</p><h2>{selected.team_name}</h2>
               <p className="venue-detail-meta">{selected.sector_track} · {selected.solution_type} · {selected.present_count} present<br />{selected.project_mode || 'Project mode not recorded'}</p>
               <div className={`venue-result ${selected.table_id ? 'is-assigned' : ''}`} role="status">
-                {selected.table_id ? <><span>Assigned venue</span><strong>{selected.room_name} <span>·</span> Table {String(selected.table_number).padStart(2,'0')}</strong><small>{selected.block} block</small></> : status(selected)}
+                {selected.table_id ? <><span>Assigned venue</span><strong>{selected.room_name} <span>·</span> Table {`T${selected.table_number}`}</strong>{selected.block && <small>{selected.block} block</small>}</> : status(selected)}
               </div>
-              {!selected.attendance_marked || !selected.project_mode || selected.present_count < 2 || !selected.lead_present ? <a className="ops-primary" href="/attendance">Open check-in desk</a> : menu === 'finder' ? (canEdit || !selected.table_id) && <button className="ops-secondary" onClick={() => { setMenu('allocate'); setQuery(''); setTableId(''); }}>{selected.table_id ? 'Reallocate team' : 'Open Manual Allocation'}</button> : canEdit ? <div className="venue-assignment-form">
-                <label className="venue-field">Compatible free room and table<select value={tableId} disabled={saving} onChange={e => setTableId(e.target.value)}><option value="">Choose a table</option>{free.map(t => <option key={t.table_id} value={t.table_id}>{t.name} · Table {String(t.table_number).padStart(2,'0')} · {t.seats} seats</option>)}</select></label>
+              {!selected.attendance_marked || !selected.project_mode || selected.present_count < 2 || !selected.lead_present ? <a className="ops-primary" href="/attendance">Open check-in desk</a> : canEdit ? <div className="venue-assignment-form">
+                <label className="venue-field">Compatible free room and table<select value={tableId} disabled={saving} onChange={e => setTableId(e.target.value)}><option value="">Choose a table</option>{free.map(t => <option key={t.table_id} value={t.table_id}>{t.name} · Table {`T${t.table_number}`} · {t.seats} seats</option>)}</select></label>
                 {!free.length && <p className="venue-help">{selected.table_id ? 'No matching tables available. The current assignment is retained.' : 'No matching tables available. The team remains on the waiting list.'}</p>}
                 <button className="ops-primary" disabled={saving || !free.some(t => String(t.table_id) === tableId)} onClick={assign}>{saving ? 'Saving…' : selected.table_id ? 'Reallocate room and table' : 'Assign room and table'}</button>
               </div> : <p className="venue-help">A check-in editor can change this assignment.</p>}
