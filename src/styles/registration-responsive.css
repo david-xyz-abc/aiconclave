@@ -1127,3 +1127,13 @@
   }
 }
 
+
+/* Closed workshops keep their details visible without a registration action. */
+.workshop-registration-card .workshop-register-button:disabled {
+  background: #eef0f3;
+  border-color: #d8dde5;
+  color: #596273;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}

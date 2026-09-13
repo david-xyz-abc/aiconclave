@@ -31,7 +31,6 @@ const WORKSHOPS = [
     logo: '/partners/unique-world-robotics.png',
     resourcePeople: 'Anumol P Joy, Robotics Engineer',
     handsOn: true,
-    registrationUrl: 'https://e.ajce.in/gi0td2',
   },
   {
     id: 'physical-ai',
@@ -40,7 +39,6 @@ const WORKSHOPS = [
     logo: '/partners/tcs-horizontal.png',
     resourcePeople: 'Jason Lenox and Jim Seelan',
     handsOn: true,
-    registrationUrl: 'https://e.ajce.in/zvel8s',
   },
   {
     id: 'edge-ai',
@@ -49,7 +47,6 @@ const WORKSHOPS = [
     logo: '/partners/cloud-innovations.jpg',
     resourcePeople: 'Mr. Prajeesh A, Founder & Chief Executive Officer',
     handsOn: true,
-    registrationUrl: 'https://e.ajce.in/3ualai',
   },
   {
     id: 'ai-in-action',
@@ -58,7 +55,6 @@ const WORKSHOPS = [
     logo: '/partners/ust.jpg',
     resourcePeople: 'Renjith Paulose',
     handsOn: false,
-    registrationUrl: 'https://e.ajce.in/wyqzwn',
   },
   {
     id: 'build-and-ship-ai-products',
@@ -67,7 +63,6 @@ const WORKSHOPS = [
     banner: '/workshops/sunith-vs-landscape.png',
     resourcePeople: 'Sunith VS (TrueVibeCoder)',
     handsOn: true,
-    registrationUrl: 'https://e.ajce.in/b10rxz',
   },
   {
     id: 'agentic-ai-zero-to-one',
@@ -76,7 +71,6 @@ const WORKSHOPS = [
     banner: '/workshops/alosh-denny-landscape.png',
     resourcePeople: 'Alosh Denny',
     handsOn: true,
-    registrationUrl: 'https://e.ajce.in/7tn6rb',
   },
 ]
 
@@ -154,28 +148,6 @@ function HackathonInstructionsDialog({ open, onContinue }) {
   </dialog>
 }
 
-function WorkshopRedirectDialog({ workshop, onClose }) {
-  const dialogRef = useRef(null)
-
-  useEffect(() => {
-    const dialog = dialogRef.current
-    if (!dialog) return
-    if (workshop && !dialog.open) dialog.showModal()
-    else if (!workshop && dialog.open) dialog.close()
-  }, [workshop])
-
-  if (!workshop) return <dialog ref={dialogRef} className="workshop-redirect-dialog" />
-
-  return <dialog ref={dialogRef} className="workshop-redirect-dialog" aria-labelledby="workshop-redirect-title" onClose={onClose}>
-    <span className="stamp">Paid workshop</span>
-    <h2 id="workshop-redirect-title">Continue to workshop registration?</h2>
-    <p>You are registering for <strong>{workshop.title}</strong>{workshop.banner ? <> with <strong>{workshop.resourcePeople}</strong>, {workshop.organisation}.</> : <>, conducted by <strong>{workshop.organisation}</strong>.</>}</p>
-    <div className="workshop-redirect-notice"><strong>You will be redirected to the AJCE registration website.</strong><span>This is a paid workshop. Complete the registration and payment details on the college website.</span></div>
-    <RegistrationEnquiry eventKey="workshop" />
-    <div className="workshop-redirect-actions"><a className="btn btn-primary" href={workshop.registrationUrl} rel="noopener noreferrer">Continue to Registration <span aria-hidden="true">↗</span></a><button type="button" className="btn btn-outline" onClick={() => dialogRef.current?.close()}>Cancel</button></div>
-  </dialog>
-}
-
 function RegistrationEligibilityError({ message, onRetry }) {
   return <main id="main"><section className="section"><div className="container register-layout"><div className="account-error account-error-page" role="alert"><h1>Registration status could not be checked.</h1><p>{message}</p><button type="button" className="btn btn-outline" onClick={onRetry}>Try again</button></div></div></section></main>
 }
@@ -191,7 +163,6 @@ function AlreadyRegisteredPage({ eventName }) {
 export function RegistrationChoicePage({ participant, onSignOut, signingOut }) {
   const [capacity, retryCapacity] = useHackathonCapacity()
   const [registrationState, retryRegistrationCheck] = useExistingRegistrations(participant)
-  const [selectedWorkshop, setSelectedWorkshop] = useState(null)
   const panelRegistered = hasEventRegistration(registrationState.registrations, 'panel')
   const hackathonRegistered = hasEventRegistration(registrationState.registrations, 'hackathon')
   const panelRegistration = registrationState.registrations.find(({ type }) => type === 'Panel Discussion')
@@ -213,11 +184,10 @@ export function RegistrationChoicePage({ participant, onSignOut, signingOut }) {
           : <div className="workshop-organisation"><img src={workshop.logo} alt={`${workshop.organisation} logo`} loading="lazy" decoding="async" /><div><small>Conducted by</small><strong>{workshop.organisation}</strong></div></div>}
         <h3>{workshop.title}</h3>
         {!workshop.banner && <div className="workshop-resource"><small>Resource {workshop.resourcePeople.includes(' and ') ? 'people' : 'person'}</small><span>{workshop.resourcePeople}</span></div>}
-        <button type="button" className="btn btn-primary workshop-register-button" onClick={() => setSelectedWorkshop(workshop)}>Register for Workshop <span aria-hidden="true">→</span></button>
+        <button type="button" className="btn btn-primary workshop-register-button" disabled>Registration closed</button>
       </article>)}</div>
     </section>
     </div></section>
-    <WorkshopRedirectDialog workshop={selectedWorkshop} onClose={() => setSelectedWorkshop(null)} />
   </main>
 }
 
