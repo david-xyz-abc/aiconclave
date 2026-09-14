@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { isUnauthorized, registrationsApi } from "../services/dashboardApi.js";
 
-const CACHE_KEY = 'alpha-admin-directory-v2';
+const CACHE_KEY = 'alpha-admin-directory-v3';
 const EMPTY_SUMMARY = { total: 0, panelTotal: 0, hackathonTotal: 0, students: 0 };
 function readCache(owner) {
   try {

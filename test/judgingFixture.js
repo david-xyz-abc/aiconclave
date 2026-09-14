@@ -72,6 +72,7 @@ export function judgingFixture(access = "write") {
     f.sqlite
       .prepare("INSERT INTO venue_checkins VALUES (?, 'Prepared')")
       .run(id);
+    f.DB.setPreparation('Prepared',id);
     for (let n = 1; n <= 3; n++)
       f.sqlite
         .prepare(

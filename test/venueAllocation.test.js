@@ -77,10 +77,10 @@ test('attendance allocates by mode, sector, solution, present count; repeated sa
  } finally { f.sqlite.close(); }
 });
 
-test('missing mode and incomplete roster are rejected before writing', async () => {
+test('incomplete roster is rejected before writing', async () => {
  const f=fixture();
  try {
-  for(const body of [payload(3,''),{...payload(),attendance:payload().attendance.slice(0,2)}]) {
+  for(const body of [{...payload(),attendance:payload().attendance.slice(0,2)}]) {
    assert.equal((await attendance(context(f.DB,body))).status,400);
   }
   assert.equal(f.writes,0);

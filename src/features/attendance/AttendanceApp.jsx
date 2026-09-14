@@ -313,6 +313,10 @@ function AttendanceDesk({ onLogout, user }) {
                         <dt>Sector</dt>
                         <dd>{team.sector_track || 'Not specified'}</dd>
                       </div>
+                      <div className="checkin-classification" data-kind={team.allocation?.project_mode === 'Prepared' ? 'Prepared' : 'Unprepared'}>
+                        <dt>Preparation</dt>
+                        <dd>{team.allocation?.project_mode === 'Prepared' ? 'Prepared' : 'Unprepared'}</dd>
+                      </div>
                       {(team.allocation?.table_id || attendanceMarked) && (
                         <div className="checkin-classification checkin-seat" role="status">
                           <dt>Room &amp; table</dt>
@@ -332,18 +336,10 @@ function AttendanceDesk({ onLogout, user }) {
                   {error && <p className="form-error" role="alert">{error}</p>}
                 </div> : <>
                 <section className="venue-attendance-panel" ref={venuePanel}>
-                  <fieldset className="venue-mode-toggle" disabled={controlsLocked}>
-                    <legend>Project mode — ask the team</legend>
-                    {['Prepared', 'Starting from scratch'].map(mode => <label key={mode}>
-                      <input type="radio" name="project-mode" value={mode} checked={team.allocation?.project_mode === mode}
-                        onChange={() => { setTeam(current => ({ ...current, allocation: { ...current.allocation, project_mode: mode } })); setShowConfirmDialog(false); }} />
-                      <span>{mode}</span>
-                    </label>)}
-                  </fieldset>
                   {!team.allocation?.table_id && (
-                    <p role="status">{attendanceMarked ? (team.allocation?.project_mode ? 'Awaiting allocation — staff can assign a compatible table in Manual Allocation.' : 'Project mode not recorded. Edit check-in to select it and allocate a table.') : 'A matching room and table will be assigned when check-in is saved.'}</p>
+                    <p role="status">{attendanceMarked ? 'Awaiting allocation — staff can assign a compatible table in Manual Allocation.' : 'A matching room and table will be assigned when check-in is saved.'}</p>
                   )}
-                  {editingAttendance && <small>Saving rechecks allocation using the selected mode and members present.</small>}
+                  {editingAttendance && <small>Saving rechecks allocation using the registered preparation status and members present.</small>}
                 </section>
                 <div className="attendance-controls">
                   <div className="attendance-lead-control">

@@ -288,7 +288,7 @@ test("sector and preparation filters exclude incompatible teams from ranges", as
   const f = judgingFixture(),
     id = await add(f);
   f.sqlite.exec(
-    "UPDATE hackathon_teams SET sector_track='Education' WHERE id=8; UPDATE venue_checkins SET project_mode='Starting from scratch' WHERE team_id=7;",
+    "UPDATE hackathon_teams SET sector_track='Education' WHERE id=8; UPDATE hackathon_teams SET preparation_mode='Starting from scratch' WHERE id=7;",
   );
   const d = await loadWorkspace(f.DB);
   const all = { solution_type: "Technical", sector: "", mode: "" };
