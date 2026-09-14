@@ -30,7 +30,7 @@ export function LandingPage() {
           <p>View assigned teams and submit evaluations.</p>
         </a>
         <a href="https://aiconclave-judging-alpha.pages.dev/team/login">
-          <strong>Venue management <span aria-hidden="true">→</span></strong>
+          <strong>Evaluation Team <span aria-hidden="true">→</span></strong>
           <p>Manage judges and assign teams for evaluation.</p>
         </a>
         <a href="/excel">

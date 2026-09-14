@@ -118,13 +118,12 @@ export function JudgeApp({ user, onLogout }) {
   return (
     <>
       <header className="topbar">
-        <a className="brand" href="/">
-          <span>AC</span>
+        <a className="brand" href="https://aiconclave-dashboard-alpha.pages.dev/" aria-label="Home" title="Home" onClick={event => { if (dirty && !window.confirm("Return home and discard unsaved changes?")) event.preventDefault(); }}>
+          <span><i className="fas fa-home" aria-hidden="true" /></span>
           <strong>AI CONCLAVE 2026</strong>
           <i>Judging</i>
         </a>
         <div>
-          <a className="hub-home" href="https://aiconclave-dashboard-alpha.pages.dev/" onClick={event => { if (dirty && !window.confirm("Return home and discard unsaved changes?")) event.preventDefault(); }}>Home</a>
           <span className="staff-label">
             {data?.judge?.name || user.username}
           </span>

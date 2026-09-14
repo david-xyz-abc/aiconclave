@@ -2,9 +2,8 @@ import { BrandLockup } from '../common/BrandLockup.jsx';
 
 export function OperationsHeader({ active, onLogout, children }) {
   return <header className="ops-header">
-    <a className="ops-brand" href="/" aria-label="AI Conclave operations"><BrandLockup /></a>
+    <a className="ops-brand" href="/" aria-label="Home" title="Home"><BrandLockup home /></a>
     <nav aria-label="Operations navigation">
-      <a href="/">Home</a>
       {active !== 'admin' && <>
       <a href="/attendance" aria-current={active === 'attendance' ? 'page' : undefined}>Check in</a>
       <a href="/attendance/venues" aria-current={active === 'venues' ? 'page' : undefined}>Staff venues</a>

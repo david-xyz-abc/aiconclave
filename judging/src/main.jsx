@@ -15,8 +15,8 @@ import { Emergency } from "./Emergency.jsx";
 import { JudgeAccount } from "./JudgeAccount.jsx";
 function Brand() {
   return (
-    <a className="brand" href="/" aria-label="Judging operations home">
-      <span>AC</span>
+    <a className="brand" href="https://aiconclave-dashboard-alpha.pages.dev/" aria-label="Home" title="Home">
+      <span><i className="fas fa-home" aria-hidden="true" /></span>
       <strong>AI CONCLAVE 2026</strong>
       <i>Judging</i>
     </a>
@@ -48,8 +48,7 @@ function Login({ onLogin, judge = false }) {
     <main className="login">
       <section className="login-card">
         <Brand />
-        <a className="hub-home" href="https://aiconclave-dashboard-alpha.pages.dev/">← Home</a>
-        <h1>{judge ? "Judge sign in" : "Venue team sign in"}</h1>
+        <h1>{judge ? "Judge sign in" : "Evaluation Team sign in"}</h1>
         <p>
           {judge
             ? "Sign in with your email and password."
@@ -85,9 +84,6 @@ function Login({ onLogin, judge = false }) {
             {busy ? "Signing in…" : "Sign in"}
           </button>
         </form>
-        <a className="back-link" href="/">
-          ← Back to login options
-        </a>
       </section>
     </main>
   );
@@ -669,9 +665,8 @@ function Workspace({ user, onLogout }) {
     <>
       <header className="topbar">
         <Brand />
-        <a className="hub-home" href="https://aiconclave-dashboard-alpha.pages.dev/">← Home</a>
         <div>
-          <span className="staff-label">Venue team</span>
+          <span className="staff-label">Evaluation Team</span>
           <button
             onClick={async () => {
               try {
@@ -789,32 +784,8 @@ function Workspace({ user, onLogout }) {
   );
 }
 function EntryPage() {
-  return (
-    <main className="entry">
-      <section className="entry-content">
-        <Brand />
-        <a className="hub-home" href="https://aiconclave-dashboard-alpha.pages.dev/">← Home</a>
-        <h1>Judging portal</h1>
-        <p>Choose your workspace to continue.</p>
-        <div className="entry-options">
-          <a className="card entry-option" href="/judges/login">
-            <h2>
-              Judge login <span aria-hidden="true">→</span>
-            </h2>
-            <p>Access your assigned teams and evaluations.</p>
-            <small>Individual judge access</small>
-          </a>
-          <a className="card entry-option" href="/team/login">
-            <h2>
-              Venue team login <span aria-hidden="true">→</span>
-            </h2>
-            <p>Manage judges, team assignments, and room routes.</p>
-            <small>Venue team access</small>
-          </a>
-        </div>
-      </section>
-    </main>
-  );
+  useEffect(() => { window.location.replace("https://aiconclave-dashboard-alpha.pages.dev/"); }, []);
+  return null;
 }
 function App() {
   const [user, setUser] = useState(null),
