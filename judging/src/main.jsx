@@ -15,8 +15,8 @@ import { Emergency } from "./Emergency.jsx";
 import { JudgeAccount } from "./JudgeAccount.jsx";
 function Brand() {
   return (
-    <a className="brand" href="/" aria-label="Judging operations home">
-      <span>AC</span>
+    <a className="brand" href="https://aiconclave-dashboard.pages.dev/" aria-label="Home" title="Home">
+      <span><i className="fas fa-home" aria-hidden="true" /></span>
       <strong>AI CONCLAVE 2026</strong>
       <i>Judging</i>
     </a>
@@ -48,8 +48,7 @@ function Login({ onLogin, judge = false }) {
     <main className="login">
       <section className="login-card">
         <Brand />
-        <a className="hub-home" href="https://aiconclave-dashboard.pages.dev/">← Home</a>
-        <h1>{judge ? "Judge sign in" : "Venue team sign in"}</h1>
+        <h1>{judge ? "Judge sign in" : "Evaluation Team sign in"}</h1>
         <p>
           {judge
             ? "Sign in with your email and password."
@@ -85,9 +84,6 @@ function Login({ onLogin, judge = false }) {
             {busy ? "Signing in…" : "Sign in"}
           </button>
         </form>
-        <a className="back-link" href="/">
-          ← Back to login options
-        </a>
       </section>
     </main>
   );
@@ -172,13 +168,12 @@ function Route({ teams }) {
 }
 function Assignments({ data, save, busy }) {
   const [side, setSide] = useState(SIDES[0]),
-    [sector, setSector] = useState(""),
-    [mode, setMode] = useState(""),
+    [mode, setMode] = useState(MODES[0]),
     [judgeId, setJudgeId] = useState(""),
     [start, setStart] = useState(""),
     [count, setCount] = useState(5),
     [suggested, setSuggested] = useState(false);
-  const filters = { solution_type: side, sector, mode },
+  const filters = { solution_type: side, sector: "", mode },
     teams = orderedTeams(data, filters),
     judge = data.judges.find((j) => j.id === judgeId);
   const preview = previewAssignment(
@@ -191,7 +186,6 @@ function Assignments({ data, save, busy }) {
   const currentCount = data.assignments.filter(
     (a) => a.judge_id === judgeId,
   ).length;
-  const sectors = [...new Set(data.rooms.map((r) => r.sector))].sort();
   function changeFilter(set, value) {
     set(value);
     setStart("");
@@ -225,60 +219,13 @@ function Assignments({ data, save, busy }) {
   }
   return (
     <>
-      <div className="filters card">
-        <label>
-          Side
-          <select
-            aria-label="Side"
-            value={side}
-            onChange={(e) => {
-              changeFilter(setSide, e.target.value);
-              setJudgeId("");
-            }}
-          >
-            {SIDES.map((s) => (
-              <option key={s}>{s}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Sector
-          <select
-            aria-label="Sector"
-            value={sector}
-            onChange={(e) => changeFilter(setSector, e.target.value)}
-          >
-            <option value="">All sectors</option>
-            {sectors.map((s) => (
-              <option key={s}>{s}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Preparation
-          <select
-            aria-label="Preparation"
-            value={mode}
-            onChange={(e) => changeFilter(setMode, e.target.value)}
-          >
-            <option value="">Both preparation modes</option>
-            {MODES.map((s) => (
-              <option key={s} value={s}>
-                {s === "Starting from scratch"
-                  ? "Not prepared · starting from scratch"
-                  : s}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
       <div className="workspace">
         <section className="card directory">
           <div className="section-head">
             <div>
-              <h2>Teams in visit order</h2>
+              <h2>Teams eligible for assignment</h2>
               <p>
-                {teams.length} matching teams ·{" "}
+                {side} · {mode} · {teams.length} teams ·{" "}
                 {teams.filter((t) => !t.judge_id).length} unassigned
               </p>
             </div>
@@ -291,7 +238,7 @@ function Assignments({ data, save, busy }) {
         <section className="card assignment">
           <h2>Assign a judge</h2>
           <p className="muted">
-            Choose a consecutive range of matching tables.
+            Choose who this judge will evaluate.
           </p>
           <form onSubmit={submit}>
             <label>
@@ -316,6 +263,14 @@ function Assignments({ data, save, busy }) {
                   ))}
               </select>
             </label>
+            <div className="assignment-scope">
+              <fieldset><legend>Solution type to evaluate</legend><div className="filter-choices">
+                {SIDES.map(value => <button type="button" key={value} aria-pressed={side === value} disabled={busy} onClick={() => changeFilter(setSide,value)}>{value}</button>)}
+              </div></fieldset>
+              <fieldset><legend>Team preparation</legend><div className="filter-choices">
+                {MODES.map(value => <button type="button" key={value} aria-pressed={mode === value} disabled={busy} onClick={() => changeFilter(setMode,value)}>{value}</button>)}
+              </div></fieldset>
+            </div>
             {!data.judges.length && (
               <p className="hint">
                 Add judges in the Judges tab to get started.
@@ -710,9 +665,8 @@ function Workspace({ user, onLogout }) {
     <>
       <header className="topbar">
         <Brand />
-        <a className="hub-home" href="https://aiconclave-dashboard.pages.dev/">← Home</a>
         <div>
-          <span className="staff-label">Venue team</span>
+          <span className="staff-label">Evaluation Team</span>
           <button
             onClick={async () => {
               try {
@@ -830,32 +784,8 @@ function Workspace({ user, onLogout }) {
   );
 }
 function EntryPage() {
-  return (
-    <main className="entry">
-      <section className="entry-content">
-        <Brand />
-        <a className="hub-home" href="https://aiconclave-dashboard.pages.dev/">← Home</a>
-        <h1>Judging portal</h1>
-        <p>Choose your workspace to continue.</p>
-        <div className="entry-options">
-          <a className="card entry-option" href="/judges/login">
-            <h2>
-              Judge login <span aria-hidden="true">→</span>
-            </h2>
-            <p>Access your assigned teams and evaluations.</p>
-            <small>Individual judge access</small>
-          </a>
-          <a className="card entry-option" href="/team/login">
-            <h2>
-              Venue team login <span aria-hidden="true">→</span>
-            </h2>
-            <p>Manage judges, team assignments, and room routes.</p>
-            <small>Venue team access</small>
-          </a>
-        </div>
-      </section>
-    </main>
-  );
+  useEffect(() => { window.location.replace("https://aiconclave-dashboard.pages.dev/"); }, []);
+  return null;
 }
 function App() {
   const [user, setUser] = useState(null),

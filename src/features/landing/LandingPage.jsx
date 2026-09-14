@@ -17,10 +17,6 @@ export function LandingPage() {
           <strong>Check in <span aria-hidden="true">→</span></strong>
           <p>Check in teams and assign their venues.</p>
         </a>
-        <a href="/attendance/venues">
-          <strong>Staff venues <span aria-hidden="true">→</span></strong>
-          <p>Find teams, manage allocations and view rooms.</p>
-        </a>
         <a href="https://aiconclave-room-finder.pages.dev/">
           <strong>Room finder <span aria-hidden="true">→</span></strong>
           <p>Find a team’s room and table. Hospitality access.</p>
@@ -34,7 +30,7 @@ export function LandingPage() {
           <p>View assigned teams and submit evaluations.</p>
         </a>
         <a href="https://aiconclave-judging.pages.dev/team/login">
-          <strong>Venue management <span aria-hidden="true">→</span></strong>
+          <strong>Evaluation Team <span aria-hidden="true">→</span></strong>
           <p>Manage judges and assign teams for evaluation.</p>
         </a>
         <a href="/excel">

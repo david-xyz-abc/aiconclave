@@ -14,142 +14,133 @@
     "category": "Technical",
     "seats": 3,
     "start": 91,
-    "end": 106,
-    "projectMode": "Prepared"
+    "end": 105,
+    "projectMode": "Starting from scratch"
   },
   {
     "id": 1003,
     "name": "RS205",
     "category": "Technical",
     "seats": 2,
-    "start": 107,
-    "end": 126,
+    "start": 106,
+    "end": 125,
     "projectMode": "Starting from scratch"
   },
   {
     "id": 1004,
     "name": "RS209",
     "category": "Technical",
-    "seats": 3,
-    "start": 127,
-    "end": 146,
+    "seats": 4,
+    "start": 126,
+    "end": 145,
     "projectMode": "Starting from scratch"
   },
   {
-    "id": 1024,
-    "name": "RS303",
+    "id": 1005,
+    "name": "2nd Corridor",
     "category": "Technical",
-    "seats": 3,
-    "start": 147,
-    "end": 162,
-    "projectMode": "Starting from scratch"
+    "seats": 4,
+    "start": 146,
+    "end": 185,
+    "projectMode": "Prepared"
   },
   {
     "id": 1006,
     "name": "RS305",
     "category": "Technical",
     "seats": 3,
-    "start": 163,
-    "end": 178,
-    "projectMode": "Prepared"
+    "start": 186,
+    "end": 200,
+    "projectMode": "Starting from scratch"
   },
   {
-    "id": 1025,
-    "name": "RS306",
-    "category": "Technical",
-    "seats": 3,
-    "start": 179,
-    "end": 194,
-    "projectMode": "Prepared"
-  },
-  {
-    "id": 1026,
-    "name": "RS408",
+    "id": 1007,
+    "name": "3rd Corridor",
     "category": "Technical",
     "seats": 4,
-    "start": 195,
-    "end": 210,
+    "start": 201,
+    "end": 240,
     "projectMode": "Prepared"
   },
   {
     "id": 1008,
     "name": "RS503",
     "category": "Technical",
-    "seats": 3,
-    "start": 211,
-    "end": 230,
+    "seats": 2,
+    "start": 241,
+    "end": 260,
     "projectMode": "Starting from scratch"
   },
   {
     "id": 1009,
-    "name": "RS504 505 506",
+    "name": "RS504",
     "category": "Technical",
     "seats": 4,
-    "start": 231,
-    "end": 270,
+    "start": 261,
+    "end": 300,
     "projectMode": "Starting from scratch"
   },
   {
     "id": 1010,
     "name": "RS508",
     "category": "Technical",
-    "seats": 4,
-    "start": 271,
-    "end": 286,
+    "seats": 3,
+    "start": 301,
+    "end": 315,
     "projectMode": "Starting from scratch"
   },
   {
     "id": 1011,
     "name": "RS703",
-    "category": "Technical",
+    "category": "Non-Technical",
     "seats": 2,
-    "start": 287,
-    "end": 302,
-    "projectMode": "Starting from scratch"
+    "start": 316,
+    "end": 325,
+    "projectMode": null
   },
   {
     "id": 1012,
     "name": "RS705",
-    "category": "Technical",
-    "seats": 4,
-    "start": 303,
-    "end": 318,
-    "projectMode": "Starting from scratch"
+    "category": "Non-Technical",
+    "seats": 3,
+    "start": 326,
+    "end": 340,
+    "projectMode": null
   },
   {
     "id": 1013,
     "name": "RS706",
     "category": "Technical",
-    "seats": 4,
-    "start": 319,
-    "end": 334,
+    "seats": 3,
+    "start": 341,
+    "end": 355,
     "projectMode": "Starting from scratch"
   },
   {
     "id": 1014,
     "name": "RS802",
-    "category": "Non-Technical",
-    "seats": 4,
-    "start": 335,
-    "end": 344,
-    "projectMode": "Prepared"
+    "category": "Technical",
+    "seats": 3,
+    "start": 356,
+    "end": 365,
+    "projectMode": "Starting from scratch"
   },
   {
     "id": 1015,
     "name": "RS803",
-    "category": "Non-Technical",
-    "seats": 4,
-    "start": 345,
-    "end": 360,
-    "projectMode": "Prepared"
+    "category": "Technical",
+    "seats": 3,
+    "start": 366,
+    "end": 380,
+    "projectMode": "Starting from scratch"
   },
   {
     "id": 1016,
     "name": "RS806",
     "category": "Technical",
-    "seats": 4,
-    "start": 361,
-    "end": 376,
+    "seats": 3,
+    "start": 381,
+    "end": 395,
     "projectMode": "Starting from scratch"
   },
   {
@@ -157,8 +148,8 @@
     "name": "CCF LAB 1",
     "category": "Technical",
     "seats": 4,
-    "start": 377,
-    "end": 396,
+    "start": 396,
+    "end": 415,
     "projectMode": "Starting from scratch"
   },
   {
@@ -166,8 +157,8 @@
     "name": "CCF LAB 2",
     "category": "Technical",
     "seats": 4,
-    "start": 397,
-    "end": 416,
+    "start": 416,
+    "end": 435,
     "projectMode": "Starting from scratch"
   },
   {
@@ -175,17 +166,17 @@
     "name": "CCF LAB 3",
     "category": "Technical",
     "seats": 4,
-    "start": 417,
-    "end": 427,
+    "start": 436,
+    "end": 446,
     "projectMode": "Starting from scratch"
   },
   {
     "id": 1020,
     "name": "CCF LAB 4",
     "category": "Technical",
-    "seats": 4,
-    "start": 428,
-    "end": 439,
+    "seats": 2,
+    "start": 447,
+    "end": 458,
     "projectMode": "Starting from scratch"
   },
   {
@@ -193,25 +184,25 @@
     "name": "CCF Seminar hall",
     "category": "Non-Technical",
     "seats": 4,
-    "start": 440,
-    "end": 449,
-    "projectMode": "Prepared"
+    "start": 459,
+    "end": 468,
+    "projectMode": null
   },
   {
     "id": 1022,
     "name": "Incubation",
     "category": "Non-Technical",
     "seats": 4,
-    "start": 450,
-    "end": 495,
-    "projectMode": "Starting from scratch"
+    "start": 469,
+    "end": 513,
+    "projectMode": null
   },
   {
     "id": 1023,
     "name": "Alphonsa Hall",
     "category": "Technical",
     "seats": 4,
-    "start": 496,
+    "start": 514,
     "end": 568,
     "projectMode": "Prepared"
   }

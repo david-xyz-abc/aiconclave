@@ -4,7 +4,7 @@ export function searchDirectory(teams,query) {
  if(q.length<2)return [];
  return teams.filter(team=>[team.team_name,team.team_code,team.captain,team.leader].some(value=>normalize(value).includes(q)));
 }
-export const CACHE_KEY='room-finder-directory-v1';
+export const CACHE_KEY='room-finder-directory-v2';
 export function readDirectory(storage) {
  try {const data=JSON.parse(storage.getItem(CACHE_KEY));
  if(!data||!Array.isArray(data.teams)||!Number.isFinite(Date.parse(data.syncedAt)))return null;

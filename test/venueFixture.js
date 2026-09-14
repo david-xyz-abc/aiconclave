@@ -18,8 +18,9 @@ export function fixture(access = 'write', tableSeating = true) {
   sqlite.exec(readFileSync(new URL('../db/migrations/0020_alpha_venue_plan.sql', import.meta.url), 'utf8'));
   if (tableSeating) sqlite.exec(readFileSync(new URL('../db/migrations/0024_table_seating.sql', import.meta.url), 'utf8'));
   sqlite.exec(readFileSync(new URL('../db/migrations/0029_checkin_versions.sql', import.meta.url),'utf8'));
+  sqlite.exec(readFileSync(new URL('../db/migrations/0033_registered_preparation.sql', import.meta.url),'utf8'));
   let writes = 0;
-  const DB = { currentVersion(id=1) { return sqlite.prepare('SELECT checkin_version FROM hackathon_teams WHERE id=?').get(id)?.checkin_version; }, prepare(sql) {
+  const DB = { setPreparation(mode,id=1) { sqlite.prepare('UPDATE hackathon_teams SET preparation_mode=? WHERE id=?').run(mode,id); }, currentVersion(id=1) { return sqlite.prepare('SELECT checkin_version FROM hackathon_teams WHERE id=?').get(id)?.checkin_version; }, prepare(sql) {
     let args = [];
     const statement = {
       bind(...values) { args = values; return statement; },
@@ -40,6 +41,8 @@ export function fixture(access = 'write', tableSeating = true) {
 }
 
 export function context(DB, body, method = 'POST', path = 'teams/1') {
+  // Legacy allocation scenarios declare their registered preparation via the fixture.
+  if(method==='POST' && body?.attendance && body.projectMode && body.expectedVersion===undefined) DB.setPreparation(body.projectMode);
   if(method==='POST' && body?.attendance && body.expectedVersion===undefined) body={...body,expectedVersion:DB.currentVersion()};
   return { env: { DB }, params: { id: '1' }, request: new Request(`https://test.example/api/attendance/${path}`, {
     method, headers: { origin: 'https://test.example', 'content-type': 'application/json', cookie: '__Host-aiconclave_attendance_session=test' },
