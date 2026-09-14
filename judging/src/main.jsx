@@ -253,7 +253,7 @@ function Assignments({ data, save, busy }) {
                 {data.judges
                   .map((j) => (
                     <option value={j.id} key={j.id}>
-                      {j.name} (
+                      {j.name}{j.slot_preference ? ` [${j.slot_preference}]` : ""}{j.is_backup ? " [Backup]" : ""} (
                       {
                         data.assignments.filter((a) => a.judge_id === j.id)
                           .length
@@ -441,7 +441,7 @@ function Judges({ data, save, busy, refresh }) {
                   onClick={() => edit(j)}
                 >
                   <span>
-                    <strong>{j.name}</strong>
+                    <strong>{j.name}{j.slot_preference ? ` [${j.slot_preference}]` : ""}{j.is_backup ? " [Backup]" : ""}</strong>
                     <small>{j.department}</small>
                   </span>
                   <span className={r.needsReview ? "review" : "muted"}>
