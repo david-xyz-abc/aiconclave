@@ -464,7 +464,7 @@ export async function createRegistrationsWorkbook(routeId, registrations) {
   const sheets =
     routeId === "hackathon"
       ? createHackathonSheets(registrations, generatedAt).map(sheet => ({...sheet, plain: true}))
-      : [createPanelSheet(registrations, generatedAt)];
+      : [{...createPanelSheet(registrations, generatedAt), plain: true}];
   const { strToU8, zipSync } = await import("fflate");
   const bytes = packageWorkbook(sheets, zipSync, strToU8);
   const datePart = localDatePart(generatedAt);
