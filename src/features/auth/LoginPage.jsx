@@ -2,8 +2,8 @@ import { useState } from "react";
 import { BrandLockup } from "../../components/common/BrandLockup.jsx";
 import { authApi } from "../../services/dashboardApi.js";
 
-export function LoginPage({ onLogin }) {
-  const [username, setUsername] = useState("admin");
+export function LoginPage({ onLogin, title = "Admin", initialUsername = "admin", login = authApi.login }) {
+  const [username, setUsername] = useState(initialUsername);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -13,7 +13,7 @@ export function LoginPage({ onLogin }) {
     setError("");
     setBusy(true);
     try {
-      const data = await authApi.login(username, password);
+      const data = await login(username, password);
       onLogin(data.user);
     } catch (loginError) {
       setError(loginError.message);
@@ -27,7 +27,7 @@ export function LoginPage({ onLogin }) {
       <section className="auth-panel" aria-labelledby="login-heading">
         <a className="ops-home-link" href="/">← Home</a>
         <BrandLockup />
-        <div className="auth-copy"><p className="eyebrow">Admin access</p><h1 id="login-heading">Admin</h1></div>
+        <div className="auth-copy"><p className="eyebrow">{title} access</p><h1 id="login-heading">{title}</h1></div>
         <form className="auth-form" onSubmit={submit}>
           <label>
             Username

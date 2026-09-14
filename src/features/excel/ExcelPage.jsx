@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { OperationsHeader } from '../../components/layout/OperationsHeader.jsx';
-import { authApi, registrationsApi, isUnauthorized } from '../../services/dashboardApi.js';
+import { excelApi, isUnauthorized } from '../../services/dashboardApi.js';
 import { downloadRegistrationsWorkbook, downloadHackathonDivisionsWorkbook } from '../../services/registrationExport.js';
 import './excel.css';
 
@@ -20,7 +20,7 @@ export function ExcelPage({onLogout}) {
     try {
       if (!cache.current || kind === 'refresh') {
         lastFetch.current = Date.now();
-        const data = await registrationsApi.export('hackathon');
+        const data = await excelApi.export();
         cache.current = data.registrations; setLoaded(true);
       }
       if (kind === 'all') await downloadRegistrationsWorkbook('hackathon', cache.current);
@@ -29,7 +29,7 @@ export function ExcelPage({onLogout}) {
     finally { pending.current = false; setBusy(''); }
   }
   async function logout() {
-    try { await authApi.logout(); cache.current = null; onLogout(); }
+    try { await excelApi.logout(); cache.current = null; onLogout(); }
     catch(e) { setError(e.message); }
   }
   return <div className="excel-shell">
