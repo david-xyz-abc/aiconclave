@@ -559,3 +559,25 @@ export async function downloadHackathonDivisionsWorkbook(registrations) {
   const {bytes, filename} = await createHackathonDivisionsWorkbook(registrations);
   downloadBytes(bytes, filename);
 }
+
+export async function createCheckedInParticipantsWorkbook(participants) {
+  if (!participants.length) throw new Error("There are no checked-in participants to export.");
+  const columns = [
+    {key:"full_name",header:"Participant",width:28},
+    {key:"team_name",header:"Team Name",width:28},
+    {key:"team_code",header:"Team Code",width:24},
+    {key:"role",header:"Registration Role",width:20},
+    {key:"sector_track",header:"Sector",width:20},
+    {key:"solution_type",header:"Solution Type",width:22},
+    {key:"room_name",header:"Room",width:24},
+    {key:"table_number",header:"Table",width:12},
+    {key:"marked_at",header:"Check-in Updated (UTC)",width:28},
+  ];
+  const rows = participants.map(person => Object.fromEntries(columns.map(column => [column.key,text(person[column.key])])));
+  const {strToU8,zipSync} = await import("fflate");
+  return {bytes:packageWorkbook([createSheet("Checked-in Participants","","",columns,rows,{plain:true})],zipSync,strToU8),filename:`ai-conclave-2026-checked-in-participants-${localDatePart(new Date())}.xlsx`};
+}
+export async function downloadCheckedInParticipantsWorkbook(participants) {
+  const {bytes,filename} = await createCheckedInParticipantsWorkbook(participants);
+  downloadBytes(bytes,filename);
+}
