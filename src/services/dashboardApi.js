@@ -92,3 +92,11 @@ export const venuesApi = {
   load: () => requestJson('/api/attendance/venues'),
   assign: (teamId, tableId) => requestJson('/api/attendance/venues', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ teamId, tableId }) }),
 };
+
+export const excelApi = {
+  judging: (kind,sector,award) => requestJson(`/api/excel/judging?${new URLSearchParams({kind,sector,award})}`),
+  current: () => requestJson('/api/excel/auth'),
+  login: (username,password) => requestJson('/api/excel/auth', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({username,password})}),
+  logout: () => requestJson('/api/excel/auth', {method:'DELETE'}),
+  export: (type = 'hackathon') => requestJson(`/api/excel/registrations?type=${encodeURIComponent(type)}`),
+};

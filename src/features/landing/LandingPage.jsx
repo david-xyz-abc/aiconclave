@@ -37,10 +37,10 @@ export function LandingPage() {
           <strong>Venue management <span aria-hidden="true">→</span></strong>
           <p>Manage judges and assign teams for evaluation.</p>
         </a>
-        <div className="workspace-coming-soon" aria-disabled="true">
-          <strong>Excel <span>Coming soon</span></strong>
-          <p>Download event data and spreadsheets.</p>
-        </div>
+        <a href="/excel">
+          <strong>Excel <span aria-hidden="true">→</span></strong>
+          <p>Download hackathon registrations and team divisions.</p>
+        </a>
       </section>
     </main>
   );

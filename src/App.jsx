@@ -1,6 +1,7 @@
 import "./features/venues/venues.css";
 import { useCallback, useEffect, useState } from "react";
 import { LoginPage } from "./features/auth/LoginPage.jsx";
+import { ExcelApp } from "./features/excel/ExcelApp.jsx";
 import { Dashboard } from "./features/dashboard/Dashboard.jsx";
 import { LandingPage } from "./features/landing/LandingPage.jsx";
 import { AttendanceApp } from "./features/attendance/AttendanceApp.jsx";
@@ -18,7 +19,7 @@ export default function App() {
   );
 
   useEffect(() => {
-    if (pathname === "/" || pathname === "/attendance" || pathname.startsWith("/attendance/")) {
+    if (pathname === "/excel" || pathname === "/" || pathname === "/attendance" || pathname.startsWith("/attendance/")) {
       setSession({ loading: false, user: null });
       return undefined;
     }
@@ -36,6 +37,7 @@ export default function App() {
     };
   }, [clearSession, pathname]);
 
+  if (pathname === "/excel") return <ExcelApp />;
   if (pathname === "/") return <LandingPage />;
   if (pathname === "/attendance" || pathname.startsWith("/attendance/")) return <AttendanceApp venues={pathname === "/attendance/venues"} />;
 
@@ -45,7 +47,7 @@ export default function App() {
     return (
       <LoginPage
         onLogin={(user) => {
-          window.history.replaceState({}, "", "/dashboard");
+          window.history.replaceState({}, "", pathname === "/excel" ? "/excel" : "/dashboard");
           setSession({ loading: false, user });
         }}
       />

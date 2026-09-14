@@ -1,6 +1,6 @@
 # Judging operations
 
-Separate Cloudflare Pages app for the venue team. Uses the alpha D1 database's existing seating records and independent accounts in `judging_users` with the `venue_admin` role. Authentication uses the dedicated `__Host-aiconclave_judging_session` cookie; attendance/admin sessions are not accepted. Passwords are salted PBKDF2 hashes, never frontend constants or committed credentials. No registration or attendance mutation endpoints are deployed here.
+Separate Cloudflare Pages app for the venue team. Uses the production D1 database's existing seating records and independent accounts in `judging_users` with the `venue_admin` role. Authentication uses the dedicated `__Host-aiconclave_judging_session` cookie; attendance/admin sessions are not accepted. Passwords are salted PBKDF2 hashes, never frontend constants or committed credentials. No registration or attendance mutation endpoints are deployed here.
 
 Run from the repository root:
 
@@ -9,7 +9,7 @@ Run from the repository root:
 - `npm test` — includes assignment rules, SQL transactions, concurrency and access checks.
 - From `judging/`, `wrangler pages dev dist` runs the frontend and Functions with a local D1 database. Provision the existing schema plus migrations 0021–0023 first. Never seed browser fixtures into the remote database.
 
-Deployment: `.github/workflows/deploy-judging.yml` deploys only the separate `aiconclave-judging-alpha` Pages project. Apply `db/migrations/0021_judging_admin.sql`  , `db/migrations/0022_judging_auth.sql`, and `db/migrations/0023_judge_evaluations.sql` to the alpha D1 database once before the first deployment; normal deployments do not run schema migrations. The root dashboard deployment remains independent.
+Deployment: `.github/workflows/deploy-judging.yml` deploys only the separate `aiconclave-judging` Pages project from the `judging-production` branch. Apply `db/migrations/0021_judging_admin.sql`  , `db/migrations/0022_judging_auth.sql`, and `db/migrations/0023_judge_evaluations.sql` to the production D1 database once before the first deployment; normal deployments do not run schema migrations. The root dashboard deployment remains independent.
 
 Staff add judges individually or paste one name per line, assigning a Technical / Non-Technical side. The assignment screen filters by side, sector and preparation mode. A starting team and count define a consecutive range in the filtered walking order. Suggestions prefer one room; spillover follows the configured room order. Empty and ineligible tables do not count. A team assigned to another judge blocks a range; it is never silently skipped or stolen. Saving replaces a judge's complete route, with confirmation. Staff can release a route before assigning those teams elsewhere.
 

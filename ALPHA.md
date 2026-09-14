@@ -1,3 +1,5 @@
+> Historical alpha environment notes. This branch now deploys production; see [DEPLOYMENT.md](DEPLOYMENT.md). Alpha remains on `dashboard-dev-alpha`.
+
 # Dashboard alpha
 
 Branch: dashboard-dev-alpha. Site: https://aiconclave-dashboard-alpha.pages.dev
