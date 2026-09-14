@@ -31,9 +31,7 @@ export function JudgeApp({ user, onLogout }) {
         const e = d.evaluations.find((e) => e.team_id === teamId);
         setNominations(e?.nominations || []);
         setScores(e?.scores || {});
-        const currentTeam = d.teams.find((t) => t.team_id === teamId);
-        if (e?.status !== "submitted" &&
-            !validNominations(e?.nominations, currentTeam?.sector_track)) setStep(0);
+        setStep(e?.status === "submitted" ? 2 : validScores(e?.scores, true) ? 1 : 0);
       }
       setDirty(false);
     } catch (e) {
@@ -65,7 +63,7 @@ export function JudgeApp({ user, onLogout }) {
     setTeamId(t?.team_id || null);
     setNominations(e?.nominations || []);
     setScores(e?.scores || {});
-    setStep(e?.status === "submitted" ? 2 : e?.nominations_saved && validNominations(e.nominations, t?.sector_track) ? 1 : 0);
+    setStep(e?.status === "submitted" ? 2 : validScores(e?.scores, true) ? 1 : 0);
     setDirty(false);
     setError("");
     setMessage("");
@@ -255,7 +253,7 @@ export function JudgeApp({ user, onLogout }) {
             </div>
             {!locked && (
               <ol className="evaluation-steps" aria-label="Evaluation steps">
-                {["Nominations", "Evaluation", "Review & submit"].map(
+                {["Evaluation", "Nominations", "Review & submit"].map(
                   (label, index) => (
                     <li
                       key={label}
@@ -275,7 +273,7 @@ export function JudgeApp({ user, onLogout }) {
               </div>
             ) : null}
             <section className="card evaluation-form">
-              {!locked && step === 0 ? (
+              {!locked && step === 1 ? (
                 <>
                   <h2>Best {shown.sector_track} Innovation</h2>
                   <p className="muted">
@@ -313,17 +311,23 @@ export function JudgeApp({ user, onLogout }) {
                             ? "Nominations saved"
                             : "No nominations selected yet"}
                       </small>
+                      <button onClick={() => {
+                        if (dirty && !window.confirm("Go back and discard unsaved nomination changes?")) return;
+                        setNominations(saved?.nominations || []);
+                        setDirty(false);
+                        setStep(0);
+                      }}>← Evaluation</button>
                       <button
                         className="primary"
                         disabled={!validNominations(nominations, shown.sector_track)}
-                        onClick={() => save("nominations", 1)}
+                        onClick={() => save("nominations", 2)}
                       >
-                        Next · save nominations
+                        Save nomination · review
                       </button>
                     </div>
                   </fieldset>
                 </>
-              ) : !locked && step === 1 ? (
+              ) : !locked && step === 0 ? (
                 <>
                   <h2>Judges evaluation</h2>
                   <p className="muted">
@@ -365,29 +369,13 @@ export function JudgeApp({ user, onLogout }) {
                       </small>
                     </div>
                     <div className="form-actions">
-                      <button
-                        onClick={() => {
-                          if (
-                            dirty &&
-                            !window.confirm(
-                              "Go back and discard unsaved score changes?",
-                            )
-                          )
-                            return;
-                          setScores(saved?.scores || {});
-                          setDirty(false);
-                          setStep(0);
-                        }}
-                      >
-                        ← Nominations
-                      </button>
                       <button onClick={() => save("scores")}>Save draft</button>
                       <button
                         className="primary"
                         disabled={!validScores(scores, true)}
-                        onClick={() => save("scores", 2)}
+                        onClick={() => save("scores", 1)}
                       >
-                        Save evaluation
+                        Next · save scores
                       </button>
                     </div>
                   </fieldset>
@@ -429,7 +417,7 @@ export function JudgeApp({ user, onLogout }) {
                       </p>
                       <div className="form-actions">
                         <button disabled={busy} onClick={() => setStep(1)}>
-                          ← Back to evaluation
+                          ← Back to nominations
                         </button>
                         <button
                           className="primary"
