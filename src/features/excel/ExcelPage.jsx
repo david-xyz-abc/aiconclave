@@ -26,6 +26,7 @@ export function ExcelPage({onLogout}) {
       if (kind === 'checked-in') await downloadCheckedInParticipantsWorkbook(registrations);
       if (kind === 'panel') await downloadRegistrationsWorkbook('panel', registrations);
       if (kind === 'all') await downloadRegistrationsWorkbook('hackathon', registrations);
+      if (kind === 'team-divisions') await downloadHackathonDivisionsWorkbook(registrations, 'teams');
       if (kind === 'divisions') await downloadHackathonDivisionsWorkbook(registrations);
     } catch (e) { setError(e.message); if (isUnauthorized(e)) onLogout(); }
     finally { pending.current = false; setBusy(''); }
@@ -45,7 +46,7 @@ export function ExcelPage({onLogout}) {
       </nav>
       {tab === 'registrations' ? <div className="excel-cards">
         <section><span className="excel-tag">ALL REGISTRATIONS</span><h2>Complete hackathon list</h2><p>Team overview and every registered member, in separate sheets.</p><button className="button button-primary" disabled={Boolean(busy)} onClick={() => run('all')}>{busy === 'all' ? 'Preparing…' : 'Download Excel'}</button></section>
-        <section><span className="excel-tag">BY SOLUTION TYPE</span><h2>Technical & non-technical</h2><p>Two sheets, with each team’s members grouped together and their registration details included.</p><button className="button button-primary" disabled={Boolean(busy)} onClick={() => run('divisions')}>{busy === 'divisions' ? 'Preparing…' : 'Download Excel'}</button></section>
+        <section><span className="excel-tag">BY SOLUTION TYPE</span><h2>Technical & non-technical</h2><p>Separate Technical and Non-Technical sheets. Choose one row per student or one row per team.</p><div className="excel-download-options"><button className="button button-primary" disabled={Boolean(busy)} onClick={() => run('divisions')}>{busy === 'divisions' ? 'Preparing…' : 'Student-wise Excel'}</button><button className="button button-secondary" disabled={Boolean(busy)} onClick={() => run('team-divisions')}>{busy === 'team-divisions' ? 'Preparing…' : 'Team-wise Excel'}</button></div></section>
         <section><span className="excel-tag">PANEL DISCUSSION</span><h2>Panel registrations</h2><p>All registered participants, contact details, organisations and panel selections.</p><button className="button button-primary" disabled={Boolean(busy)} onClick={() => run('panel')}>{busy === 'panel' ? 'Preparing…' : 'Download Excel'}</button></section>
         <section><span className="excel-tag">CHECK IN</span><h2>Checked-in participants</h2><p>Currently present hackathon participants, with their team, sector, room and table.</p><button className="button button-primary" disabled={Boolean(busy)} onClick={() => run('checked-in')}>{busy === 'checked-in' ? 'Preparing…' : 'Download Excel'}</button></section>
       </div> : <>

@@ -537,7 +537,7 @@ export async function downloadAttendanceWorkbook(teams) {
   downloadBytes(bytes, filename);
 }
 
-export async function createHackathonDivisionsWorkbook(registrations) {
+export async function createHackathonDivisionsWorkbook(registrations, grouping = "participants") {
   const teams = registrations.filter(item => item.record_type === "team")
     .sort((a,b) => text(a.team_name).localeCompare(text(b.team_name)) || text(a.team_code).localeCompare(text(b.team_code)));
   if (!teams.length) throw new Error("There are no hackathon teams to export.");
@@ -546,17 +546,18 @@ export async function createHackathonDivisionsWorkbook(registrations) {
   if (teams.some(team => !types.includes(team.solution_type))) throw new Error("A team has an unrecognized solution type. Update it before exporting divisions.");
   const sheets = types.map(type => {
     const selected = teams.filter(team => team.solution_type === type);
+    if (grouping === "teams") return {...createHackathonSheets(selected, generatedAt)[0], plain: true, name: type};
     const sheet = createHackathonParticipantsSheet(selected, generatedAt);
     const keys = ["teamCode", "teamName", "category", "sector", "solution", "order", "name", "role", "institution", "course", "year", "email", "phone"];
     return {...sheet, plain: true, name: type, title: `AI CONCLAVE 2026 · ${type.toUpperCase()}`,
       columns: keys.map(key => sheet.columns.find(column => column.key === key))};
   });
   const {strToU8, zipSync} = await import("fflate");
-  return {bytes: packageWorkbook(sheets, zipSync, strToU8), filename: `ai-conclave-2026-team-divisions-${localDatePart(generatedAt)}.xlsx`};
+  return {bytes: packageWorkbook(sheets, zipSync, strToU8), filename: `ai-conclave-2026-${grouping === "teams" ? "teamwise" : "team"}-divisions-${localDatePart(generatedAt)}.xlsx`};
 }
 
-export async function downloadHackathonDivisionsWorkbook(registrations) {
-  const {bytes, filename} = await createHackathonDivisionsWorkbook(registrations);
+export async function downloadHackathonDivisionsWorkbook(registrations, grouping = "participants") {
+  const {bytes, filename} = await createHackathonDivisionsWorkbook(registrations, grouping);
   downloadBytes(bytes, filename);
 }
 

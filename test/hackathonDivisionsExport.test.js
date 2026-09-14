@@ -25,3 +25,16 @@ test('complete export retains team overview and every member; empty division rem
  assert.match(strFromU8(one['xl/workbook.xml']),/Non-Technical/);
  await assert.rejects(createHackathonDivisionsWorkbook([{...teams[0],solution_type:'Unknown'}]),/unrecognized/);
 });
+
+test('team-wise divisions have one row per team and retain captain and team size',async()=>{
+ const {bytes,filename}=await createHackathonDivisionsWorkbook(teams,'teams');
+ const zip=unzipSync(bytes),tech=strFromU8(zip['xl/worksheets/sheet1.xml']),nontech=strFromU8(zip['xl/worksheets/sheet2.xml']);
+ assert.match(filename,/teamwise/);
+ assert.equal((tech.match(/<row /g)||[]).length,2);
+ assert.equal((nontech.match(/<row /g)||[]).length,2);
+ assert.match(tech,/Team Name/);assert.match(tech,/Captain/);assert.match(tech,/Team Size/);
+ assert.match(tech,/Tech team/);assert.match(tech,/=NOT_A_FORMULA\(\)/);assert.doesNotMatch(tech,/Second member|Nontech team|<f[ >]/);
+ assert.match(nontech,/Nontech team/);assert.doesNotMatch(tech,/<mergeCells/);
+ const single=unzipSync((await createHackathonDivisionsWorkbook(teams.slice(0,1),'teams')).bytes);
+ assert.equal((strFromU8(single['xl/worksheets/sheet2.xml']).match(/<row /g)||[]).length,1);
+});
