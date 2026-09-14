@@ -172,13 +172,12 @@ function Route({ teams }) {
 }
 function Assignments({ data, save, busy }) {
   const [side, setSide] = useState(SIDES[0]),
-    [sector, setSector] = useState(""),
     [mode, setMode] = useState(MODES[0]),
     [judgeId, setJudgeId] = useState(""),
     [start, setStart] = useState(""),
     [count, setCount] = useState(5),
     [suggested, setSuggested] = useState(false);
-  const filters = { solution_type: side, sector, mode },
+  const filters = { solution_type: side, sector: "", mode },
     teams = orderedTeams(data, filters),
     judge = data.judges.find((j) => j.id === judgeId);
   const preview = previewAssignment(
@@ -191,7 +190,6 @@ function Assignments({ data, save, busy }) {
   const currentCount = data.assignments.filter(
     (a) => a.judge_id === judgeId,
   ).length;
-  const sectors = [...new Set(data.teams.map((team) => team.sector_track).filter(Boolean))].sort();
   function changeFilter(set, value) {
     set(value);
     setStart("");
@@ -232,9 +230,6 @@ function Assignments({ data, save, busy }) {
         <fieldset><legend>2. Preparation</legend><div className="filter-choices">
           {MODES.map(value => <button type="button" key={value} aria-pressed={mode === value} disabled={busy} onClick={() => changeFilter(setMode,value)}>{value === 'Starting from scratch' ? 'Not prepared · starting from scratch' : value}</button>)}
         </div></fieldset>
-        <label>Sector (optional)<select aria-label="Sector" value={sector} disabled={busy} onChange={event => changeFilter(setSector,event.target.value)}>
-          <option value="">All sectors</option>{sectors.map(value => <option key={value}>{value}</option>)}
-        </select></label>
       </div>
       <div className="workspace">
         <section className="card directory">
