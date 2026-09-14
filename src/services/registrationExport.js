@@ -583,6 +583,37 @@ export async function downloadCheckedInParticipantsWorkbook(participants) {
   downloadBytes(bytes,filename);
 }
 
+export async function createCheckedInTeamsWorkbook(participants) {
+  if (!participants.length) throw new Error("There are no checked-in teams to export.");
+  const teams = new Map();
+  for (const person of participants) {
+    const key = person.team_id ?? person.team_code;
+    if (!teams.has(key)) teams.set(key, {...person, present_count: 0, names: []});
+    const team = teams.get(key);
+    team.present_count++;
+    team.names.push(person.full_name);
+  }
+  const columns = [
+    {key:"team_name",header:"Team Name",width:28},
+    {key:"team_code",header:"Team Code",width:24},
+    {key:"lead_name",header:"Team Lead",width:28},
+    {key:"team_size",header:"Registered Members",width:22},
+    {key:"present_count",header:"Checked-in Members",width:22},
+    {key:"names",header:"Checked-in Participants",width:60},
+    {key:"sector_track",header:"Sector",width:20},
+    {key:"solution_type",header:"Solution Type",width:22},
+    {key:"room_name",header:"Room",width:24},
+    {key:"table_number",header:"Table",width:12},
+  ];
+  const rows = [...teams.values()].map(team => Object.fromEntries(columns.map(column => [column.key, text(column.key === "names" ? team.names.join(", ") : team[column.key])])));
+  const {strToU8,zipSync} = await import("fflate");
+  return {bytes:packageWorkbook([createSheet("Checked-in Teams","","",columns,rows,{plain:true})],zipSync,strToU8),filename:`ai-conclave-2026-checked-in-teams-${localDatePart(new Date())}.xlsx`};
+}
+export async function downloadCheckedInTeamsWorkbook(participants) {
+  const {bytes,filename} = await createCheckedInTeamsWorkbook(participants);
+  downloadBytes(bytes,filename);
+}
+
 export async function createJudgingResultsWorkbook(rows, {kind,sector,awardName}) {
   if(!rows.length)throw new Error('No submitted evaluations match this selection.');
   const columns=[{key:'team_name',header:'Team Name',width:30},{key:'leader_name',header:'Team Lead',width:28}];

@@ -456,3 +456,5 @@ td a { text-decoration-thickness: 1px; text-underline-offset: .2em; }
 }
 
 @font-face{font-family:'Font Awesome 5 Free';font-style:normal;font-weight:900;font-display:block;src:url('/fonts/fa-solid-900.woff2') format('woff2')}.fas{font-family:'Font Awesome 5 Free';font-weight:900;font-style:normal}.fa-home::before{content:'\f015'}
+
+.checkin-total { display: inline-block; margin-top: 8px; padding: 5px 10px; border-radius: 6px; background: #eaf4ee; color: #216443; font-size: 14px; font-weight: 600; }

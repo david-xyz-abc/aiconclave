@@ -1,7 +1,7 @@
 import { getSession } from '../../_shared/auth.js';
 
 export const CHECKED_IN_SQL = `SELECT m.id, m.full_name, m.role, t.id AS team_id, t.team_size, t.team_name, t.team_code,
- t.sector_track, t.solution_type, a.marked_at, r.name AS room_name, vt.table_number
+ t.sector_track, t.solution_type, COALESCE((SELECT full_name FROM hackathon_team_members WHERE id=t.attendance_lead_member_id AND team_id=t.id),(SELECT full_name FROM hackathon_team_members WHERE team_id=t.id AND role='Captain' LIMIT 1)) AS lead_name, a.marked_at, r.name AS room_name, vt.table_number
  FROM hackathon_teams t JOIN hackathon_team_members m ON m.team_id=t.id
  JOIN hackathon_attendance a ON a.id=(SELECT latest.id FROM hackathon_attendance latest
  WHERE latest.team_id=t.id AND latest.member_id=m.id

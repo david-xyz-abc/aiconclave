@@ -193,7 +193,7 @@ function AttendanceDesk({ onLogout, user }) {
         team.lead_member_id,
       );
       setTeam(data.team);
-      setTeams(current => current.map(item => item.id === data.team.id ? { ...item, team_name: data.team.team_name, team_code: data.team.team_code, team_size: data.team.member_count, lead_name: data.team.members.find(member => member.id === data.team.lead_member_id)?.full_name || item.lead_name } : item));
+      setTeams(current => current.map(item => item.id === data.team.id ? { ...item, team_name: data.team.team_name, team_code: data.team.team_code, team_size: data.team.member_count, present_count: data.team.allocation.present_count, lead_name: data.team.members.find(member => member.id === data.team.lead_member_id)?.full_name || item.lead_name } : item));
       setEditingAttendance(false);
       setShowConfirmDialog(false);
       setMessage("");
@@ -243,6 +243,7 @@ function AttendanceDesk({ onLogout, user }) {
           <div>
             <p className="eyebrow">Hackathon</p>
             <h1>Check in</h1>
+            <span className="checkin-total" title="Updated when you refresh the directory or save a check-in">{syncedAt ? teams.reduce((sum, item) => sum + (Number(item.present_count) || 0), 0) : "—"} checked in</span>
           </div>
         </div>
         <div className={`attendance-workspace ${selectedId ? "detail-open" : ""}`}>
