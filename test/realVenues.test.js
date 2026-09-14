@@ -22,7 +22,7 @@ test('real inventory includes every source table, capacity and category and clea
   const before=f.sqlite.prepare('SELECT * FROM venue_allocations').get();
   const attendanceBefore=f.sqlite.prepare('SELECT * FROM hackathon_attendance').all();
   migrate(f,true);
-  const plan=JSON.parse(read('db/real-venues.json')).map(v=>({...v,name:v.name.replace('CCF','CFF'),category:['2nd Corridor','3rd Corridor','CFF Seminar hall','CCF Seminar hall','Incubation'].includes(v.name)?'Non-Technical':'Technical'}));
+  const plan=JSON.parse(read('test/fixtures/venues-0026.json')).map(v=>({...v,name:v.name.replace('CCF','CFF'),category:['2nd Corridor','3rd Corridor','CFF Seminar hall','CCF Seminar hall','Incubation'].includes(v.name)?'Non-Technical':'Technical'}));
   const rows=f.sqlite.prepare('SELECT r.name,r.solution_type,t.table_number,t.seats FROM venue_tables t JOIN venue_rooms r ON r.id=t.room_id ORDER BY t.table_number').all();
   const expected=plan.flatMap(v=>Array.from({length:v.end-v.start+1},(_,i)=>({name:v.name,solution_type:v.category,table_number:v.start+i,seats:v.seats})));
   assert.deepEqual(rows.map(r=>({...r})),expected);
@@ -60,7 +60,7 @@ test('exhibition split applies to automatic, manual and reallocation across sect
  try {
   migrate(f);
   f.sqlite.exec(read('db/migrations/0026_exhibition_allocation.sql'));
-  const plan=JSON.parse(read('db/real-venues.json'));
+  const plan=JSON.parse(read('test/fixtures/venues-0026.json'));
   assert.deepEqual(f.sqlite.prepare('SELECT id,name,solution_type category,project_mode projectMode FROM venue_rooms ORDER BY id').all().map(r=>({...r})),plan.map(({id,name,category,projectMode})=>({id,name,category,projectMode})));
   assert.equal(f.sqlite.prepare('SELECT COUNT(*) n FROM venue_tables').get().n,568);
   const check=async(mode,count=2)=>await (await attendance(context(f.DB,{...payload(count),projectMode:mode}))).json();

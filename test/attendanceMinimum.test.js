@@ -26,14 +26,14 @@ test('zero or one present member cannot save attendance', async () => {
 });
 
 test('two present members including the lead can save', async () => {
-  const result = await save([{ memberId: 11, present: true, mealPreference: 'Veg' }, { memberId: 12, present: true, mealPreference: 'Non-Veg' }, { memberId: 13, present: false }]);
+  const result = await save([{ memberId: 11, present: true }, { memberId: 12, present: true }, { memberId: 13, present: false }]);
   assert.equal(result.status, 200);
   assert.equal(result.writes, 1);
-  assert.deepEqual(result.rows.map(row => [row.member_id, row.present, row.meal_preference]), [[11, 1, 'Veg'], [12, 1, 'Non-Veg'], [13, 0, null]]);
+  assert.deepEqual(result.rows.map(row => [row.member_id, row.present, row.meal_preference]), [[11, 1, null], [12, 1, null], [13, 0, null]]);
 });
 
 test('absent members have no meal even when a stale preference is submitted', async () => {
-  const result = await save([{ memberId: 11, present: true, mealPreference: 'Veg' }, { memberId: 12, present: true, mealPreference: 'Non-Veg' }, { memberId: 13, present: false, mealPreference: 'Veg' }]);
+  const result = await save([{ memberId: 11, present: true }, { memberId: 12, present: true }, { memberId: 13, present: false, mealPreference: 'Veg' }]);
   assert.equal(result.status, 200);
   assert.equal(result.rows[2].meal_preference, null);
 });
@@ -61,13 +61,4 @@ test('viewers remain unable to mark attendance', async () => {
   const result = await save([{ memberId: 11, present: true }, { memberId: 12, present: true }], 'read');
   assert.equal(result.status, 403);
   assert.equal(result.writes, 0);
-});
-
-test('present members require an explicit valid meal choice', async () => {
-  for (const mealPreference of [undefined, null, '', 'Other']) {
-    const result = await save([{ memberId: 11, present: true, mealPreference: 'Veg' }, { memberId: 12, present: true, mealPreference }]);
-    assert.equal(result.status, 400);
-    assert.match(result.data.error, /Choose Veg/);
-    assert.equal(result.writes, 0);
-  }
 });

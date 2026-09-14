@@ -61,15 +61,12 @@ export async function onRequestPost(context) {
     if (!attendance.some((item) => Number(item.memberId) === Number(leadMemberId) && item.present === true)) {
       return attendanceJson({ ok: false, error: "The team lead must be present. Select a present member as team lead before saving check-in." }, 400);
     }
-    if (attendance.some((item) => item.present && !['Veg', 'Non-Veg'].includes(item.mealPreference))) {
-      return attendanceJson({ ok: false, error: "Choose Veg or Non-veg for each present member." }, 400);
-    }
     if (!['Prepared', 'Starting from scratch'].includes(body.projectMode)) return attendanceJson({ ok: false, error: "Select Prepared or Starting from scratch." }, 400);
     if (currentTeam.member_count !== attendance.length) return attendanceJson({ ok: false, error: "Include every team member before saving." }, 400);
     await context.env.DB.batch([
       context.env.DB.prepare('INSERT INTO checkin_save_guards(team_id,expected_version) VALUES (?,?)').bind(id,body.expectedVersion),
       context.env.DB.prepare('UPDATE hackathon_teams SET attendance_lead_member_id=? WHERE id=?').bind(leadMemberId,id),
-      ...attendance.map((item) => context.env.DB.prepare(`INSERT INTO hackathon_attendance (team_id, member_id, attendance_date, present, meal_preference, marked_by) VALUES (?, ?, ?, ?, ?, 'attendance-desk') ON CONFLICT(team_id, member_id, attendance_date) DO UPDATE SET present = excluded.present, meal_preference = excluded.meal_preference, marked_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), marked_by = excluded.marked_by`).bind(id, validId(item.memberId), date, item.present ? 1 : 0, item.present ? item.mealPreference : null)), ...allocationStatements(context.env.DB, id, body.projectMode, auth.session.username), context.env.DB.prepare('DELETE FROM checkin_save_guards WHERE team_id=?').bind(id)]);
+      ...attendance.map((item) => context.env.DB.prepare(`INSERT INTO hackathon_attendance (team_id, member_id, attendance_date, present, meal_preference, marked_by) VALUES (?, ?, ?, ?, ?, 'attendance-desk') ON CONFLICT(team_id, member_id, attendance_date) DO UPDATE SET present = excluded.present, meal_preference = CASE WHEN excluded.present = 1 THEN hackathon_attendance.meal_preference ELSE NULL END, marked_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), marked_by = excluded.marked_by`).bind(id, validId(item.memberId), date, item.present ? 1 : 0, null)), ...allocationStatements(context.env.DB, id, body.projectMode, auth.session.username), context.env.DB.prepare('DELETE FROM checkin_save_guards WHERE team_id=?').bind(id)]);
     return attendanceJson({ ok: true, team: await loadTeam(context.env.DB, id, date), date });
   } catch (error) {
     if (String(error?.message || error).includes('checkin_stale_version')) return attendanceJson({ok:false,error:"This team changed since you opened it. Reload the team and review the latest check-in before saving."},409);
