@@ -283,7 +283,7 @@ function worksheetXml(sheet) {
   if (sheet.plain) {
     const lastRow = Math.max(1, sheet.rows.length + 1);
     const headerRow = sheet.columns
-      .map((column, index) => cellXml(`${columnName(index + 1)}1`, column.header, 0))
+      .map((column, index) => cellXml(`${columnName(index + 1)}1`, column.header, 7))
       .join("");
     const dataRows = sheet.rows
       .map((row, rowIndex) => {
@@ -304,7 +304,7 @@ function worksheetXml(sheet) {
   <sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
   <sheetFormatPr defaultRowHeight="20"/>
   <cols>${columns}</cols>
-  <sheetData><row r="1">${headerRow}</row>${dataRows}</sheetData>
+  <sheetData><row r="1" ht="30" customHeight="1">${headerRow}</row>${dataRows}</sheetData>
   ${autoFilter}
   <pageMargins left="0.25" right="0.25" top="0.5" bottom="0.5" header="0.2" footer="0.2"/>
 </worksheet>`;
@@ -364,10 +364,11 @@ function stylesXml() {
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
   <numFmts count="1"><numFmt numFmtId="164" formatCode="dd mmm yyyy, hh:mm AM/PM"/></numFmts>
-  <fonts count="3">
+  <fonts count="4">
     <font><sz val="10"/><name val="Arial"/><color rgb="${THEME.ink}"/></font>
     <font><b/><sz val="18"/><name val="Courier New"/><color rgb="${THEME.black}"/></font>
     <font><b/><sz val="10"/><name val="Courier New"/><color rgb="${THEME.white}"/></font>
+    <font><b/><sz val="11"/><name val="Calibri"/><color rgb="FF253044"/></font>
   </fonts>
   <fills count="5">
     <fill><patternFill patternType="none"/></fill>
@@ -382,7 +383,7 @@ function stylesXml() {
     <border><left/><right/><top/><bottom style="thin"><color rgb="${THEME.line}"/></bottom><diagonal/></border>
   </borders>
   <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-  <cellXfs count="7">
+  <cellXfs count="8">
     <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
     <xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"><alignment vertical="center"/></xf>
     <xf numFmtId="0" fontId="0" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"><alignment vertical="center"/></xf>
@@ -390,6 +391,7 @@ function stylesXml() {
     <xf numFmtId="0" fontId="2" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment vertical="center" wrapText="1"/></xf>
     <xf numFmtId="0" fontId="0" fillId="0" borderId="2" xfId="0" applyFont="1" applyBorder="1"><alignment vertical="top" wrapText="1"/></xf>
     <xf numFmtId="164" fontId="0" fillId="0" borderId="2" xfId="0" applyNumberFormat="1" applyFont="1" applyBorder="1"><alignment vertical="top" wrapText="1"/></xf>
+    <xf numFmtId="0" fontId="3" fillId="2" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment vertical="center" wrapText="1"/></xf>
   </cellXfs>
   <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
 </styleSheet>`;
@@ -461,7 +463,7 @@ export async function createRegistrationsWorkbook(routeId, registrations) {
   const generatedAt = new Date();
   const sheets =
     routeId === "hackathon"
-      ? createHackathonSheets(registrations, generatedAt)
+      ? createHackathonSheets(registrations, generatedAt).map(sheet => ({...sheet, plain: true}))
       : [createPanelSheet(registrations, generatedAt)];
   const { strToU8, zipSync } = await import("fflate");
   const bytes = packageWorkbook(sheets, zipSync, strToU8);
@@ -546,7 +548,7 @@ export async function createHackathonDivisionsWorkbook(registrations) {
     const selected = teams.filter(team => team.solution_type === type);
     const sheet = createHackathonParticipantsSheet(selected, generatedAt);
     const keys = ["teamCode", "teamName", "category", "sector", "solution", "order", "name", "role", "institution", "course", "year", "email", "phone"];
-    return {...sheet, name: type, title: `AI CONCLAVE 2026 · ${type.toUpperCase()}`,
+    return {...sheet, plain: true, name: type, title: `AI CONCLAVE 2026 · ${type.toUpperCase()}`,
       columns: keys.map(key => sheet.columns.find(column => column.key === key))};
   });
   const {strToU8, zipSync} = await import("fflate");

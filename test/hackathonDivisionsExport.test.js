@@ -14,6 +14,7 @@ test('division workbook separates sides and preserves all members as text',async
  assert.match(tech,/Second member/);assert.match(tech,/T001/);assert.doesNotMatch(tech,/Nontech captain/);
  assert.match(nontech,/Nontech captain/);assert.doesNotMatch(nontech,/Second member/);
  assert.match(tech,/=NOT_A_FORMULA\(\)/);assert.doesNotMatch(tech,/<f[ >]/);
+ assert.match(tech,/ySplit="1"/);assert.doesNotMatch(tech,/<mergeCells|AI CONCLAVE|s="[134]"/);
  assert.match(tech,/state="frozen"/);assert.match(tech,/<autoFilter/);
 });
 test('complete export retains team overview and every member; empty division remains a valid sheet',async()=>{
