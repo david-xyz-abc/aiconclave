@@ -173,7 +173,7 @@ function Route({ teams }) {
 function Assignments({ data, save, busy }) {
   const [side, setSide] = useState(SIDES[0]),
     [sector, setSector] = useState(""),
-    [mode, setMode] = useState(""),
+    [mode, setMode] = useState(MODES[0]),
     [judgeId, setJudgeId] = useState(""),
     [start, setStart] = useState(""),
     [count, setCount] = useState(5),
@@ -191,7 +191,7 @@ function Assignments({ data, save, busy }) {
   const currentCount = data.assignments.filter(
     (a) => a.judge_id === judgeId,
   ).length;
-  const sectors = [...new Set(data.rooms.map((r) => r.sector))].sort();
+  const sectors = [...new Set(data.teams.map((team) => team.sector_track).filter(Boolean))].sort();
   function changeFilter(set, value) {
     set(value);
     setStart("");
@@ -225,52 +225,16 @@ function Assignments({ data, save, busy }) {
   }
   return (
     <>
-      <div className="filters card">
-        <label>
-          Side
-          <select
-            aria-label="Side"
-            value={side}
-            onChange={(e) => {
-              changeFilter(setSide, e.target.value);
-              setJudgeId("");
-            }}
-          >
-            {SIDES.map((s) => (
-              <option key={s}>{s}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Sector
-          <select
-            aria-label="Sector"
-            value={sector}
-            onChange={(e) => changeFilter(setSector, e.target.value)}
-          >
-            <option value="">All sectors</option>
-            {sectors.map((s) => (
-              <option key={s}>{s}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Preparation
-          <select
-            aria-label="Preparation"
-            value={mode}
-            onChange={(e) => changeFilter(setMode, e.target.value)}
-          >
-            <option value="">Both preparation modes</option>
-            {MODES.map((s) => (
-              <option key={s} value={s}>
-                {s === "Starting from scratch"
-                  ? "Not prepared · starting from scratch"
-                  : s}
-              </option>
-            ))}
-          </select>
-        </label>
+      <div className="filters card assignment-filters">
+        <fieldset><legend>1. Solution type</legend><div className="filter-choices">
+          {SIDES.map(value => <button type="button" key={value} aria-pressed={side === value} disabled={busy} onClick={() => {changeFilter(setSide,value);setJudgeId("");}}>{value}</button>)}
+        </div></fieldset>
+        <fieldset><legend>2. Preparation</legend><div className="filter-choices">
+          {MODES.map(value => <button type="button" key={value} aria-pressed={mode === value} disabled={busy} onClick={() => changeFilter(setMode,value)}>{value === 'Starting from scratch' ? 'Not prepared · starting from scratch' : value}</button>)}
+        </div></fieldset>
+        <label>Sector (optional)<select aria-label="Sector" value={sector} disabled={busy} onChange={event => changeFilter(setSector,event.target.value)}>
+          <option value="">All sectors</option>{sectors.map(value => <option key={value}>{value}</option>)}
+        </select></label>
       </div>
       <div className="workspace">
         <section className="card directory">

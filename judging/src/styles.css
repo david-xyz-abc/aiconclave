@@ -955,3 +955,5 @@ tr.selected {
 
 .hub-home { display:inline-block; color:#2858a5; font-size:14px; font-weight:600; margin:12px 16px 12px 0; text-decoration:none; }
 .hub-home:hover { text-decoration:underline; }
+
+.assignment-filters{align-items:start}.assignment-filters fieldset{border:0;padding:0;margin:0;min-width:0}.assignment-filters legend{font-size:13px;font-weight:600;margin-bottom:8px;color:#344054}.filter-choices{display:flex;flex-wrap:wrap;gap:8px}.filter-choices button{min-height:44px;border:1px solid #cdd5e1;border-radius:6px;padding:10px 12px;background:#fff;color:#344054;font:inherit;cursor:pointer}.filter-choices button[aria-pressed="true"]{background:#eaf1fc;border-color:#2858a5;color:#204a8c;font-weight:600}.filter-choices button:focus-visible{outline:3px solid #93b8ee;outline-offset:2px}.filter-choices button:disabled{opacity:.6;cursor:wait}
