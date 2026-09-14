@@ -1,40 +1,23 @@
-> Historical alpha environment notes. This branch now deploys production; see [DEPLOYMENT.md](DEPLOYMENT.md). Alpha remains on `dashboard-dev-alpha`.
+# Alpha sandbox
 
-# Dashboard alpha
+Branch: dashboard-dev-alpha.
 
-Branch: dashboard-dev-alpha. Site: https://aiconclave-dashboard-alpha.pages.dev
+- Operations: https://aiconclave-dashboard-alpha.pages.dev
+- Judging: https://aiconclave-judging-alpha.pages.dev
+- Room Finder: https://aiconclave-room-finder-alpha.pages.dev
 
-DB: aiconclave-registrations-alpha (2cef820f-583b-4e9a-9a2c-c2b72f0a48a7).
+All three sites use D1 `aiconclave-registrations-alpha-clone-20260914` (`11854aec-284c-4994-b9f4-3cea51116d59`). Production D1 must never be used for alpha writes.
 
-This is a one-time snapshot of production schema and records from 11 September 2026, including the current local dashboard cleanup and login-heading changes. It is not synchronized with production. It initially contains real participant data, not dummy records. Keep it protected by login.
+## Production snapshot refresh
 
-Deployment, migrations and the local Vite API proxy target alpha only. Do not change these to production when testing. Existing account passwords are copied. No public registration forms, email sender or food website are deployed here. Production email delivery rows are inert in this dashboard; do not attach a mail-sending worker to this database.
+The new database is a verified snapshot of production, including schema, account credentials and event records. At refresh: 552 hackathon teams, 1904 members, 64 judges, no judge assignments or evaluations. All 38 application-table/ID-sequence checksums matched the source snapshot. It is not continuously synchronized.
 
-Database exports must remain outside the repository and deployment output.
+Source bookmark: `00000ee1-00000008-000050e6-329059d9768439c038ee558eebfd2fc8`.
 
-CI tests, builds and deploys alpha only. The existing GitHub token lacks D1 migration permissions. If a future change needs a migration, apply it explicitly using authorized Wrangler access: `wrangler d1 migrations apply aiconclave-registrations-alpha --remote`, before deploying that change. The initial clone has all current migrations applied.
+Old alpha D1 `2cef820f-583b-4e9a-9a2c-c2b72f0a48a7` is retained solely for rollback; it still contains the old simulation. Its pre-refresh bookmark is `00000040-00000000-000050e6-b48850e8f77eb0037acdde8be94d4ac8`. Do not deploy current alpha sites against it accidentally.
 
-## Venue allocation
+Cached team/room directories use a new cache version so old simulated entries are not reused. Login sessions and credentials are from the production snapshot; the independent Excel and Room Finder secrets remain environment-specific Pages secrets. Food continues linking to the existing production Food website by explicit user instruction.
 
-`/attendance` records an explicit Prepared / Starting from scratch selection and atomically assigns a compatible table when attendance is saved. Matching uses project mode, sector, solution type, and **members actually present** (minimum two, with the lead present). Compatible assignments survive repeat saves; changed requirements release and reallocate the table in the same transaction. No compatible table means attendance is retained and the team waits.
+Production migration history is already present in the clone. Do not replay historical seed/reset migrations or `db/production/0030_promote_alpha_operations.sql`. Apply only new, reviewed alpha migrations. Do not enable an email sender for copied historical delivery records. Exports and participant data must not be committed to Git.
 
-`/attendance/venues` uses the attendance login and has Venue Finder, Manual Allocation, and Rooms & Tables menus. Attendance readers can inspect; attendance writers can assign compatible free tables to unallocated checked-in teams. Missing attendance and missing project mode are distinct states. Availability refreshes every ten seconds; database uniqueness and atomic SQL claims protect against stale screens and simultaneous staff requests.
-
-Apply `0019_venue_allocation.sql` and `0020_alpha_venue_plan.sql` to **alpha only** before publishing the new code. These add venue tables and a requirements view; existing registrations and attendance are not rewritten. Existing attendance needs a project-mode choice before allocation. For a fresh local database, `db/schema.sql` includes the venue schema; apply only the room seed after loading that schema.
-
-The provisional plan has 53 rooms / 565 tables: RS 16 rooms, R 16, CC 16, D 5; 46 rooms have ten tables and seven have fifteen. It assumes approximately half of each registered sector / solution / size group arrives prepared, full attendance, and no separation by school/college. These are proposed rooms, not a verified physical inventory. Unknown project mode and absences can exhaust individual categories despite free tables elsewhere. `node scripts/seed-venue-plan.mjs` reproduces the seed from aggregate counts. Once applied, change the plan with a new migration rather than rerunning the seed or modifying migration history.
-
-Allocation tests include real concurrent SQLite connections, duplicate claims, repeat attendance, changed mode/headcount, waiting-list resolution, permissions, and transactional rollback. Run `npm test` and `npm run build` before deploying.
-
-Already assigned teams can be reallocated from Venue Finder or Manual Allocation. Moves require a compatible free table and attendance write access. A single conditional SQL update claims the new table and releases the old one; stale requests or unavailable targets preserve the existing assignment. Manual Allocation includes all checked-in teams and filters for waiting or already allocated teams.
-
-
-## Per-table capacities (0024)
-
-Apply `0024_table_seating.sql` to alpha before deploying the mixed-table allocator. It adds `venue_tables.seats` (2, 3 or 4), copying each existing table's former room capacity without moving teams or changing evaluations. The legacy `venue_rooms.seats` column remains for compatibility but is no longer used for allocation. New table inserts should specify their actual capacity; the default is conservatively 2.
-
-Rooms may mix 2-, 3- and 4-seat tables. New check-ins claim the smallest adequate free table across matching mode, sector and solution type, then room/table order: 2 → 3 → 4, 3 → 4, or 4 only. Existing compatible assignments are retained on repeat check-in, including larger fallback tables. A headcount increase releases a too-small table and attempts a suitable replacement in the same transaction. No suitable table leaves check-in saved and the team waiting. Manual assignment/reallocation also accepts larger tables, never smaller ones, and lists exact fits first. Tables are not shared between teams.
-
-Room views show capacities per table and the room's size mix. Judge routes follow physical room/table order independent of capacity, accepting larger tables while flagging insufficient capacity for review. Table-capacity edits invalidate stale workspace requests through the existing revision triggers.
-
-This migration preserves the current provisional inventory; it does not invent a mixed seating plan for the physical event. Apply subsequent explicit inventory migrations to `venue_tables.seats` once the actual table counts and capacities are known. For the local `db/schema.sql` bootstrap snapshot, apply the existing room seed 0020, then migrations 0021–0024. Do not rerun 0020 on a seeded database.
+Current room plan has 23 venues and 568 tables, with mixed seats per room. Technical prepared teams use exhibition rooms; technical scratch teams use other technical rooms; both non-technical modes use non-technical rooms. Sectors may mix. Judge assignment filters select solution type then preparation; physical visit order is preserved.
