@@ -959,3 +959,5 @@ tr.selected {
 .assignment-filters{align-items:start}.assignment-filters fieldset{border:0;padding:0;margin:0;min-width:0}.assignment-filters legend{font-size:13px;font-weight:600;margin-bottom:8px;color:#344054}.filter-choices{display:flex;flex-wrap:wrap;gap:8px}.filter-choices button{min-height:44px;border:1px solid #cdd5e1;border-radius:6px;padding:10px 12px;background:#fff;color:#344054;font:inherit;cursor:pointer}.filter-choices button[aria-pressed="true"]{background:#eaf1fc;border-color:#2858a5;color:#204a8c;font-weight:600}.filter-choices button:focus-visible{outline:3px solid #93b8ee;outline-offset:2px}.filter-choices button:disabled{opacity:.6;cursor:wait}
 
 .assignment-filters{grid-template-columns:repeat(2,minmax(0,1fr))}@media(max-width:700px){.assignment-filters{grid-template-columns:1fr}}
+
+.assignment-scope{display:grid;gap:16px}.assignment-scope fieldset{border:0;padding:0;margin:0;min-width:0}.assignment-scope legend{font-size:13px;font-weight:600;color:#344054;margin-bottom:8px}

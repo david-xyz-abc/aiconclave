@@ -223,21 +223,13 @@ function Assignments({ data, save, busy }) {
   }
   return (
     <>
-      <div className="filters card assignment-filters">
-        <fieldset><legend>1. Solution type</legend><div className="filter-choices">
-          {SIDES.map(value => <button type="button" key={value} aria-pressed={side === value} disabled={busy} onClick={() => {changeFilter(setSide,value);setJudgeId("");}}>{value}</button>)}
-        </div></fieldset>
-        <fieldset><legend>2. Preparation</legend><div className="filter-choices">
-          {MODES.map(value => <button type="button" key={value} aria-pressed={mode === value} disabled={busy} onClick={() => changeFilter(setMode,value)}>{value === 'Starting from scratch' ? 'Not prepared · starting from scratch' : value}</button>)}
-        </div></fieldset>
-      </div>
       <div className="workspace">
         <section className="card directory">
           <div className="section-head">
             <div>
-              <h2>Teams in visit order</h2>
+              <h2>Teams eligible for assignment</h2>
               <p>
-                {teams.length} matching teams ·{" "}
+                {side} · {mode} · {teams.length} teams ·{" "}
                 {teams.filter((t) => !t.judge_id).length} unassigned
               </p>
             </div>
@@ -250,7 +242,7 @@ function Assignments({ data, save, busy }) {
         <section className="card assignment">
           <h2>Assign a judge</h2>
           <p className="muted">
-            Choose a consecutive range of matching tables.
+            Choose who this judge will evaluate.
           </p>
           <form onSubmit={submit}>
             <label>
@@ -275,6 +267,14 @@ function Assignments({ data, save, busy }) {
                   ))}
               </select>
             </label>
+            <div className="assignment-scope">
+              <fieldset><legend>Solution type to evaluate</legend><div className="filter-choices">
+                {SIDES.map(value => <button type="button" key={value} aria-pressed={side === value} disabled={busy} onClick={() => changeFilter(setSide,value)}>{value}</button>)}
+              </div></fieldset>
+              <fieldset><legend>Team preparation</legend><div className="filter-choices">
+                {MODES.map(value => <button type="button" key={value} aria-pressed={mode === value} disabled={busy} onClick={() => changeFilter(setMode,value)}>{value}</button>)}
+              </div></fieldset>
+            </div>
             {!data.judges.length && (
               <p className="hint">
                 Add judges in the Judges tab to get started.
