@@ -94,6 +94,7 @@ export const venuesApi = {
 };
 
 export const excelApi = {
+  judging: (kind,sector,award) => requestJson(`/api/excel/judging?${new URLSearchParams({kind,sector,award})}`),
   current: () => requestJson('/api/excel/auth'),
   login: (username,password) => requestJson('/api/excel/auth', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({username,password})}),
   logout: () => requestJson('/api/excel/auth', {method:'DELETE'}),
