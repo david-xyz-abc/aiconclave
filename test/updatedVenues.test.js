@@ -6,7 +6,7 @@ import {onRequestPost as checkin} from '../functions/api/attendance/teams/[id].j
 import {onRequestPatch as move} from '../functions/api/attendance/venues.js';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const plan=JSON.parse(read('db/real-venues.json'));
-const migrate=f=>{f.sqlite.exec(read('db/migrations/0031_updated_table_numbering.sql'));f.sqlite.exec(read('db/migrations/0032_rs504_exhibition.sql'));};
+const migrate=f=>{f.sqlite.exec(read('db/migrations/0031_updated_table_numbering.sql'));f.sqlite.exec(read('db/migrations/0032_rs504_exhibition.sql'));f.sqlite.exec(read('db/migrations/0034_rebalance_exhibition.sql'));};
 function setup(){const f=fixture();f.sqlite.exec(read('db/migrations/0021_judging_admin.sql'));f.sqlite.exec('BEGIN');f.sqlite.exec(read('db/migrations/0025_real_venue_plan.sql'));f.sqlite.exec('COMMIT');migrate(f);return f;}
 test('updated numbering has 568 unique tables in 24 rooms and exact capacities',()=>{const f=setup();try{
  const rows=f.sqlite.prepare('SELECT r.name,r.solution_type category,r.project_mode projectMode,t.table_number number,t.seats FROM venue_tables t JOIN venue_rooms r ON r.id=t.room_id ORDER BY t.table_number').all().map(r=>({...r}));

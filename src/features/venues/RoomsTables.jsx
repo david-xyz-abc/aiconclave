@@ -1,7 +1,7 @@
 import {useEffect,useRef,useState} from 'react';
 import {OperationsHeader} from '../../components/layout/OperationsHeader.jsx';
 import {attendanceApi,venuesApi,isUnauthorized} from '../../services/dashboardApi.js';
-const KEY='alpha-room-overview-v5';
+const KEY='alpha-room-overview-v6';
 function cached(){try{const d=JSON.parse(localStorage.getItem(KEY));return Array.isArray(d?.rooms)&&typeof d.syncedAt==='string'?d:null;}catch{return null;}}
 function kind(room){return room.solution_type==='Non-Technical'?'Non-Technical · Both project modes':room.project_mode==='Prepared'?'Technical · Exhibition (prepared)':'Technical · Starting from scratch';}
 function seats(room){return [2,3,4].filter(n=>room['seats_'+n]).map(n=>`${room['seats_'+n]} × ${n}-seat`).join(' · ');}
