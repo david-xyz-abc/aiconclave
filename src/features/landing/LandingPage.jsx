@@ -17,10 +17,6 @@ export function LandingPage() {
           <strong>Check in <span aria-hidden="true">→</span></strong>
           <p>Check in teams and assign their venues.</p>
         </a>
-        <a href="/attendance/venues">
-          <strong>Staff venues <span aria-hidden="true">→</span></strong>
-          <p>Find teams, manage allocations and view rooms.</p>
-        </a>
         <a href="https://aiconclave-room-finder-alpha.pages.dev/">
           <strong>Room finder <span aria-hidden="true">→</span></strong>
           <p>Find a team’s room and table. Hospitality access.</p>
