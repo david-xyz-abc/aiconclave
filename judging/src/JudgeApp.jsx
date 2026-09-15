@@ -344,7 +344,7 @@ export function JudgeApp({ user, onLogout }) {
                 <>
                   <h2>Judges evaluation</h2>
                   <p className="muted">
-                    Award 1–10 marks for each criterion, or choose 0 for no credit. Maximum total: 50.
+                    Award 1–10 marks for each criterion. Tap a selected score again to clear it. Maximum total: 50.
                   </p>
                   {saved && evaluationMaximum(saved) === 5 && <p className="notice">This older draft used marks out of 5. Its marks are doubled below to keep the same proportions out of 10. Review before saving.</p>}
                   <fieldset disabled={busy || data.routeNeedsReview}>
@@ -365,7 +365,12 @@ export function JudgeApp({ user, onLogout }) {
                               aria-label={`${c.name}: ${value} out of 10`}
                               aria-pressed={scores[c.id] === value}
                               onClick={() => {
-                                setScores({ ...scores, [c.id]: value });
+                                setScores((current) => {
+                                  const next = { ...current };
+                                  if (next[c.id] === value) delete next[c.id];
+                                  else next[c.id] = value;
+                                  return next;
+                                });
                                 setDirty(true);
                               }}
                             >
@@ -373,7 +378,6 @@ export function JudgeApp({ user, onLogout }) {
                             </button>
                           ))}
                         </div>
-                        <button type="button" className="zero-score" aria-label={`${c.name}: 0 out of 10 — no credit`} aria-pressed={scores[c.id] === 0} onClick={() => { setScores({ ...scores, [c.id]: 0 }); setDirty(true); }}>0 — No credit</button>
                       </section>
                     ))}
                     <div className="score-total">
