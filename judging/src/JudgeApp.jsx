@@ -154,22 +154,19 @@ export function JudgeApp({ user, onLogout }) {
       </header>
       <main className="main judge-main">
         <div className="page-head">
-          <div>
-            <h1>{team ? shown.team_name : "Your teams"}</h1>
-            <p>
-              {team
-                ? `Team leader: ${shown.leader_name || "Not available"}`
-                : `${completed} of ${data?.teams.length || 0} evaluations submitted`}
-            </p>
-          </div>
           {team ? (
-            <button disabled={busy} onClick={() => select(null)}>
-              ← Your teams
-            </button>
+            <div className="judge-detail-actions">
+              <button disabled={busy} onClick={() => select(null)}>← Back to your teams</button>
+              {!locked && <button className="absent-button" disabled={busy || data.routeNeedsReview} onClick={() => save("absent")}>Not present · Disqualify</button>}
+            </div>
           ) : (
-            <button disabled={busy} onClick={load}>
-              Refresh
-            </button>
+            <>
+              <div>
+                <h1>Your teams</h1>
+                <p>{completed} of {data?.teams.length || 0} evaluations submitted</p>
+              </div>
+              <button disabled={busy} onClick={load}>Refresh</button>
+            </>
           )}
         </div>
         {error && (
@@ -247,15 +244,13 @@ export function JudgeApp({ user, onLogout }) {
         ) : (
           <>
             <div className="team-context card">
+              <span aria-label="Team name"><h1>{shown.team_name}</h1></span>
+              <span aria-label="Team leader"><b>{shown.leader_name || "Not available"}</b></span>
               <span aria-label="Team code"><b>{shown.team_code}</b></span>
               <span aria-label="Room and table"><b>{shown.room_name || "Pending"} / {shown.table_number ? `T${shown.table_number}` : "—"}</b></span>
               <span aria-label="Category"><b>{shown.participant_category}</b></span>
               <span aria-label="Sector"><b>{shown.sector_track}</b></span>
             </div>
-            {!locked && <div className="absence-action">
-              <span>Team members not at their table?</span>
-              <button className="absent-button" disabled={busy || data.routeNeedsReview} onClick={() => save("absent")}>Not present · Disqualify</button>
-            </div>}
             {!locked && (
               <ol className="evaluation-steps" aria-label="Evaluation steps">
                 {["Score the team", "Award nomination", "Review & submit"].map(

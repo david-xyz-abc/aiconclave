@@ -989,3 +989,16 @@ tr.selected {
 .judge-team-list .team-submitted:hover { background: #e8f3ec; }
 
 .team-context b { font-weight: 600; }
+
+.judge-detail-actions { display: flex; flex-wrap: wrap; gap: 10px; width: 100%; }
+.judge-detail-actions button { min-width: 0; white-space: normal; }
+.judge-detail-actions .absent-button { background: #fff0ef; border-color: #d9aaa6; color: #a02e27; }
+.judge-detail-actions .absent-button:hover:not(:disabled) { background: #ffe3df; }
+.team-context > span { min-width: 0; line-height: 1.45; overflow-wrap: anywhere; word-break: normal; }
+.team-context h1 { margin: 0; font-size: inherit; font-weight: 700; line-height: inherit; }
+.team-context span:nth-child(5) { background: #f1f5fb; }
+.team-context span:nth-child(6) { background: #edf6f2; }
+@media (max-width: 420px) {
+  .judge-detail-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .judge-detail-actions button { padding: 10px 8px; font-size: 13px; }
+}
