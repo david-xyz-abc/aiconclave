@@ -134,7 +134,7 @@ export function JudgeApp({ user, onLogout }) {
           <i>Judging</i>
         </a>
         <div>
-          <span className="staff-label judge-identity">
+          <span className="staff-label">
             {data?.judge?.name || user.username}
           </span>
           <button
@@ -212,7 +212,7 @@ export function JudgeApp({ user, onLogout }) {
               const e = data.evaluations.find((e) => e.team_id === t.team_id);
               return (
                 <button
-                  className={`card judge-team ${e?.status === "submitted" ? isNotPresent(e) ? "team-absent" : "team-completed" : "team-pending"}`}
+                  className="card judge-team"
                   disabled={busy}
                   key={t.team_id}
                   onClick={() => select(t)}
@@ -220,17 +220,16 @@ export function JudgeApp({ user, onLogout }) {
                   <div>
                     <strong>{t.team_name}</strong>
                     <p>Team leader: {t.leader_name || "Not available"}</p>
-                    <div className="team-location">
-                      <span><small>Room</small><b>{t.room_name || "Pending"}</b></span>
-                      <span><small>Table</small><b>{t.table_number || "—"}</b></span>
-                    </div>
-                    <small className="team-code">{t.team_code}</small>
+                    <small>
+                      {t.team_code} · {t.room_name || "Room pending"} / Table{" "}
+                      {t.table_number || "—"}
+                    </small>
                   </div>
                   <span
                     className={`badge ${e?.status === "submitted" ? "complete" : ""}`}
                   >
                     {e?.status === "submitted"
-                      ? isNotPresent(e) ? "Not present · Disqualified" : "✓ Graded · View scores"
+                      ? isNotPresent(e) ? "Not present · Disqualified" : "Submitted"
                       : e
                         ? "Draft saved"
                         : "Not started"}{" "}
@@ -253,8 +252,8 @@ export function JudgeApp({ user, onLogout }) {
                 {shown.team_code}
               </span>
               <span>
-                <small>Room / Table</small>
-                <strong className="detail-location">{shown.room_name || "Pending"} · Table {shown.table_number || "—"}</strong>
+                <small>Venue / table</small>
+                {shown.room_name || "Pending"} / {shown.table_number || "—"}
               </span>
               <span>
                 <small>Category</small>
