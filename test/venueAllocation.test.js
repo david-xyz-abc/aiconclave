@@ -210,13 +210,12 @@ test('exact capacity wins across rooms before an earlier larger table',async()=>
   assert.equal((await response.json()).team.allocation.table_id,904);
  }finally{f.sqlite.close();}
 });
-test('repeat check-in retains a fitting larger table; growing teams move off undersized tables',async()=>{
+test('repeat check-in selects a smaller available table; growing teams move off undersized tables',async()=>{
  const f=mixedFixture();
  try {
   await attendance(context(f.DB,payload(2)));
   await reallocate(context(f.DB,{teamId:1,currentTableId:903,tableId:901},'PATCH'));
-  assert.equal((await (await attendance(context(f.DB,payload(2)))).json()).team.allocation.table_id,901);
-  assert.equal((await reallocate(context(f.DB,{teamId:1,currentTableId:901,tableId:903},'PATCH'))).status,200);
+  assert.equal((await (await attendance(context(f.DB,payload(2)))).json()).team.allocation.table_id,903);
   assert.equal((await (await attendance(context(f.DB,payload(3)))).json()).team.allocation.table_id,902);
  }finally{f.sqlite.close();}
 });
@@ -257,4 +256,28 @@ test('table-capacity migration preserves inventory and existing assignments', ()
   for(const seats of [0,1,5,2.5,null])assert.throws(()=>f.sqlite.prepare('UPDATE venue_tables SET seats=? WHERE id=1').run(seats));
   assert.deepEqual(f.sqlite.prepare('PRAGMA foreign_key_check').all(),[]);
  }finally{f.sqlite.close();}
+});
+
+test('attendance reduction moves 4 to 3 to 2 seats and releases each old table',async()=>{
+ const f=mixedFixture();try{
+  f.sqlite.exec("INSERT INTO hackathon_team_members VALUES(14,1,'Member 4','','','Member',4)");
+  const body=count=>({...payload(count),attendance:[...payload(count).attendance,{memberId:14,present:count===4,mealPreference:'Veg'}]});
+  for(const [count,table] of [[4,901],[3,902],[2,903]]){
+   const response=await attendance(context(f.DB,body(count)));assert.equal(response.status,200);
+   assert.equal((await response.json()).team.allocation.table_id,table);
+   assert.deepEqual(f.sqlite.prepare('SELECT table_id FROM venue_allocations WHERE team_id=1').all().map(r=>r.table_id),[table]);
+  }
+ }finally{f.sqlite.close();}
+});
+test('reduced team keeps larger table when smaller tables are occupied or incompatible',async()=>{
+ for(const reason of ['occupied','incompatible']){
+  const f=mixedFixture();try{
+   f.sqlite.exec("INSERT INTO hackathon_team_members VALUES(14,1,'Member 4','','','Member',4)");
+   await attendance(context(f.DB,{...payload(),attendance:[...payload().attendance,{memberId:14,present:true,mealPreference:'Veg'}]}));
+   if(reason==='occupied')occupy(f,2,902);
+   else f.sqlite.exec('UPDATE venue_tables SET room_id=2 WHERE id=902');
+   const r=await attendance(context(f.DB,{...payload(),attendance:[...payload().attendance,{memberId:14,present:false,mealPreference:null}]}));
+   assert.equal(r.status,200);assert.equal((await r.json()).team.allocation.table_id,901);
+  }finally{f.sqlite.close();}
+ }
 });
