@@ -586,12 +586,12 @@ export async function createJudgingResultsWorkbook(rows, {kind,sector,awardName}
   if(!rows.length)throw new Error('No submitted evaluations match this selection.');
   const columns=[{key:'team_name',header:'Team Name',width:30},{key:'leader_name',header:'Team Lead',width:28}];
   if(kind==='overall') {
-    for(const [key,label] of [['impact','Impact'],['creativity','Creativity'],['validity','Validity'],['relevance','Relevance'],['presentation','Presentation']]) columns.push({key,header:label+' (out of 5)',width:23});
+    for(const [key,label] of [['impact','Impact'],['creativity','Creativity'],['validity','Validity'],['relevance','Relevance'],['presentation','Presentation']]) columns.push({key,header:label+' (out of 10)',width:23});
   }else{
     columns.push({key:'team_code',header:'Team Code',width:24},{key:'sector',header:'Sector',width:20});
     if(kind==='award')columns.push({key:'award',header:'Award',width:46});
   }
-  columns.push({key:'total',header:'Total (out of 25)',width:23});
+  columns.push({key:'total',header:'Total (out of 50)',width:23});
   const data=[...rows].sort((a,b)=>b.total-a.total || text(a.team_name).localeCompare(text(b.team_name)) || text(a.team_code).localeCompare(text(b.team_code)))
     .map(row=>({...row,...row.scores,award:awardName}));
   const {strToU8,zipSync}=await import('fflate');

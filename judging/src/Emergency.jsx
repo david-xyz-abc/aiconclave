@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { api } from "./client.js";
-import { scoreTotal, CRITERIA, nominationOptions } from "../shared/evaluation.js";
+import { scoreTotal, evaluationMaximum, isNotPresent, CRITERIA, nominationOptions } from "../shared/evaluation.js";
 export function Emergency() {
   const [data, setData] = useState(null),
     [selected, setSelected] = useState(null),
@@ -119,7 +119,7 @@ export function Emergency() {
                 </span>
                 <span>
                   {e.status === "submitted" ? "Locked" : "Draft"} ·{" "}
-                  {scoreTotal(e.scores)}/25
+                  {scoreTotal(e.scores)}/{evaluationMaximum(e) * 5}{isNotPresent(e) ? " · Not present / disqualified" : ""}
                 </span>
               </button>
             ))}
@@ -147,7 +147,7 @@ export function Emergency() {
                 {CRITERIA.map((c) => (
                   <div key={c.id}>
                     <dt>{c.name}</dt>
-                    <dd>{selected.scores[c.id] ?? "—"} / 5</dd>
+                    <dd>{selected.scores[c.id] ?? "—"} / {evaluationMaximum(selected)}</dd>
                   </div>
                 ))}
               </dl>
@@ -196,7 +196,7 @@ export function Emergency() {
                     <small>{new Date(h.created_at).toLocaleString()}</small>
                   </summary>
                   {h.reason && <p>{h.reason}</p>}
-                  <p>Total: {scoreTotal(h.next_snapshot.scores)} / 25</p>
+                  <p>Total: {scoreTotal(h.next_snapshot.scores)} / {evaluationMaximum(h.next_snapshot) * 5}</p>
                   <p>
                     {CRITERIA.map(
                       (c) =>

@@ -264,7 +264,7 @@ test("unassigned teams, bad marks, sector nominations, missing scores and other 
   );
   await f.evaluate({ action: "nominations", revision: 0, nominations: ["none-of-the-above"] });
   for (const scores of [
-    { impact: 6 },
+    { impact: 11 },
     { impact: -1 },
     { impact: 2.5 },
     { impact: "5" },
@@ -487,4 +487,47 @@ test('seating changes between reading and saving cannot commit a stale evaluatio
   assert.equal((await f.evaluate({action:'nominations',revision:0,nominations:['none-of-the-above']})).status,409);
   assert.equal(f.sqlite.prepare('SELECT COUNT(*) n FROM judging_evaluations').get().n,0);
   assert.equal(f.sqlite.prepare('SELECT COUNT(*) n FROM judging_evaluation_history').get().n,0);
+});
+
+
+test('absent requires confirmation and atomically locks all zero scores with no award', async () => {
+ const f=await setup();
+ assert.equal((await f.evaluate({action:'absent',revision:0})).status,400);
+ assert.equal(f.sqlite.prepare('SELECT count(*) n FROM judging_evaluations').get().n,0);
+ await f.evaluate({action:'scores',revision:0,scores:fullScores});
+ const result=await f.evaluate({action:'absent',revision:1,confirmAbsent:true,scores:fullScores,nominations:['agri-impact']});
+ assert.equal(result.status,200);
+ assert.equal(result.evaluation.status,'submitted');
+ assert.deepEqual(Object.values(result.evaluation.scores),[0,0,0,0,0]);
+ assert.deepEqual(result.evaluation.nominations,['none-of-the-above']);
+ assert.equal(result.evaluation.team_snapshot.not_present,true);
+ assert.equal(result.evaluation.team_snapshot.score_max,10);
+ assert.equal((await f.evaluate({action:'absent',revision:2,confirmAbsent:true})).status,409);
+ assert.equal((await f.evaluate({action:'scores',revision:2,scores:fullScores})).status,409);
+ assert.equal((await f.evaluate({action:'absent',teamId:8,revision:0,confirmAbsent:true})).status,403);
+ assert.equal(f.sqlite.prepare("SELECT count(*) n FROM judging_evaluation_history WHERE action='absent'").get().n,1);
+});
+test('ten-point scores accept 10, reject invalid boundaries, and retain fifty-point total', async () => {
+ const f=await setup();
+ for(const impact of [-1,11,2.5,'10']) assert.equal((await f.evaluate({action:'scores',revision:0,scores:{impact}})).status,400);
+ const scores=Object.fromEntries(Object.keys(fullScores).map(k=>[k,10]));
+ const a=await f.evaluate({action:'scores',revision:0,scores});assert.equal(a.status,200);
+ await f.evaluate({action:'nominations',revision:1,nominations:['none-of-the-above']});
+ const r=await f.evaluate({action:'submit',revision:2});assert.equal(r.status,200);
+ assert.equal(Object.values(r.evaluation.scores).reduce((a,b)=>a+b,0),50);
+ assert.equal(r.evaluation.team_snapshot.score_max,10);
+});
+test('old five-point draft is proportionately upgraded once on next save', async () => {
+ const f=await setup();await f.evaluate({action:'scores',revision:0,scores:fullScores});
+ f.sqlite.exec("UPDATE judging_evaluations SET team_snapshot=json_remove(team_snapshot,'$.score_max')");
+ const r=await f.evaluate({action:'nominations',revision:1,nominations:['none-of-the-above']});
+ assert.equal(r.status,200);assert.equal(r.evaluation.scores.impact,10);assert.equal(r.evaluation.scores.creativity,8);
+ const again=await f.evaluate({action:'nominations',revision:2,nominations:['agri-impact']});
+ assert.equal(again.evaluation.scores.impact,10);
+});
+test('absent concurrent with another save permits one atomic winner', async () => {
+ const f=await setup();overlapWrites(f);
+ const results=await Promise.all([f.evaluate({action:'absent',revision:0,confirmAbsent:true}),f.evaluate({action:'scores',revision:0,scores:fullScores})]);
+ assert.deepEqual(results.map(r=>r.status).sort(),[200,409]);
+ assert.equal(f.sqlite.prepare('SELECT count(*) n FROM judging_evaluation_history').get().n,1);
 });

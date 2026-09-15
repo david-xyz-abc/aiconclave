@@ -128,14 +128,14 @@ export const AWARDS = {
     ],
   ],
 };
-export function validScores(scores, complete = false) {
+export function validScores(scores, complete = false, maximum = 10) {
   return (
     scores &&
     typeof scores === "object" &&
     !Array.isArray(scores) &&
     Object.keys(scores).every((key) => CRITERIA.some((c) => c.id === key)) &&
     Object.values(scores).every(
-      (value) => Number.isInteger(value) && value >= 0 && value <= 5,
+      (value) => Number.isInteger(value) && value >= 0 && value <= maximum,
     ) &&
     (!complete || CRITERIA.every((c) => Object.hasOwn(scores, c.id)))
   );
@@ -160,3 +160,8 @@ export function validNominations(nominations, sector) {
   return Boolean(AWARDS[sector]) && Array.isArray(nominations) && nominations.length === 1 &&
     nominationOptions(sector).some(([id]) => id === nominations[0]);
 }
+
+// Historical evaluations without metadata retain their original five-point scale.
+export const evaluationMaximum = (evaluation) => evaluation?.score_max ?? evaluation?.team_snapshot?.score_max ?? 5;
+export const editableScores = (evaluation) => Object.fromEntries(Object.entries(evaluation?.scores || {}).map(([key, value]) => [key, value * (10 / evaluationMaximum(evaluation))]));
+export const isNotPresent = (evaluation) => evaluation?.team_snapshot?.not_present === true;

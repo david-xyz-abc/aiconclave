@@ -9,7 +9,7 @@ import { downloadAttendanceWorkbook } from "../../services/registrationExport.js
 const today = () => new Date().toISOString().slice(0, 10);
 
 function AttendanceLogin({ onLogin }) {
-  const [username, setUsername] = useState("admin");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -41,12 +41,11 @@ function AttendanceLogin({ onLogin }) {
         <form className="auth-form" onSubmit={submit}>
           <label>
             Username
-            <input value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" required />
+            <input autoFocus value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" required />
           </label>
           <label>
             Password
             <input
-              autoFocus
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}

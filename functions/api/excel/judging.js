@@ -2,6 +2,8 @@ import { authenticated, json } from '../../_shared/excelSession.js';
 import { AWARDS, validScores, scoreTotal } from '../../../judging/shared/evaluation.js';
 
 export const RESULTS_SQL = `SELECT e.team_id,e.scores,e.nominations,
+ COALESCE(json_extract(e.team_snapshot,'$.score_max'),5) score_max,
+ COALESCE(json_extract(e.team_snapshot,'$.not_present'),0) not_present,
  COALESCE(json_extract(e.team_snapshot,'$.team_name'),t.team_name) team_name,
  COALESCE(json_extract(e.team_snapshot,'$.team_code'),t.team_code) team_code,
  COALESCE(json_extract(e.team_snapshot,'$.leader_name'),
@@ -12,9 +14,11 @@ export const RESULTS_SQL = `SELECT e.team_id,e.scores,e.nominations,
  WHERE e.status='submitted'`;
 export function rankedResults(rows) {
  return rows.map(row => {
-  const scores=JSON.parse(row.scores);
-  if(!validScores(scores,true)) throw new Error('Invalid submitted scores');
-  return {...row,scores,total:scoreTotal(scores)};
+  const originalScores=JSON.parse(row.scores);
+  const maximum=row.score_max ?? 5;
+  if(![5,10].includes(maximum) || !validScores(originalScores,true,maximum)) throw new Error('Invalid submitted scores');
+  const scores=Object.fromEntries(Object.entries(originalScores).map(([k,v])=>[k,v*10/maximum]));
+  return {...row,scores,score_max:10,total:scoreTotal(scores)};
  }).sort((a,b) => b.total-a.total || a.team_name.localeCompare(b.team_name) || a.team_code.localeCompare(b.team_code) || a.team_id-b.team_id);
 }
 export async function onRequestGet(context) {

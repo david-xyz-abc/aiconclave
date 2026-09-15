@@ -31,8 +31,8 @@ async function fixture(){
 test('all 18 awards and 3 sector lists contain only final matching teams, descending by total',async()=>{
  const f=await fixture();try{
   for(const [sector,awards] of Object.entries(AWARDS)){
-   for(const [award] of awards){const r=await f.request(new URLSearchParams({kind:'award',sector,award}));assert.equal(r.status,200);const {rows}=await r.json();assert.deepEqual(rows.map(r=>r.total),[20,10]);}
-   const {rows}=await (await f.request(new URLSearchParams({kind:'sector',sector}))).json();assert.equal(rows.length,13);assert.equal(rows[0].total,25);
+   for(const [award] of awards){const r=await f.request(new URLSearchParams({kind:'award',sector,award}));assert.equal(r.status,200);const {rows}=await r.json();assert.deepEqual(rows.map(r=>r.total),[40,20]);}
+   const {rows}=await (await f.request(new URLSearchParams({kind:'sector',sector}))).json();assert.equal(rows.length,13);assert.equal(rows[0].total,50);
   }
   const {rows}=await (await f.request('kind=overall')).json();assert.equal(rows.length,39);assert.ok(rows.every((r,i)=>!i||rows[i-1].total>=r.total));
   f.db.prepare("UPDATE judging_evaluations SET status='draft' WHERE team_id=?").run(rows[0].team_id);
@@ -48,9 +48,23 @@ test('overall workbook has exact requested columns, numeric marks, descending to
   const {bytes}=await createJudgingResultsWorkbook(rows,{kind:'overall'});
   const zip=unzipSync(bytes),xml=strFromU8(zip['xl/worksheets/sheet1.xml']);
   const headers=[...xml.matchAll(/<c r="[A-H]1"[^>]*><is><t[^>]*>(.*?)<\/t>/g)].map(m=>m[1]);
-  assert.deepEqual(headers,['Team Name','Team Lead','Impact (out of 5)','Creativity (out of 5)','Validity (out of 5)','Relevance (out of 5)','Presentation (out of 5)','Total (out of 25)']);
-  assert.match(xml,/<c r="C2"[^>]*><v>5<\/v>/);assert.match(xml,/<c r="H2"[^>]*><v>25<\/v>/);
+  assert.deepEqual(headers,['Team Name','Team Lead','Impact (out of 10)','Creativity (out of 10)','Validity (out of 10)','Relevance (out of 10)','Presentation (out of 10)','Total (out of 50)']);
+  assert.match(xml,/<c r="C2"[^>]*><v>10<\/v>/);assert.match(xml,/<c r="H2"[^>]*><v>50<\/v>/);
   assert.doesNotMatch(xml,/<mergeCells/);
   await assert.rejects(createJudgingResultsWorkbook([],{kind:'overall'}),/No submitted evaluations/);
+ }finally{f.db.close();}
+});
+
+
+test('mixed historical five-point and new ten-point results use the same export scale without rewriting records',async()=>{
+ const f=await fixture();try{
+  const newId=f.insert('Agriculture',NO_AWARD,8);
+  f.db.prepare("UPDATE judging_evaluations SET team_snapshot=json_set(team_snapshot,'$.score_max',10) WHERE team_id=?").run(newId);
+  const before=f.db.prepare('SELECT * FROM judging_evaluations ORDER BY team_id').all();
+  const r=await f.request('kind=overall');assert.equal(r.status,200);
+  const {rows}=await r.json();
+  assert.equal(rows.find(r=>r.team_id===newId).total,40);
+  assert.equal(rows[0].total,50);
+  assert.deepEqual(f.db.prepare('SELECT * FROM judging_evaluations ORDER BY team_id').all(),before);
  }finally{f.db.close();}
 });

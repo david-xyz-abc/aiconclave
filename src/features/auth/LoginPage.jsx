@@ -2,7 +2,7 @@ import { useState } from "react";
 import { BrandLockup } from "../../components/common/BrandLockup.jsx";
 import { authApi } from "../../services/dashboardApi.js";
 
-export function LoginPage({ onLogin, title = "Admin", initialUsername = "admin", login = authApi.login }) {
+export function LoginPage({ onLogin, title = "Admin", initialUsername = "", login = authApi.login }) {
   const [username, setUsername] = useState(initialUsername);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -32,6 +32,7 @@ export function LoginPage({ onLogin, title = "Admin", initialUsername = "admin",
           <label>
             Username
             <input
+              autoFocus
               value={username}
               onChange={(event) => setUsername(event.target.value)}
               autoComplete="username"
