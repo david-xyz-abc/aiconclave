@@ -6,6 +6,6 @@ pages_build_output_dir = "dist"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "aiconclave-registrations-alpha-clone-20260914"
-database_id = "11854aec-284c-4994-b9f4-3cea51116d59"
+database_name = "aiconclave-alpha-production-copy-20260915"
+database_id = "d362909e-aa66-42f7-a98e-d364daa7aff0"
 migrations_dir = "db/migrations"
