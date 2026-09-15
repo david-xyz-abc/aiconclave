@@ -212,7 +212,7 @@ export function JudgeApp({ user, onLogout }) {
               const e = data.evaluations.find((e) => e.team_id === t.team_id);
               return (
                 <button
-                  className="card judge-team"
+                  className={`card judge-team ${e?.status === "submitted" ? "team-submitted" : ""}`}
                   disabled={busy}
                   key={t.team_id}
                   onClick={() => select(t)}
@@ -220,10 +220,11 @@ export function JudgeApp({ user, onLogout }) {
                   <div>
                     <strong>{t.team_name}</strong>
                     <p>Team leader: {t.leader_name || "Not available"}</p>
-                    <small>
-                      {t.team_code} · {t.room_name || "Room pending"} / Table{" "}
-                      {t.table_number || "—"}
-                    </small>
+                    <small>{t.team_code}</small>
+                  </div>
+                  <div className="team-card-location">
+                    <span><small>Room</small><b>{t.room_name || "Pending"}</b></span>
+                    <span><small>Table</small><b>{t.table_number || "—"}</b></span>
                   </div>
                   <span
                     className={`badge ${e?.status === "submitted" ? "complete" : ""}`}
