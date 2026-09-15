@@ -1003,5 +1003,5 @@ tr.selected {
   .judge-detail-actions button { padding: 10px 8px; font-size: 13px; }
 }
 
-.evaluation-form .zero-score { margin-top: 10px; padding: 8px 12px; min-height: 40px; font-size: 13px; background: transparent; }
+.evaluation-form .zero-score { width: 100%; margin-top: 10px; padding: 8px 12px; min-height: 40px; font-size: 13px; background: transparent; }
 .evaluation-form .zero-score[aria-pressed="true"] { background: #eaf0fb; border-color: #315ea8; color: #244f92; font-weight: 700; }
