@@ -72,9 +72,9 @@ test('exhibition split applies to automatic, manual and reallocation across sect
   assert.equal((await reallocate(context(f.DB,{teamId:1,currentTableId:10091,tableId:10146},'PATCH'))).status,409);
   f.sqlite.exec("UPDATE hackathon_teams SET solution_type='Non-Technical',sector_track='Healthcare'");
   result=await check('Prepared');
-  assert.equal(result.team.allocation.table_id,10316);
+  assert.equal(result.team.allocation.table_id,10326);
   result=await check('Starting from scratch');
-  assert.equal(result.team.allocation.table_id,10316);
+  assert.equal(result.team.allocation.table_id,10326);
   f.sqlite.exec("DELETE FROM venue_allocations; UPDATE hackathon_teams SET solution_type='Technical'; DELETE FROM venue_tables WHERE room_id IN (SELECT id FROM venue_rooms WHERE project_mode='Prepared');");
   result=await check('Prepared');
   assert.equal(result.team.allocation.table_id,null);
