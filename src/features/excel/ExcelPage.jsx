@@ -5,6 +5,7 @@ import { downloadRegistrationsWorkbook, downloadHackathonDivisionsWorkbook, down
 import { AWARDS } from '../../../judging/shared/evaluation.js';
 import { downloadJudgingResultsWorkbook } from '../../services/registrationExport.js';
 import './excel.css';
+import { downloadJudgeScorecardWorkbook } from '../../services/judgeScorecardExport.js';
 
 export function ExcelPage({onLogout}) {
   const pending = useRef(false);
@@ -17,6 +18,11 @@ export function ExcelPage({onLogout}) {
     if (pending.current) return;
     pending.current = true; setBusy(kind); setError('');
     try {
+      if (['evaluation','nomination'].includes(kind)) {
+        const {rows}=await excelApi.judging('overall');
+        await downloadJudgeScorecardWorkbook(rows,kind);
+        return;
+      }
       if (['award','sector','overall'].includes(kind)) {
         const {rows}=await excelApi.judging(kind,sector,award);
         await downloadJudgingResultsWorkbook(rows,{kind,sector,awardName:AWARDS[sector].find(([id])=>id===award)?.[1]});
@@ -54,6 +60,8 @@ export function ExcelPage({onLogout}) {
           <section><h2>Award rankings</h2><p>Teams nominated for the selected award, highest total first.</p><label className="excel-award">Award<select value={award} disabled={Boolean(busy)} onChange={event => {setAward(event.target.value);setError('');}}>{AWARDS[sector].map(([id,name]) => <option value={id} key={id}>{name}</option>)}</select></label><button className="button button-primary" disabled={Boolean(busy)} onClick={() => run('award')}>{busy === 'award' ? 'Preparing…' : 'Download Excel'}</button></section>
           <section><h2>{sector} rankings</h2><p>All evaluated teams in this sector, highest total first, including None of the above nominations.</p><button className="button button-primary" disabled={Boolean(busy)} onClick={() => run('sector')}>{busy === 'sector' ? 'Preparing…' : 'Download Excel'}</button></section>
           <section><h2>Overall score breakdown</h2><p>All sectors together. Team name, team lead, five individual marks and the total, highest total first.</p><button className="button button-primary" disabled={Boolean(busy)} onClick={() => run('overall')}>{busy === 'overall' ? 'Preparing…' : 'Download Excel'}</button></section>
+          <section><h2>Evaluation Sheet</h2><p>All submitted teams: team ID, College/School, theme, five marks out of 10 and total out of 50, in the scorecard layout.</p><button className="button button-primary" disabled={Boolean(busy)} onClick={() => run('evaluation')}>{busy === 'evaluation' ? 'Preparing…' : 'Download Evaluation Sheet'}</button></section>
+          <section><h2>Award Nomination Sheet</h2><p>All submitted teams with recorded nominations ticked across A1–A6, H1–H6 and E1–E6, with the award key above.</p><button className="button button-primary" disabled={Boolean(busy)} onClick={() => run('nomination')}>{busy === 'nomination' ? 'Preparing…' : 'Download Award Nomination Sheet'}</button></section>
         </div>
       </>}
       {error && <p className="form-error" role="alert">{error}</p>}

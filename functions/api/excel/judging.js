@@ -9,6 +9,7 @@ export const RESULTS_SQL = `SELECT e.team_id,e.scores,e.nominations,
  COALESCE(json_extract(e.team_snapshot,'$.leader_name'),
  (SELECT full_name FROM hackathon_team_members WHERE team_id=t.id AND id=t.attendance_lead_member_id),
  (SELECT full_name FROM hackathon_team_members WHERE team_id=t.id AND role='Captain' ORDER BY member_order LIMIT 1),'') leader_name,
+ COALESCE(json_extract(e.team_snapshot,'$.participant_category'),t.participant_category) participant_category,
  COALESCE(json_extract(e.team_snapshot,'$.sector_track'),t.sector_track) sector
  FROM judging_evaluations e JOIN hackathon_teams t ON t.id=e.team_id
  WHERE e.status='submitted'`;

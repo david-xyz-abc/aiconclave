@@ -6,16 +6,17 @@ import {onRequestGet} from '../functions/api/excel/judging.js';
 import {token,COOKIE} from '../functions/_shared/excelSession.js';
 import {AWARDS,CRITERIA,NO_AWARD} from '../judging/shared/evaluation.js';
 import {createJudgingResultsWorkbook} from '../src/services/registrationExport.js';
+import {createJudgeScorecardWorkbook} from '../src/services/judgeScorecardExport.js';
 
 async function fixture(){
  const db=new DatabaseSync(':memory:');
- db.exec(`CREATE TABLE hackathon_teams(id INTEGER,team_name TEXT,team_code TEXT,sector_track TEXT,attendance_lead_member_id INTEGER);
+ db.exec(`CREATE TABLE hackathon_teams(id INTEGER,team_name TEXT,team_code TEXT,sector_track TEXT,attendance_lead_member_id INTEGER,participant_category TEXT);
  CREATE TABLE hackathon_team_members(id INTEGER,team_id INTEGER,full_name TEXT,role TEXT,member_order INTEGER);
  CREATE TABLE judging_evaluations(team_id INTEGER,scores TEXT,nominations TEXT,team_snapshot TEXT,status TEXT);`);
  let id=0;
  const insert=(sector,award,mark,status='submitted',name)=>{
   id++;const scores=Object.fromEntries(CRITERIA.map(c=>[c.id,mark]));
-  db.prepare('INSERT INTO hackathon_teams VALUES(?,?,?,?,NULL)').run(id,name||'Team '+id,'CODE-'+id,sector);
+  db.prepare("INSERT INTO hackathon_teams VALUES(?,?,?,?,NULL,'College')").run(id,name||'Team '+id,'CODE-'+id,sector);
   db.prepare('INSERT INTO judging_evaluations VALUES(?,?,?,?,?)').run(id,JSON.stringify(scores),JSON.stringify([award]),JSON.stringify({leader_name:'Leader '+id,sector_track:sector}),status);
   return id;
  };
@@ -40,6 +41,32 @@ test('all 18 awards and 3 sector lists contain only final matching teams, descen
   assert.equal((await f.request('kind=overall','')).status,401);
   assert.equal((await f.request('kind=award&sector=Agriculture&award=health-impact')).status,400);
   assert.equal((await f.request('kind=sector&sector=Unknown')).status,400);
+ }finally{f.db.close();}
+});
+test('scorecard downloads include all submitted rows, category, normalized marks and exact award ticks',async()=>{
+ const f=await fixture();try{
+  const before=f.db.prepare('SELECT * FROM judging_evaluations').all();
+  const {rows}=await (await f.request('kind=overall')).json();
+  assert.equal(rows.length,39);assert.equal(rows[0].participant_category,'College');
+  for(const kind of ['evaluation','nomination']){
+   const {bytes}=await createJudgeScorecardWorkbook(rows,kind);
+   const zip=unzipSync(bytes),xml=strFromU8(zip['xl/worksheets/sheet1.xml']);
+   const start=kind==='evaluation'?5:12,last=start+rows.length-1;
+   assert.match(xml,new RegExp(`<row r="${last}"`));
+   for(const row of rows)assert.ok(xml.includes(row.team_code));
+   assert.match(xml,/orientation="landscape" fitToWidth="1" fitToHeight="0"/);
+   if(kind==='evaluation'){
+    assert.match(xml,/<f>SUM\(E5:I5\)<\/f><v>50<\/v>/);
+    assert.match(xml,/<c r="C5"[^>]*>.*?College/);
+    assert.match(xml,/<c r="D5"[^>]*>.*?Agriculture/);
+   }else{
+    assert.equal((xml.match(/>✓<\/t>/g)||[]).length,36);
+    // The first three teams have no nomination. No marks may appear in their award cells.
+    for(let r=start;r<start+3;r++)assert.doesNotMatch(xml.match(new RegExp(`<row r="${r}"[^>]*>(.*?)</row>`))[1],/✓/);
+   }
+   await assert.rejects(createJudgeScorecardWorkbook([],kind),/No submitted evaluations/);
+  }
+  assert.deepEqual(f.db.prepare('SELECT * FROM judging_evaluations').all(),before);
  }finally{f.db.close();}
 });
 test('overall workbook has exact requested columns, numeric marks, descending totals and plain headers',async()=>{
