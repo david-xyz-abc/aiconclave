@@ -222,9 +222,8 @@ export function JudgeApp({ user, onLogout }) {
                     <p>Team leader: {t.leader_name || "Not available"}</p>
                     <small>{t.team_code}</small>
                   </div>
-                  <div className="team-card-location">
-                    <span aria-label="Room"><b>{t.room_name || "Pending"}</b></span>
-                    <span aria-label="Table"><b>{t.table_number ? `T${t.table_number}` : "—"}</b></span>
+                  <div className="team-card-location" aria-label="Room and table">
+                    <b>{t.room_name || "Pending"} / {t.table_number ? `T${t.table_number}` : "—"}</b>
                   </div>
                   <span
                     className={`badge ${e?.status === "submitted" ? "complete" : ""}`}
