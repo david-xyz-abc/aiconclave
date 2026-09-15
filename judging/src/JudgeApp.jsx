@@ -223,8 +223,8 @@ export function JudgeApp({ user, onLogout }) {
                     <small>{t.team_code}</small>
                   </div>
                   <div className="team-card-location">
-                    <span><small>Room</small><b>{t.room_name || "Pending"}</b></span>
-                    <span><small>Table</small><b>{t.table_number || "—"}</b></span>
+                    <span aria-label="Room"><b>{t.room_name || "Pending"}</b></span>
+                    <span aria-label="Table"><b>{t.table_number ? `T${t.table_number}` : "—"}</b></span>
                   </div>
                   <span
                     className={`badge ${e?.status === "submitted" ? "complete" : ""}`}
@@ -248,22 +248,10 @@ export function JudgeApp({ user, onLogout }) {
         ) : (
           <>
             <div className="team-context card">
-              <span>
-                <small>Team code</small>
-                {shown.team_code}
-              </span>
-              <span>
-                <small>Venue / table</small>
-                {shown.room_name || "Pending"} / {shown.table_number || "—"}
-              </span>
-              <span>
-                <small>Category</small>
-                {shown.participant_category}
-              </span>
-              <span>
-                <small>Sector</small>
-                {shown.sector_track}
-              </span>
+              <span aria-label="Team code"><b>{shown.team_code}</b></span>
+              <span aria-label="Room and table"><b>{shown.room_name || "Pending"} / {shown.table_number ? `T${shown.table_number}` : "—"}</b></span>
+              <span aria-label="Category"><b>{shown.participant_category}</b></span>
+              <span aria-label="Sector"><b>{shown.sector_track}</b></span>
             </div>
             {!locked && <div className="absence-action">
               <span>Team members not at their table?</span>

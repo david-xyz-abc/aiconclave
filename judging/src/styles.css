@@ -986,6 +986,8 @@ tr.selected {
 .team-card-location { display: grid; gap: 8px; text-align: right; }
 .team-card-location span { display: grid; gap: 2px; }
 .team-card-location small { font-size: 12px; }
-.team-card-location b { font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
+.team-card-location b { font-size: 16px; font-weight: 700; overflow-wrap: anywhere; }
 .judge-team-list .team-submitted { background: #f0f8f3; border-color: #b6d7c2; }
 .judge-team-list .team-submitted:hover { background: #e8f3ec; }
+
+.team-context b { font-weight: 600; }
