@@ -243,11 +243,11 @@ export function JudgeApp({ user, onLogout }) {
           </div>
         ) : (
           <>
-            <div className="team-context card">
-              <span aria-label="Team name"><h1>{shown.team_name}</h1></span>
-              <span aria-label="Team leader"><b>{shown.leader_name || "Not available"}</b></span>
-              <span aria-label="Team code"><b>{shown.team_code}</b></span>
-              <span aria-label="Room and table"><b>{shown.room_name || "Pending"} / {shown.table_number ? `T${shown.table_number}` : "—"}</b></span>
+            <div className="team-context">
+              <span aria-label="Team name"><small>Team name</small><h1>{shown.team_name}</h1></span>
+              <span aria-label="Team leader"><small>Lead name</small><b>{shown.leader_name || "Not available"}</b></span>
+              <span aria-label="Team code"><small>Team ID</small><b>{shown.team_code}</b></span>
+              <span aria-label="Room and table"><small>Allocation</small><b>{shown.room_name || "Pending"} / {shown.table_number ? `T${shown.table_number}` : "—"}</b></span>
               <span aria-label="Category"><b>{shown.participant_category}</b></span>
               <span aria-label="Sector"><b>{shown.sector_track}</b></span>
             </div>

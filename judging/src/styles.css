@@ -1004,4 +1004,11 @@ tr.selected {
 }
 
 .evaluation-form .zero-score { width: 100%; margin-top: 10px; padding: 8px 12px; min-height: 40px; font-size: 13px; background: transparent; }
-.evaluation-form .zero-score[aria-pressed="true"] { background: #eaf0fb; border-color: #315ea8; color: #244f92; font-weight: 700; }
+.evaluation-form .zero-score[aria-pressed="true"] { background: var(--blue); border-color: var(--blue); color: #fff; font-weight: 700; }
+
+.judge-main .team-context { padding: 0; gap: 14px; background: transparent; border: 0; }
+.team-context > span { padding: 14px; }
+.team-context small { display: block; font-size: 12px; font-weight: 400; color: var(--muted); }
+
+.judge-login-control { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; padding:16px; margin-bottom:20px; }
+.judge-login-control p { margin-top:6px; font-size:13px; }

@@ -531,3 +531,19 @@ test('absent concurrent with another save permits one atomic winner', async () =
  assert.deepEqual(results.map(r=>r.status).sort(),[200,409]);
  assert.equal(f.sqlite.prepare('SELECT count(*) n FROM judging_evaluation_history').get().n,1);
 });
+
+ test("venue admins control new judge login without revoking existing sessions",async()=>{
+ const {onRequest:control}=await import('../judging/functions/api/judge-login.js');
+ const f=await setup();
+ assert.equal((await control(judgeContext(f.DB,f.cookie,{enabled:false}))).status,403);
+ assert.equal((await control(judgeContext(f.DB,'',{enabled:false}))).status,401);
+ assert.equal((await control(judgingContext(f.DB,{enabled:'false'}))).status,400);
+ assert.equal((await control(judgingContext(f.DB,{enabled:false}))).status,200);
+ const before=f.sqlite.prepare('SELECT COUNT(*) n FROM judging_sessions').get().n;
+ const login=await authRequest(judgeContext(f.DB,'',{username:'judge-one',password:'fixture-pass',role:'judge'}));
+ assert.equal(login.status,403);assert.equal((await login.json()).error,'Judge login is not open yet.');
+ assert.equal(f.sqlite.prepare('SELECT COUNT(*) n FROM judging_sessions').get().n,before);
+ assert.equal((await getEvaluation(judgeContext(f.DB,f.cookie,null,'GET'))).status,200);
+ assert.equal((await control(judgingContext(f.DB,{enabled:true}))).status,200);
+ assert.equal((await authRequest(judgeContext(f.DB,'',{username:'judge-one',password:'fixture-pass',role:'judge'}))).status,200);
+ });

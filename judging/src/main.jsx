@@ -13,6 +13,7 @@ import { api } from "./client.js";
 import { JudgeApp } from "./JudgeApp.jsx";
 import { Emergency } from "./Emergency.jsx";
 import { JudgeAccount } from "./JudgeAccount.jsx";
+import { JudgeLoginControl } from "./JudgeLoginControl.jsx";
 function Brand() {
   return (
     <a className="brand" href="https://aiconclave-dashboard-alpha.pages.dev/" aria-label="Home" title="Home">
@@ -745,6 +746,7 @@ function Workspace({ user, onLogout }) {
                 </button>
               </div>
             )}
+            <JudgeLoginControl />
             <nav className="tabs" aria-label="Judging administration">
               {[
                 ["assign", "Assign teams"],
