@@ -733,6 +733,10 @@ function Workspace({ user, onLogout }) {
                 <span>Assigned teams</span>
                 <strong>{data.assignments.length}</strong>
               </div>
+              <div>
+                <span>Evaluated teams</span>
+                <strong>{new Set((data.evaluations || []).filter(e => e.status === "submitted").map(e => e.team_id)).size}</strong>
+              </div>
             </div>
             {review > 0 && (
               <div className="notice banner">

@@ -1010,5 +1010,5 @@ tr.selected {
 .team-context > span { padding: 14px; }
 .team-context small { display: block; font-size: 12px; font-weight: 400; color: var(--muted); }
 
-.judge-login-control { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; padding:16px; margin-bottom:20px; }
+.judge-login-control { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; padding:16px; margin:20px 0; }
 .judge-login-control p { margin-top:6px; font-size:13px; }
