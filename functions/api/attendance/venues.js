@@ -7,12 +7,12 @@ export async function onRequestGet(context) {
   if (!['read', 'write'].includes(auth.session.attendance_access)) return attendanceJson({ ok: false, error: 'Check-in access required.' }, 403);
   try {
     const results = await context.env.DB.batch([
-      context.env.DB.prepare(`SELECT q.*, a.table_id, r.name AS room_name, r.block, vt.table_number, vt.seats AS table_seats
+      context.env.DB.prepare(`SELECT q.*, (SELECT team_size FROM hackathon_teams WHERE id=q.team_id) AS registered_size, a.table_id, r.name AS room_name, r.block, vt.table_number, vt.seats AS table_seats
         FROM venue_requirements q LEFT JOIN venue_allocations a ON a.team_id = q.team_id
         LEFT JOIN venue_tables vt ON vt.id = a.table_id LEFT JOIN venue_rooms r ON r.id = vt.room_id
         ORDER BY lower(q.team_name), q.team_id`),
       context.env.DB.prepare(`SELECT r.id, r.name, r.block, r.project_mode, r.sector, r.solution_type, vt.seats, vt.id AS table_id, vt.table_number, a.team_id, t.team_name, t.team_code
-        FROM venue_rooms r JOIN venue_tables vt ON vt.room_id = r.id
+        FROM venue_rooms r JOIN venue_tables vt ON vt.room_id = r.id AND vt.table_number NOT BETWEEN 552 AND 568
         LEFT JOIN venue_allocations a ON a.table_id = vt.id LEFT JOIN hackathon_teams t ON t.id = a.team_id
         ORDER BY r.id, vt.table_number`),
     ]);
@@ -23,7 +23,7 @@ export async function onRequestGet(context) {
 export const MANUAL_SQL = `INSERT INTO venue_allocations (team_id, table_id, assigned_by)
  SELECT q.team_id, vt.id, ? FROM venue_requirements q JOIN venue_rooms r
  ON (r.project_mode IS NULL OR r.project_mode = q.project_mode) AND (r.sector IS NULL OR r.sector = q.sector_track) AND r.solution_type = q.solution_type
- JOIN venue_tables vt ON vt.room_id = r.id AND vt.seats >= q.present_count
+ JOIN venue_tables vt ON vt.room_id = r.id AND vt.table_number NOT BETWEEN 552 AND 568 AND vt.seats >= (SELECT team_size FROM hackathon_teams WHERE id=q.team_id)
  WHERE q.team_id = ? AND vt.id = ? AND q.attendance_marked = 1 AND q.present_count >= 2 AND q.lead_present = 1
  AND NOT EXISTS (SELECT 1 FROM venue_allocations WHERE team_id = q.team_id OR table_id = vt.id)`;
 
@@ -33,7 +33,7 @@ export const REALLOCATE_SQL = `UPDATE venue_allocations SET table_id = ?, assign
  AND EXISTS (SELECT 1 FROM venue_requirements q JOIN venue_rooms r
  ON (r.project_mode IS NULL OR r.project_mode = q.project_mode) AND (r.sector IS NULL OR r.sector = q.sector_track)
  AND r.solution_type = q.solution_type
- JOIN venue_tables vt ON vt.room_id = r.id AND vt.seats >= q.present_count
+ JOIN venue_tables vt ON vt.room_id = r.id AND vt.table_number NOT BETWEEN 552 AND 568 AND vt.seats >= (SELECT team_size FROM hackathon_teams WHERE id=q.team_id)
  WHERE q.team_id = venue_allocations.team_id AND vt.id = ?
  AND q.attendance_marked = 1 AND q.present_count >= 2 AND q.lead_present = 1)
  AND NOT EXISTS (SELECT 1 FROM venue_allocations occupied WHERE occupied.table_id = ?)`;

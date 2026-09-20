@@ -1,7 +1,7 @@
 import {attendanceJson,requireAttendanceSession} from '../../../_shared/attendance.js';
 export const TABLES_SQL=`SELECT t.id table_id,t.table_number,t.seats,a.team_id,h.team_name,h.team_code
  FROM venue_tables t LEFT JOIN venue_allocations a ON a.table_id=t.id
- LEFT JOIN hackathon_teams h ON h.id=a.team_id WHERE t.room_id=? ORDER BY t.table_number`;
+ LEFT JOIN hackathon_teams h ON h.id=a.team_id WHERE t.room_id=? AND t.table_number NOT BETWEEN 552 AND 568 ORDER BY t.table_number`;
 export async function onRequestGet(context){
  const auth=await requireAttendanceSession(context);if(auth.response)return auth.response;
  if(!['read','write'].includes(auth.session.attendance_access))return attendanceJson({ok:false,error:'Check-in access required.'},403);

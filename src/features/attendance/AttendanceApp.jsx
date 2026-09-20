@@ -1,3 +1,4 @@
+import { StockSyncStatus } from './StockSyncStatus.jsx';
 import {DIRECTORY_KEY,readTeamDirectory,filterTeams,clearTeamDirectory} from './teamDirectory.js';
 import { OperationsHeader } from "../../components/layout/OperationsHeader.jsx";
 import { VenueDashboard } from "../venues/VenueDashboard.jsx";
@@ -9,7 +10,7 @@ import { downloadAttendanceWorkbook } from "../../services/registrationExport.js
 const today = () => new Date().toISOString().slice(0, 10);
 
 function AttendanceLogin({ onLogin }) {
-  const [username, setUsername] = useState("admin");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -32,8 +33,9 @@ function AttendanceLogin({ onLogin }) {
         className="auth-panel"
         aria-labelledby="attendance-login-heading"
       >
-        <a className="ops-home-link" href="/">← Home</a>
-        <BrandLockup />
+        <a className="ops-brand auth-home-brand" href="/" aria-label="Home" title="Home">
+          <BrandLockup home />
+        </a>
         <div className="auth-copy">
           <h1 id="attendance-login-heading">Staff sign in</h1>
           <p>Access check-in and room allocation.</p>
@@ -41,12 +43,11 @@ function AttendanceLogin({ onLogin }) {
         <form className="auth-form" onSubmit={submit}>
           <label>
             Username
-            <input value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" required />
+            <input autoFocus value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" required />
           </label>
           <label>
             Password
             <input
-              autoFocus
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
@@ -64,9 +65,6 @@ function AttendanceLogin({ onLogin }) {
             <span aria-hidden="true">→</span>
           </button>
         </form>
-        <a className="attendance-back-link" href="/">
-          ← Return
-        </a>
       </section>
     </main>
   );
@@ -435,6 +433,7 @@ function AttendanceDesk({ onLogout, user }) {
                   </button>
                 ) : null}
                 </>}
+                {attendanceMarked && <StockSyncStatus teamId={team.id} version={team.checkin_version} />}
               </>
             ) : (
               <div className="attendance-empty">

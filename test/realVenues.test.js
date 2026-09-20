@@ -41,7 +41,7 @@ test('real plan falls back within category across all sectors and modes; manual 
  try {
   migrate(f);
   f.sqlite.exec("UPDATE hackathon_teams SET sector_track='Healthcare';");
-  assert.equal((await (await attendance(context(f.DB,payload(2)))).json()).team.allocation.table_id,10106);
+  assert.equal((await (await attendance(context(f.DB,payload(2)))).json()).team.allocation.table_id,10091);
   f.sqlite.exec('DELETE FROM venue_allocations; DELETE FROM venue_tables WHERE seats=2;');
   assert.equal((await (await attendance(context(f.DB,payload(2)))).json()).team.allocation.table_id,10091);
   f.sqlite.exec('DELETE FROM venue_allocations; DELETE FROM venue_tables WHERE seats=3;');
@@ -66,19 +66,19 @@ test('exhibition split applies to automatic, manual and reallocation across sect
   const check=async(mode,count=2)=>await (await attendance(context(f.DB,{...payload(count),projectMode:mode}))).json();
   let result=await check('Prepared');
   assert.equal(result.team.allocation.table_id,10146);
-  assert.equal((await reallocate(context(f.DB,{teamId:1,currentTableId:10146,tableId:10106},'PATCH'))).status,409);
+  assert.equal((await reallocate(context(f.DB,{teamId:1,currentTableId:10146,tableId:10091},'PATCH'))).status,409);
   result=await check('Starting from scratch');
-  assert.equal(result.team.allocation.table_id,10106);
-  assert.equal((await reallocate(context(f.DB,{teamId:1,currentTableId:10106,tableId:10146},'PATCH'))).status,409);
+  assert.equal(result.team.allocation.table_id,10091);
+  assert.equal((await reallocate(context(f.DB,{teamId:1,currentTableId:10091,tableId:10146},'PATCH'))).status,409);
   f.sqlite.exec("UPDATE hackathon_teams SET solution_type='Non-Technical',sector_track='Healthcare'");
   result=await check('Prepared');
-  assert.equal(result.team.allocation.table_id,10316);
+  assert.equal(result.team.allocation.table_id,10326);
   result=await check('Starting from scratch');
-  assert.equal(result.team.allocation.table_id,10316);
+  assert.equal(result.team.allocation.table_id,10326);
   f.sqlite.exec("DELETE FROM venue_allocations; UPDATE hackathon_teams SET solution_type='Technical'; DELETE FROM venue_tables WHERE room_id IN (SELECT id FROM venue_rooms WHERE project_mode='Prepared');");
   result=await check('Prepared');
   assert.equal(result.team.allocation.table_id,null);
-  assert.equal((await manual(context(f.DB,{teamId:1,tableId:10106}))).status,409);
+  assert.equal((await manual(context(f.DB,{teamId:1,tableId:10091}))).status,409);
   assert.deepEqual(f.sqlite.prepare('PRAGMA foreign_key_check').all(),[]);
  }finally{f.sqlite.close();}
 });

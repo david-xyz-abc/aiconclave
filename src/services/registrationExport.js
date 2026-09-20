@@ -614,21 +614,25 @@ export async function downloadCheckedInTeamsWorkbook(participants) {
   downloadBytes(bytes,filename);
 }
 
-export async function createJudgingResultsWorkbook(rows, {kind,sector,awardName}) {
+export async function createJudgingResultsWorkbook(rows, {kind,sector,awardName,category}) {
+  if(category && !['College','School'].includes(category))throw new Error('Choose College or School.');
+  if(category)rows=rows.filter(row=>row.participant_category===category);
   if(!rows.length)throw new Error('No submitted evaluations match this selection.');
-  const columns=[{key:'team_name',header:'Team Name',width:30},{key:'leader_name',header:'Team Lead',width:28}];
-  if(kind==='overall') {
-    for(const [key,label] of [['impact','Impact'],['creativity','Creativity'],['validity','Validity'],['relevance','Relevance'],['presentation','Presentation']]) columns.push({key,header:label+' (out of 5)',width:23});
-  }else{
+  const columns=[{key:'team_name',header:'Team Name',width:30},{key:'leader_name',header:'Team Lead',width:28},
+    {key:'participant_category',header:'School/College',width:20},{key:'leader_institution',header:'School/College Name',width:48}];
+  if(kind!=='overall') {
     columns.push({key:'team_code',header:'Team Code',width:24},{key:'sector',header:'Sector',width:20});
     if(kind==='award')columns.push({key:'award',header:'Award',width:46});
   }
-  columns.push({key:'total',header:'Total (out of 25)',width:23});
+  if(kind==='overall' || kind==='award') {
+    for(const [key,label] of [['impact','Impact'],['creativity','Creativity'],['validity','Validity'],['relevance','Relevance'],['presentation','Presentation']]) columns.push({key,header:label+' (out of 10)',width:23});
+  }
+  columns.push({key:'total',header:'Total (out of 50)',width:23});
   const data=[...rows].sort((a,b)=>b.total-a.total || text(a.team_name).localeCompare(text(b.team_name)) || text(a.team_code).localeCompare(text(b.team_code)))
     .map(row=>({...row,...row.scores,award:awardName}));
   const {strToU8,zipSync}=await import('fflate');
   const label=kind==='overall'?'Overall score breakdown':kind==='sector'?sector+' rankings':awardName;
-  return {bytes:packageWorkbook([createSheet('Results','','',columns,data,{plain:true})],zipSync,strToU8),filename:`ai-conclave-2026-${safeFilePart(label)}-${localDatePart(new Date())}.xlsx`};
+  return {bytes:packageWorkbook([createSheet(category ? `${category} Results` : 'Results','','',columns,data,{plain:true})],zipSync,strToU8),filename:`ai-conclave-2026-${category ? safeFilePart(category)+'-' : ''}${safeFilePart(label)}-${localDatePart(new Date())}.xlsx`};
 }
 export async function downloadJudgingResultsWorkbook(rows,selection){
  const {bytes,filename}=await createJudgingResultsWorkbook(rows,selection);downloadBytes(bytes,filename);

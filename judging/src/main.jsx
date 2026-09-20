@@ -13,6 +13,12 @@ import { api } from "./client.js";
 import { JudgeApp } from "./JudgeApp.jsx";
 import { Emergency } from "./Emergency.jsx";
 import { JudgeAccount } from "./JudgeAccount.jsx";
+import { JudgeLoginControl } from "./JudgeLoginControl.jsx";
+
+function judgeRosterLabel(judge) {
+  const slot = judge.slot_preference === 'Any' ? 'Any slot' : judge.slot_preference;
+  return `${judge.name}${slot ? ` [${slot}]` : ''}${judge.roster_status === 'Backup' ? ' [Backup]' : ''}`;
+}
 function Brand() {
   return (
     <a className="brand" href="https://aiconclave-dashboard.pages.dev/" aria-label="Home" title="Home">
@@ -253,7 +259,7 @@ function Assignments({ data, save, busy }) {
                 {data.judges
                   .map((j) => (
                     <option value={j.id} key={j.id}>
-                      {j.name} (
+                      {judgeRosterLabel(j)} (
                       {
                         data.assignments.filter((a) => a.judge_id === j.id)
                           .length
@@ -441,8 +447,13 @@ function Judges({ data, save, busy, refresh }) {
                   onClick={() => edit(j)}
                 >
                   <span>
-                    <strong>{j.name}</strong>
+                    <strong>{judgeRosterLabel(j)}</strong>
                     <small>{j.department}</small>
+                    <small>{[
+                      j.slot_preference === "Any" ? "Any slot" : j.slot_preference,
+                      j.solution_preference ? `${j.solution_preference} preferred` : "",
+                      j.roster_status && j.roster_status !== "Main" ? j.roster_status : "",
+                    ].filter(Boolean).join(" · ")}</small>
                   </span>
                   <span className={r.needsReview ? "review" : "muted"}>
                     {r.needsReview ? "Review route" : `${r.teams.length} teams`}{" "}
@@ -460,6 +471,11 @@ function Judges({ data, save, busy, refresh }) {
       </section>
       <section className="card assignment">
         <h2>{judge ? "Judge details" : "Add a judge"}</h2>
+        {judge && <p className="muted">{[
+          `Slot: ${judge.slot_preference === "Any" ? "Any slot" : judge.slot_preference || "Not specified"}`,
+          `Preference: ${judge.solution_preference || "Not specified"}`,
+          judge.roster_status && judge.roster_status !== "Main" ? judge.roster_status : "",
+        ].filter(Boolean).join(" · ")}</p>}
         <form onSubmit={submit}>
           <label>
             {judge ? "Judge name" : "Judge names"}
@@ -732,6 +748,10 @@ function Workspace({ user, onLogout }) {
                 <span>Assigned teams</span>
                 <strong>{data.assignments.length}</strong>
               </div>
+              <div>
+                <span>Evaluated teams</span>
+                <strong>{new Set((data.evaluations || []).filter(e => e.status === 'submitted').map(e => e.team_id)).size}</strong>
+              </div>
             </div>
             {review > 0 && (
               <div className="notice banner">
@@ -745,6 +765,7 @@ function Workspace({ user, onLogout }) {
                 </button>
               </div>
             )}
+            <JudgeLoginControl />
             <nav className="tabs" aria-label="Judging administration">
               {[
                 ["assign", "Assign teams"],

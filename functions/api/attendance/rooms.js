@@ -4,7 +4,7 @@ export const ROOMS_SQL=`SELECT r.id,r.name,r.block,r.solution_type,r.project_mod
  SUM(CASE WHEN t.seats=2 THEN 1 ELSE 0 END) seats_2,
  SUM(CASE WHEN t.seats=3 THEN 1 ELSE 0 END) seats_3,
  SUM(CASE WHEN t.seats=4 THEN 1 ELSE 0 END) seats_4
- FROM venue_rooms r LEFT JOIN venue_tables t ON t.room_id=r.id
+ FROM venue_rooms r LEFT JOIN venue_tables t ON t.room_id=r.id AND t.table_number NOT BETWEEN 552 AND 568
  LEFT JOIN venue_allocations a ON a.table_id=t.id GROUP BY r.id ORDER BY r.id`;
 export async function onRequestGet(context){
  const auth=await requireAttendanceSession(context);if(auth.response)return auth.response;

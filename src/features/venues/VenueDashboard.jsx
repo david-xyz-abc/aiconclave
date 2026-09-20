@@ -20,7 +20,7 @@ function status(team) {
   return 'Awaiting allocation';
 }
 function compatible(team, table) {
-  return !table.team_id && (!table.project_mode || team.project_mode === table.project_mode) && (!table.sector || team.sector_track === table.sector) && team.solution_type === table.solution_type && team.present_count <= table.seats;
+  return !table.team_id && (!table.project_mode || team.project_mode === table.project_mode) && (!table.sector || team.sector_track === table.sector) && team.solution_type === table.solution_type && team.registered_size <= table.seats;
 }
 
 export function VenueDashboard({ user, onLogout }) {

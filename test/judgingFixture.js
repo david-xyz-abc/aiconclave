@@ -23,6 +23,8 @@ export function judgingFixture(access = "write") {
   );
   f.sqlite.exec(readFileSync(new URL("../db/migrations/0027_judges_without_categories.sql", import.meta.url), "utf8"));
   f.sqlite.exec(readFileSync(new URL("../db/migrations/0028_judging_evaluation_guards.sql", import.meta.url), "utf8"));
+  f.sqlite.exec(readFileSync(new URL("../db/migrations/0038_judge_login_control.sql", import.meta.url), "utf8"));
+  f.sqlite.exec("UPDATE judging_login_control SET enabled=1 WHERE id=1");
   f.sqlite
     .prepare(
       "INSERT INTO judging_users(id,username,password_hash,password_salt,password_iterations,role) VALUES (?,?,?,?,?,?)",

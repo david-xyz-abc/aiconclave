@@ -1,3 +1,4 @@
+import { dispatchPending } from '../../../_shared/stockSync.js';
 import { allocationStatements } from "../../../_shared/allocation.js";
 import { attendanceJson, requireAttendanceAdmin, requireAttendanceSession } from "../../../_shared/attendance.js";
 
@@ -66,6 +67,9 @@ export async function onRequestPost(context) {
       context.env.DB.prepare('INSERT INTO checkin_save_guards(team_id,expected_version) VALUES (?,?)').bind(id,body.expectedVersion),
       context.env.DB.prepare('UPDATE hackathon_teams SET attendance_lead_member_id=? WHERE id=?').bind(leadMemberId,id),
       ...attendance.map((item) => context.env.DB.prepare(`INSERT INTO hackathon_attendance (team_id, member_id, attendance_date, present, meal_preference, marked_by) VALUES (?, ?, ?, ?, ?, 'attendance-desk') ON CONFLICT(team_id, member_id, attendance_date) DO UPDATE SET present = excluded.present, meal_preference = CASE WHEN excluded.present = 1 THEN hackathon_attendance.meal_preference ELSE NULL END, marked_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), marked_by = excluded.marked_by`).bind(id, validId(item.memberId), date, item.present ? 1 : 0, null)), ...allocationStatements(context.env.DB, id, currentTeam.preparation_mode, auth.session.username), context.env.DB.prepare('DELETE FROM checkin_save_guards WHERE team_id=?').bind(id)]);
+    if (context.env.STOCK_SYNC_ENABLED === '1') {
+      context.waitUntil(dispatchPending(context.env.DB, id).catch(() => console.error('Stock delivery dispatch failed')));
+    }
     return attendanceJson({ ok: true, team: await loadTeam(context.env.DB, id, date), date });
   } catch (error) {
     if (String(error?.message || error).includes('checkin_stale_version')) return attendanceJson({ok:false,error:"This team changed since you opened it. Reload the team and review the latest check-in before saving."},409);

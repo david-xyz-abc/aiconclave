@@ -64,6 +64,7 @@ export const registrationsApi = {
 };
 
 export const attendanceApi = {
+  stockSync: (id) => requestJson(`/api/attendance/stock-sync?teamId=${encodeURIComponent(id)}`),
   login: (username, password) => requestJson("/api/attendance/auth", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -94,7 +95,9 @@ export const venuesApi = {
 };
 
 export const excelApi = {
-  judging: (kind,sector,award) => requestJson(`/api/excel/judging?${new URLSearchParams({kind,sector,award})}`),
+  judges: () => requestJson('/api/excel/offline'),
+  offline: (judgeId) => requestJson(`/api/excel/offline?${new URLSearchParams({judge:judgeId})}`),
+  judging: (kind,sector,award,category) => requestJson(`/api/excel/judging?${new URLSearchParams({kind,sector,award,...(category ? {category} : {})})}`),
   current: () => requestJson('/api/excel/auth'),
   login: (username,password) => requestJson('/api/excel/auth', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({username,password})}),
   logout: () => requestJson('/api/excel/auth', {method:'DELETE'}),

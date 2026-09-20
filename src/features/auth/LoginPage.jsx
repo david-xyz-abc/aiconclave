@@ -2,7 +2,7 @@ import { useState } from "react";
 import { BrandLockup } from "../../components/common/BrandLockup.jsx";
 import { authApi } from "../../services/dashboardApi.js";
 
-export function LoginPage({ onLogin, title = "Admin", initialUsername = "admin", login = authApi.login }) {
+export function LoginPage({ onLogin, title = "Admin", initialUsername = "", login = authApi.login }) {
   const [username, setUsername] = useState(initialUsername);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -25,13 +25,15 @@ export function LoginPage({ onLogin, title = "Admin", initialUsername = "admin",
   return (
     <main className="auth-shell attendance-auth-shell">
       <section className="auth-panel" aria-labelledby="login-heading">
-        <a className="ops-home-link" href="/">← Home</a>
-        <BrandLockup />
+        <a className="ops-brand auth-home-brand" href="/" aria-label="Home" title="Home">
+          <BrandLockup home />
+        </a>
         <div className="auth-copy"><p className="eyebrow">{title} access</p><h1 id="login-heading">{title}</h1></div>
         <form className="auth-form" onSubmit={submit}>
           <label>
             Username
             <input
+              autoFocus
               value={username}
               onChange={(event) => setUsername(event.target.value)}
               autoComplete="username"

@@ -45,6 +45,11 @@ export async function onRequest(context) {
   if (!username || username.length > 80 || !password || password.length > 1024)
     return json({ ok: false, error: "Enter your username and password." }, 400);
   const role = body.role === "judge" ? "judge" : "venue_admin";
+  const closed = () => json({ok:false,error:"Judge login is not open yet."},403);
+  if(role === "judge") {
+    const gate=await env.DB.prepare("SELECT enabled FROM judging_login_control WHERE id=1").first();
+    if(gate?.enabled !== 1)return closed();
+  }
   const user = await env.DB.prepare(
     "SELECT * FROM judging_users WHERE username=? AND role=? AND (role='venue_admin' OR judge_id IS NOT NULL)",
   )
@@ -69,7 +74,7 @@ export async function onRequest(context) {
   if (!(await constantTimeEqual(digest, user.password_hash))) {
     await env.DB.prepare(
       `UPDATE judging_users SET failed_attempts=CASE WHEN locked_until>0 AND locked_until<=unixepoch() THEN 1 ELSE failed_attempts+1 END,
-   locked_until=CASE WHEN locked_until>0 AND locked_until<=unixepoch() THEN 0 WHEN failed_attempts>=4 THEN unixepoch()+900 ELSE 0 END WHERE id=? AND locked_until<=unixepoch()`,
+   locked_until=CASE WHEN locked_until>0 AND locked_until<=unixepoch() THEN 0 WHEN failed_attempts>=4 THEN unixepoch()+900 ELSE 0 END WHERE id=? AND locked_until<=unixepoch() AND (role='venue_admin' OR EXISTS(SELECT 1 FROM judging_login_control WHERE id=1 AND enabled=1))`,
     )
       .bind(user.id)
       .run();
@@ -78,7 +83,7 @@ export async function onRequest(context) {
   const token = newToken();
   const result = await env.DB.batch([
     env.DB.prepare(
-      `INSERT INTO judging_sessions(token_hash,user_id,expires_at) SELECT ?,id,datetime('now','+12 hours') FROM judging_users WHERE id=? AND locked_until<=unixepoch()`,
+      `INSERT INTO judging_sessions(token_hash,user_id,expires_at) SELECT ?,id,datetime('now','+12 hours') FROM judging_users WHERE id=? AND locked_until<=unixepoch() AND (role='venue_admin' OR EXISTS(SELECT 1 FROM judging_login_control WHERE id=1 AND enabled=1))`,
     ).bind(await sha256(token), user.id),
     env.DB.prepare(
       "UPDATE judging_users SET failed_attempts=0,locked_until=0 WHERE id=? AND locked_until<=unixepoch()",
@@ -87,6 +92,10 @@ export async function onRequest(context) {
       "DELETE FROM judging_sessions WHERE expires_at<=datetime('now')",
     ),
   ]);
+  if (!result[0].meta.changes && role === "judge") {
+    const gate=await env.DB.prepare("SELECT enabled FROM judging_login_control WHERE id=1").first();
+    if(gate?.enabled !== 1)return closed();
+  }
   if (!result[0].meta.changes)
     return json(
       {

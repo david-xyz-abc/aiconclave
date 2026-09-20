@@ -1,5 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from 'node:fs';
+import { DatabaseSync } from 'node:sqlite';
 import { judgingFixture, judgingContext } from "./judgingFixture.js";
 import {
   onRequestPost as workspacePost,
@@ -97,7 +99,7 @@ async function setup() {
   const cookie = login.headers.get("set-cookie").split(";")[0];
   const evaluate = async (body) => {
     const r = await postEvaluation(
-      judgeContext(f.DB, cookie, { teamId: 1, ...body }),
+      judgeContext(f.DB, cookie, { teamId: 1, scoreMax: 10, ...body }),
     );
     return { status: r.status, ...(await r.json()) };
   };
@@ -264,7 +266,7 @@ test("unassigned teams, bad marks, sector nominations, missing scores and other 
   );
   await f.evaluate({ action: "nominations", revision: 0, nominations: ["none-of-the-above"] });
   for (const scores of [
-    { impact: 6 },
+    { impact: 11 },
     { impact: -1 },
     { impact: 2.5 },
     { impact: "5" },
@@ -487,4 +489,96 @@ test('seating changes between reading and saving cannot commit a stale evaluatio
   assert.equal((await f.evaluate({action:'nominations',revision:0,nominations:['none-of-the-above']})).status,409);
   assert.equal(f.sqlite.prepare('SELECT COUNT(*) n FROM judging_evaluations').get().n,0);
   assert.equal(f.sqlite.prepare('SELECT COUNT(*) n FROM judging_evaluation_history').get().n,0);
+});
+
+
+test('absent requires confirmation and atomically locks all zero scores with no award', async () => {
+ const f=await setup();
+ assert.equal((await f.evaluate({action:'absent',revision:0})).status,400);
+ assert.equal(f.sqlite.prepare('SELECT count(*) n FROM judging_evaluations').get().n,0);
+ await f.evaluate({action:'scores',revision:0,scores:fullScores});
+ const result=await f.evaluate({action:'absent',revision:1,confirmAbsent:true,scores:fullScores,nominations:['agri-impact']});
+ assert.equal(result.status,200);
+ assert.equal(result.evaluation.status,'submitted');
+ assert.deepEqual(Object.values(result.evaluation.scores),[0,0,0,0,0]);
+ assert.deepEqual(result.evaluation.nominations,['none-of-the-above']);
+ assert.equal(result.evaluation.team_snapshot.not_present,true);
+ assert.equal(result.evaluation.team_snapshot.score_max,10);
+ assert.equal((await f.evaluate({action:'absent',revision:2,confirmAbsent:true})).status,409);
+ assert.equal((await f.evaluate({action:'scores',revision:2,scores:fullScores})).status,409);
+ assert.equal((await f.evaluate({action:'absent',teamId:8,revision:0,confirmAbsent:true})).status,403);
+ assert.equal(f.sqlite.prepare("SELECT count(*) n FROM judging_evaluation_history WHERE action='absent'").get().n,1);
+});
+test('ten-point scores accept 10, reject invalid boundaries, and retain fifty-point total', async () => {
+ const f=await setup();
+ for(const impact of [-1,11,2.5,'10']) assert.equal((await f.evaluate({action:'scores',revision:0,scores:{impact}})).status,400);
+ const scores=Object.fromEntries(Object.keys(fullScores).map(k=>[k,10]));
+ const a=await f.evaluate({action:'scores',revision:0,scores});assert.equal(a.status,200);
+ await f.evaluate({action:'nominations',revision:1,nominations:['none-of-the-above']});
+ const r=await f.evaluate({action:'submit',revision:2});assert.equal(r.status,200);
+ assert.equal(Object.values(r.evaluation.scores).reduce((a,b)=>a+b,0),50);
+ assert.equal(r.evaluation.team_snapshot.score_max,10);
+});
+test('an old five-point browser tab must reload before saving any scores',async()=>{
+ const f=await setup();
+ for(const scoreMax of [undefined,5]) {
+  const result=await f.evaluate({action:'scores',revision:0,scores:fullScores,scoreMax});
+  assert.equal(result.status,409);
+  assert.match(result.error,/Reload this page/);
+ }
+ assert.equal(f.sqlite.prepare('SELECT COUNT(*) n FROM judging_evaluations').get().n,0);
+});
+test('old five-point draft is proportionately upgraded once on next save', async () => {
+ const f=await setup();await f.evaluate({action:'scores',revision:0,scores:fullScores});
+ f.sqlite.exec("UPDATE judging_evaluations SET team_snapshot=json_remove(team_snapshot,'$.score_max')");
+ const r=await f.evaluate({action:'nominations',revision:1,nominations:['none-of-the-above']});
+ assert.equal(r.status,200);assert.equal(r.evaluation.scores.impact,10);assert.equal(r.evaluation.scores.creativity,8);
+ const again=await f.evaluate({action:'nominations',revision:2,nominations:['agri-impact']});
+ assert.equal(again.evaluation.scores.impact,10);
+});
+test('absent concurrent with another save permits one atomic winner', async () => {
+ const f=await setup();overlapWrites(f);
+ const results=await Promise.all([f.evaluate({action:'absent',revision:0,confirmAbsent:true}),f.evaluate({action:'scores',revision:0,scores:fullScores})]);
+ assert.deepEqual(results.map(r=>r.status).sort(),[200,409]);
+ assert.equal(f.sqlite.prepare('SELECT count(*) n FROM judging_evaluation_history').get().n,1);
+});
+
+ test("venue admins control new judge login without revoking existing sessions",async()=>{
+ const {onRequest:control}=await import('../judging/functions/api/judge-login.js');
+ const f=await setup();
+ assert.equal((await control(judgeContext(f.DB,f.cookie,{enabled:false}))).status,403);
+ assert.equal((await control(judgeContext(f.DB,'',{enabled:false}))).status,401);
+ assert.equal((await control(judgingContext(f.DB,{enabled:'false'}))).status,400);
+ assert.equal((await control(judgingContext(f.DB,{enabled:false}))).status,200);
+ const before=f.sqlite.prepare('SELECT COUNT(*) n FROM judging_sessions').get().n;
+ const login=await authRequest(judgeContext(f.DB,'',{username:'judge-one',password:'fixture-pass',role:'judge'}));
+ assert.equal(login.status,403);assert.equal((await login.json()).error,'Judge login is not open yet.');
+ assert.equal(f.sqlite.prepare('SELECT COUNT(*) n FROM judging_sessions').get().n,before);
+ assert.equal((await getEvaluation(judgeContext(f.DB,f.cookie,null,'GET'))).status,200);
+ assert.equal((await control(judgingContext(f.DB,{enabled:true}))).status,200);
+ assert.equal((await authRequest(judgeContext(f.DB,'',{username:'judge-one',password:'fixture-pass',role:'judge'}))).status,200);
+ });
+
+test('login-control migration preserves access initially and preserves an existing closed setting on rerun',()=>{
+ const db=new DatabaseSync(':memory:');
+ try {
+  const sql=readFileSync(new URL('../db/migrations/0038_judge_login_control.sql',import.meta.url),'utf8');
+  db.exec(sql);
+  assert.equal(db.prepare('SELECT enabled FROM judging_login_control WHERE id=1').get().enabled,1);
+  db.exec("UPDATE judging_login_control SET enabled=0,updated_by='staff' WHERE id=1");
+  db.exec(sql);
+  assert.deepEqual({...db.prepare('SELECT enabled,updated_by FROM judging_login_control WHERE id=1').get()},{enabled:0,updated_by:'staff'});
+ } finally {db.close();}
+});
+
+test('judge login control rejects cross-origin changes and records the staff member',async()=>{
+ const {onRequest:control}=await import('../judging/functions/api/judge-login.js');
+ const f=await setup();
+ const request=judgingContext(f.DB,{enabled:false});
+ request.request.headers.set('origin','https://other.example');
+ assert.equal((await control(request)).status,403);
+ assert.equal(f.sqlite.prepare('SELECT enabled FROM judging_login_control WHERE id=1').get().enabled,1);
+ const result=await control(judgingContext(f.DB,{enabled:false}));
+ assert.equal(result.status,200);
+ assert.equal(f.sqlite.prepare('SELECT updated_by FROM judging_login_control WHERE id=1').get().updated_by,'staff');
 });

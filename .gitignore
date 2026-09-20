@@ -12,3 +12,6 @@ dist/
 !/functions/**
 .env
 /backups/
+/output/
+/outputs/
+/production-d1-backup-20260920.sql

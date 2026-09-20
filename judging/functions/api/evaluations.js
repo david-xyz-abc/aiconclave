@@ -5,7 +5,7 @@ import {
   evaluationGuard,
   historyStatement,
 } from "../_shared/evaluations.js";
-import { AWARDS, validScores, validNominations } from "../../shared/evaluation.js";
+import { AWARDS, CRITERIA, NO_AWARD, editableScores, validScores, validNominations } from "../../shared/evaluation.js";
 const fail = (error, status = 400) => json({ ok: false, error }, status);
 export async function onRequestGet(context) {
   const auth = await requireJudge(context);
@@ -47,9 +47,12 @@ export async function onRequestPost(context) {
     !Number.isSafeInteger(body?.teamId) ||
     !Number.isSafeInteger(body?.revision) ||
     body.revision < 0 ||
-    !["nominations", "scores", "submit"].includes(body.action)
+    !["nominations", "scores", "submit", "absent"].includes(body.action)
   )
     return fail("Invalid evaluation request.");
+  if (body.action === 'scores' && body.scoreMax !== 10) {
+    return fail('Scoring now uses marks out of 10. Reload this page before saving scores.',409);
+  }
   try {
     const db = context.env.DB,
       judgeId = auth.session.judge_id,
@@ -86,12 +89,21 @@ export async function onRequestPost(context) {
       status: "draft",
       nominations: owned ? previous.nominations : [],
       nominations_saved: owned ? previous.nominations_saved : 0,
-      scores: owned ? previous.scores : {},
-      team_snapshot: team,
+      scores: owned ? editableScores(previous) : {},
+      score_max: 10,
+      team_snapshot: { ...team, score_max: 10, not_present: false },
       updated_at: new Date().toISOString(),
       submitted_at: null,
     };
-    if (body.action === "nominations") {
+    if (body.action === "absent") {
+      if (body.confirmAbsent !== true) return fail("Confirm that the team is not present before disqualifying it.");
+      next.scores = Object.fromEntries(CRITERIA.map(c => [c.id, 0]));
+      next.nominations = [NO_AWARD];
+      next.nominations_saved = 1;
+      next.status = "submitted";
+      next.submitted_at = next.updated_at;
+      next.team_snapshot.not_present = true;
+    } else if (body.action === "nominations") {
       if (
         !validNominations(body.nominations, team.sector_track)
       )
@@ -100,7 +112,7 @@ export async function onRequestPost(context) {
       next.nominations_saved = 1;
     } else if (body.action === "scores") {
       if (!validScores(body.scores))
-        return fail("Each mark must be a whole number from 0 to 5.");
+        return fail("Each mark must be a whole number from 0 to 10.");
       next.scores = body.scores;
     } else {
       if (
@@ -115,7 +127,7 @@ export async function onRequestPost(context) {
       next.submitted_at = next.updated_at;
     }
     await db.batch([
-      evaluationGuard(db, data, auth.session.username, body.action,
+      evaluationGuard(db, data, auth.session.username, body.action === "absent" ? "submit" : body.action,
         team.team_id, judgeId, body.revision),
       db
         .prepare(
@@ -130,7 +142,7 @@ export async function onRequestPost(context) {
           JSON.stringify(next.nominations),
           next.nominations_saved,
           JSON.stringify(next.scores),
-          JSON.stringify(team),
+          JSON.stringify(next.team_snapshot),
           next.updated_at,
           next.submitted_at,
         ),

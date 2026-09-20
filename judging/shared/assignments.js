@@ -80,7 +80,10 @@ export function judgeRoute(data, judge) {
     sector: judge.sector_filter,
     mode: judge.mode_filter,
   };
-  const ordered = orderedTeams(data, filters);
+  // A saved route is a fixed set of teams. Later check-ins between its tables
+  // must not invalidate it; still check eligibility, table identity and order.
+  const assignedIds = new Set(assigned.map((a) => a.team_id));
+  const ordered = orderedTeams(data, filters).filter((t) => assignedIds.has(t.team_id));
   const start = ordered.findIndex((t) => t.team_id === assigned[0].team_id);
   const needsReview =
     start < 0 ||

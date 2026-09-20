@@ -6,6 +6,9 @@ import {
   CRITERIA,
   validScores,
   scoreTotal,
+  evaluationMaximum,
+  editableScores,
+  isNotPresent,
 } from "../shared/evaluation.js";
 export function JudgeApp({ user, onLogout }) {
   const [data, setData] = useState(null),
@@ -30,8 +33,8 @@ export function JudgeApp({ user, onLogout }) {
       if (teamId) {
         const e = d.evaluations.find((e) => e.team_id === teamId);
         setNominations(e?.nominations || []);
-        setScores(e?.scores || {});
-        setStep(e?.status === "submitted" ? 2 : validScores(e?.scores, true) ? 1 : 0);
+        setScores(e?.status === "submitted" ? e.scores : editableScores(e));
+        if (e?.status !== "submitted") setStep(validScores(editableScores(e), true) ? 1 : 0);
       }
       setDirty(false);
     } catch (e) {
@@ -62,13 +65,16 @@ export function JudgeApp({ user, onLogout }) {
     const e = data.evaluations.find((e) => e.team_id === t?.team_id);
     setTeamId(t?.team_id || null);
     setNominations(e?.nominations || []);
-    setScores(e?.scores || {});
-    setStep(e?.status === "submitted" ? 2 : validScores(e?.scores, true) ? 1 : 0);
+    setScores(e?.status === "submitted" ? e.scores : editableScores(e));
+    setStep(e?.status === "submitted" ? 2 : validScores(editableScores(e), true) ? 1 : 0);
+    window.scrollTo({ top: 0, behavior: "instant" });
     setDirty(false);
     setError("");
     setMessage("");
   }
   async function save(action, nextStep) {
+    if (busy) return;
+    if (action === "absent" && !window.confirm(`Mark ${shown.team_name} as NOT PRESENT? This disqualifies the team, submits 0 for all five criteria and no award nomination, and locks the evaluation. Only the venue team can reopen it.`)) return;
     setBusy(true);
     setError("");
     setMessage("");
@@ -77,10 +83,11 @@ export function JudgeApp({ user, onLogout }) {
         action,
         teamId,
         revision: saved?.revision || 0,
+        ...(action === "absent" ? { confirmAbsent: true } : {}),
         ...(action === "nominations"
           ? { nominations }
           : action === "scores"
-            ? { scores }
+            ? { scores, scoreMax: 10 }
             : {}),
       });
       setData((d) => ({
@@ -94,11 +101,15 @@ export function JudgeApp({ user, onLogout }) {
       setScores(result.evaluation.scores);
       setDirty(false);
       setMessage(
-        action === "submit"
-          ? "Evaluation submitted and locked."
+        ["submit", "absent"].includes(action)
+          ? `${shown.team_name}: ${action === "absent" ? "not present — disqualified with zero marks" : "evaluation submitted"}.`
           : "Draft saved.",
       );
-      if (nextStep !== undefined) setStep(nextStep);
+      if (["submit", "absent"].includes(action)) {
+        setTeamId(null);
+        setStep(0);
+        window.scrollTo({ top: 0, behavior: "instant" });
+      } else if (nextStep !== undefined) setStep(nextStep);
     } catch (e) {
       if (e.status === 401) onLogout();
       else setError(e.message);
@@ -142,22 +153,19 @@ export function JudgeApp({ user, onLogout }) {
       </header>
       <main className="main judge-main">
         <div className="page-head">
-          <div>
-            <h1>{team ? shown.team_name : "Your teams"}</h1>
-            <p>
-              {team
-                ? `Team leader: ${shown.leader_name || "Not available"}`
-                : `${completed} of ${data?.teams.length || 0} evaluations submitted`}
-            </p>
-          </div>
           {team ? (
-            <button disabled={busy} onClick={() => select(null)}>
-              ← Your teams
-            </button>
+            <div className="judge-detail-actions">
+              <button disabled={busy} onClick={() => select(null)}>← Back to your teams</button>
+              {!locked && <button className="absent-button" disabled={busy || data.routeNeedsReview} onClick={() => save("absent")}>Not present · Disqualify</button>}
+            </div>
           ) : (
-            <button disabled={busy} onClick={load}>
-              Refresh
-            </button>
+            <>
+              <div>
+                <h1>Your teams</h1>
+                <p>{completed} of {data?.teams.length || 0} evaluations submitted</p>
+              </div>
+              <button disabled={busy} onClick={load}>Refresh</button>
+            </>
           )}
         </div>
         {error && (
@@ -200,23 +208,24 @@ export function JudgeApp({ user, onLogout }) {
               const e = data.evaluations.find((e) => e.team_id === t.team_id);
               return (
                 <button
-                  className="card judge-team"
+                  className={`card judge-team ${e?.status === "submitted" ? "team-submitted" : ""}`}
+                  disabled={busy}
                   key={t.team_id}
                   onClick={() => select(t)}
                 >
                   <div>
                     <strong>{t.team_name}</strong>
                     <p>Team leader: {t.leader_name || "Not available"}</p>
-                    <small>
-                      {t.team_code} · {t.room_name || "Room pending"} / Table{" "}
-                      {t.table_number || "—"}
-                    </small>
+                    <small>{t.team_code}</small>
+                  </div>
+                  <div className="team-card-location" aria-label="Room and table">
+                    <b>{t.room_name || "Pending"} / {t.table_number ? `T${t.table_number}` : "—"}</b>
                   </div>
                   <span
                     className={`badge ${e?.status === "submitted" ? "complete" : ""}`}
                   >
                     {e?.status === "submitted"
-                      ? "Submitted"
+                      ? isNotPresent(e) ? "Not present · Disqualified" : "Submitted"
                       : e
                         ? "Draft saved"
                         : "Not started"}{" "}
@@ -233,27 +242,17 @@ export function JudgeApp({ user, onLogout }) {
           </div>
         ) : (
           <>
-            <div className="team-context card">
-              <span>
-                <small>Team code</small>
-                {shown.team_code}
-              </span>
-              <span>
-                <small>Venue / table</small>
-                {shown.room_name || "Pending"} / {shown.table_number || "—"}
-              </span>
-              <span>
-                <small>Category</small>
-                {shown.participant_category}
-              </span>
-              <span>
-                <small>Sector</small>
-                {shown.sector_track}
-              </span>
+            <div className="team-context">
+              <span aria-label="Team name"><small>Team name</small><h1>{shown.team_name}</h1></span>
+              <span aria-label="Team leader"><small>Lead name</small><b>{shown.leader_name || "Not available"}</b></span>
+              <span aria-label="Team code"><small>Team ID</small><b>{shown.team_code}</b></span>
+              <span aria-label="Room and table"><small>Allocation</small><b>{shown.room_name || "Pending"} / {shown.table_number ? `T${shown.table_number}` : "—"}</b></span>
+              <span aria-label="Category"><b>{shown.participant_category}</b></span>
+              <span aria-label="Sector"><b>{shown.sector_track}</b></span>
             </div>
             {!locked && (
               <ol className="evaluation-steps" aria-label="Evaluation steps">
-                {["Evaluation", "Nominations", "Review & submit"].map(
+                {["Score the team", "Award nomination", "Review & submit"].map(
                   (label, index) => (
                     <li
                       key={label}
@@ -267,6 +266,7 @@ export function JudgeApp({ user, onLogout }) {
             )}
             {locked ? (
               <div className="success banner">
+                {isNotPresent(saved) ? "Not present — disqualified. All scores are zero; no award nomination. " : "Evaluation completed. "}
                 Submitted on {new Date(saved.submitted_at).toLocaleString()}.
                 This evaluation is locked. Only the venue team can reopen it in
                 an emergency.
@@ -304,6 +304,7 @@ export function JudgeApp({ user, onLogout }) {
                       ))}
                     </div>
                     <div className="form-actions">
+                      <button onClick={() => { if (!dirty || window.confirm("Discard unsaved nomination changes and return to scoring?")) { setNominations(saved?.nominations || []); setDirty(false); setStep(0); } }}>← Scores</button>
                       <small>
                         {dirty
                           ? "Unsaved changes"
@@ -311,18 +312,12 @@ export function JudgeApp({ user, onLogout }) {
                             ? "Nominations saved"
                             : "No nominations selected yet"}
                       </small>
-                      <button onClick={() => {
-                        if (dirty && !window.confirm("Go back and discard unsaved nomination changes?")) return;
-                        setNominations(saved?.nominations || []);
-                        setDirty(false);
-                        setStep(0);
-                      }}>← Evaluation</button>
                       <button
                         className="primary"
                         disabled={!validNominations(nominations, shown.sector_track)}
                         onClick={() => save("nominations", 2)}
                       >
-                        Save nomination · review
+                        Next · review & submit
                       </button>
                     </div>
                   </fieldset>
@@ -331,8 +326,9 @@ export function JudgeApp({ user, onLogout }) {
                 <>
                   <h2>Judges evaluation</h2>
                   <p className="muted">
-                    Award 0–5 marks for each criterion. Maximum total: 25.
+                    Award 1–10 marks, or choose No credit (0), for each criterion. Tap a selected score again to clear it. Maximum total: 50.
                   </p>
+                  {saved && evaluationMaximum(saved) === 5 && <p className="notice">This older draft used marks out of 5. Its marks are doubled below to keep the same proportions out of 10. Review before saving.</p>}
                   <fieldset disabled={busy || data.routeNeedsReview}>
                     <legend className="sr-only">Evaluation scores</legend>
                     {CRITERIA.map((c) => (
@@ -344,14 +340,19 @@ export function JudgeApp({ user, onLogout }) {
                           role="group"
                           aria-label={`${c.name} score`}
                         >
-                          {[0, 1, 2, 3, 4, 5].map((value) => (
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
                             <button
                               type="button"
                               key={value}
-                              aria-label={`${c.name}: ${value} out of 5`}
+                              aria-label={`${c.name}: ${value} out of 10`}
                               aria-pressed={scores[c.id] === value}
                               onClick={() => {
-                                setScores({ ...scores, [c.id]: value });
+                                setScores((current) => {
+                                  const next = { ...current };
+                                  if (next[c.id] === value) delete next[c.id];
+                                  else next[c.id] = value;
+                                  return next;
+                                });
                                 setDirty(true);
                               }}
                             >
@@ -359,11 +360,20 @@ export function JudgeApp({ user, onLogout }) {
                             </button>
                           ))}
                         </div>
+                        <button type="button" className="zero-score" aria-label={`${c.name}: No credit (0)`} aria-pressed={scores[c.id] === 0} onClick={() => {
+                          setScores((current) => {
+                            const next = { ...current };
+                            if (next[c.id] === 0) delete next[c.id];
+                            else next[c.id] = 0;
+                            return next;
+                          });
+                          setDirty(true);
+                        }}>No credit (0)</button>
                       </section>
                     ))}
                     <div className="score-total">
                       <span>Total mark</span>
-                      <strong>{scoreTotal(scores)} / 25</strong>
+                      <strong>{scoreTotal(scores)} / {locked ? evaluationMaximum(saved) * 5 : 50}</strong>
                       <small>
                         {Object.keys(scores).length} of 5 criteria scored
                       </small>
@@ -375,7 +385,7 @@ export function JudgeApp({ user, onLogout }) {
                         disabled={!validScores(scores, true)}
                         onClick={() => save("scores", 1)}
                       >
-                        Next · save scores
+                        Next · award nomination
                       </button>
                     </div>
                   </fieldset>
@@ -401,12 +411,12 @@ export function JudgeApp({ user, onLogout }) {
                     {CRITERIA.map((c) => (
                       <div key={c.id}>
                         <dt>{c.name}</dt>
-                        <dd>{scores[c.id] ?? "—"} / 5</dd>
+                        <dd>{scores[c.id] ?? "—"} / {locked ? evaluationMaximum(saved) : 10}</dd>
                       </div>
                     ))}
                     <div className="score-total">
                       <dt>Total mark</dt>
-                      <dd>{scoreTotal(scores)} / 25</dd>
+                      <dd>{scoreTotal(scores)} / {locked ? evaluationMaximum(saved) * 5 : 50}</dd>
                     </div>
                   </dl>
                   {!locked && (
@@ -417,7 +427,7 @@ export function JudgeApp({ user, onLogout }) {
                       </p>
                       <div className="form-actions">
                         <button disabled={busy} onClick={() => setStep(1)}>
-                          ← Back to nominations
+                          ← Award nomination
                         </button>
                         <button
                           className="primary"
